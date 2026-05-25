@@ -39,7 +39,7 @@ def fetch_latest_verus_release():
 
     print("Fetching latest release information...")
     api_url = "https://api.github.com/repos/verus-lang/verus/releases/latest"
-    req = urllib.request.Request(api_url)
+    req = urllib.request.Request(api_url, headers={'User-Agent': 'Verus-Benchmark-Agent'})
 
     try:
         with urllib.request.urlopen(req) as response:
