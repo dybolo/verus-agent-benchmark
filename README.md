@@ -3,3 +3,4 @@
 ## Requirements
 
 - python 3.14
+- docker
