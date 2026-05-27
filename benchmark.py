@@ -54,6 +54,10 @@ def run_tasks():
         # Build the agent's docker image
         build_agent_image(agent)
 
+        # Create an isolated staging directory too keep temporary dirs for tasks
+        staging_base = os.path.abspath(".staging_areas")
+        os.makedirs(staging_base, exist_ok=True)
+
         for task in tasks:
             print("=" * 60)
             print(f"Running agent '{agent}' on task '{task}'")
@@ -63,8 +67,7 @@ def run_tasks():
             task_base = task[:-3] if task.endswith(".rs") else task
             solution_filename = f"{task_base}_verified.rs"
 
-            # Create an isolated staging directory just for THIS run
-            with tempfile.TemporaryDirectory() as staging_dir:
+            with tempfile.TemporaryDirectory(dir=staging_base) as staging_dir:
                 # Copy the specific task file into the empty staging area
                 original_task_path = os.path.abspath(os.path.join("tasks", task))
                 staged_task_path = os.path.join(staging_dir, task)
@@ -72,17 +75,24 @@ def run_tasks():
 
                 # Format the prompt with the path to the task file inside the container
                 task_path_in_container = f"/workspace/task_env/{task}"
-                formatted_prompt = prompt_template.format(task=task_path_in_container)
+                output_path_in_container = f"/workspace/task_env/{solution_filename}"
+                formatted_prompt = prompt_template.format(task=task_path_in_container, output=output_path_in_container)
 
-                # Run the container, mounting ONLY this isolated staging folder
+                # Run the container
                 cmd = [
                     "docker", "run", "--rm",
                     "-v", f"{staging_dir}:/workspace/task_env",
-                    "-w", "/workspace/task_env",
-                    f"benchmark-{agent}",
+                    "-e", "TASK_PROMPT",
                 ]
 
-                # Pass the formatted prompt as environment variable for clarity
+                # Pass through API keys to Docker
+                for key in ["ANTHROPIC_API_KEY", "OPENAI_API_KEY", "GEMINI_API_KEY", "OPENCODE_API_KEY", "OPENROUTER_API_KEY"]:
+                    if key in os.environ:
+                        cmd.extend(["-e", key])
+
+                cmd.append(f"benchmark-{agent}")
+
+                # Build the environment for the subprocess that runs docker
                 env = os.environ.copy()
                 env["TASK_PROMPT"] = formatted_prompt
 

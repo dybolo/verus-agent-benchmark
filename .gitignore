@@ -2,3 +2,4 @@
 .vstd/
 todo.txt
 *.zip
+.staging_areas/
