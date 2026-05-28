@@ -33,6 +33,3 @@ WORKDIR /workspace
 
 # Add symbolic link from vstd of the verus release to the working directory
 RUN ln -s /opt/.verus/vstd /workspace/vstd
-
-# Keep the container running for the agent
-CMD ["/bin/bash", "-i"]

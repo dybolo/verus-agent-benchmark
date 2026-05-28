@@ -8,4 +8,10 @@ RUN apt-get update && apt-get install -y \
 
 RUN npm install -g @earendil-works/pi-coding-agent
 
-CMD sh -c 'pi -p "$TASK_PROMPT"'
+# Verify pi is installed
+RUN which pi && pi --version
+
+# Run pi with the task prompt, using exec so it replaces the shell process
+# CMD ["/bin/sh", "-c", "exec pi -p \"$TASK_PROMPT\""]
+CMD pi --model openrouter/gpt-5.4-nano -p "$TASK_PROMPT"
+#CMD ["pi", "--model", "openrouter/gpt-5.4-nano", "-p", "$TASK_PROMPT"]

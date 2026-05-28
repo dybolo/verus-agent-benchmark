@@ -102,8 +102,17 @@ def run_tasks():
                         cmd,
                         env=env,
                         check=False,
-                        capture_output=False
+                        capture_output=True,
+                        text=True
                     )
+
+                    # Display captured output
+                    if result.stdout:
+                        print("[STDOUT]")
+                        print(result.stdout)
+                    if result.stderr:
+                        print("[STDERR]")
+                        print(result.stderr)
 
                     # After the container finishes, extract the solution file
                     expected_solution_path = os.path.join(staging_dir, solution_filename)
