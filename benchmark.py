@@ -70,6 +70,7 @@ def run_tasks():
             # Strip .rs extension and create the expected output filename
             task_base = task[:-3] if task.endswith(".rs") else task
             solution_filename = f"{task_base}_verified.rs"
+            session_filename = f"{task_base}_session"
 
             with tempfile.TemporaryDirectory(dir=staging_base) as staging_dir:
                 # Copy the specific task file into the empty staging area
@@ -80,6 +81,7 @@ def run_tasks():
                 # Format the prompt with the path to the task file inside the container
                 task_path_in_container = f"/workspace/task_env/{task}"
                 output_path_in_container = f"/workspace/task_env/{solution_filename}"
+                session_path_in_container = f"/workspace/task_env/{session_filename}"
                 formatted_prompt = prompt_template.format(task=task_path_in_container, output=output_path_in_container)
 
                 # Run the container
@@ -87,6 +89,7 @@ def run_tasks():
                     "docker", "run", "--rm",
                     "-v", f"{staging_dir}:/workspace/task_env",
                     "-e", "TASK_PROMPT",
+                    "-e", "SESSION",
                 ]
 
                 # Pass through API keys to Docker
@@ -99,6 +102,7 @@ def run_tasks():
                 # Build the environment for the subprocess that runs docker
                 env = os.environ.copy()
                 env["TASK_PROMPT"] = formatted_prompt
+                env["SESSION"] = session_path_in_container
 
                 try:
                     # Create a simple wrapper script to run the agent inside the container with the prompt
@@ -123,7 +127,7 @@ def run_tasks():
 
                     if os.path.exists(expected_solution_path):
                         # Move it to the permanent solutions folder with timestamp
-                        final_solution_dir = os.path.abspath(os.path.join("solutions", agent, f"-{timestamp}"))
+                        final_solution_dir = os.path.abspath(os.path.join("solutions", agent, f"{timestamp}"))
                         os.makedirs(final_solution_dir, exist_ok=True)
                         final_solution_path = os.path.join(final_solution_dir, solution_filename)
 
@@ -134,6 +138,20 @@ def run_tasks():
 
                     if result.returncode != 0:
                         print(f"⚠ Agent {agent} exited with code {result.returncode} on task {task}")
+
+                    # And the session
+                    expected_session_path = os.path.join(staging_dir, session_filename)
+
+                    if os.path.exists(expected_session_path):
+                        # Move it to the permanent sessions folder with timestamp
+                        final_session_dir = os.path.abspath(os.path.join("sessions", agent, f"{timestamp}"))
+                        os.makedirs(final_session_dir, exist_ok=True)
+                        final_session_path = os.path.join(final_session_dir, session_filename)
+
+                        shutil.copy2(expected_session_path, final_session_path)
+                        print(f"✓ Session extracted to {final_session_path}")
+                    else:
+                        print(f"✗ Could not find the expected session file: {session_filename}")
 
                 except subprocess.CalledProcessError as e:
                     print(f"✗ Agent {agent} failed on task {task}: {e}")
