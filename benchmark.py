@@ -5,6 +5,7 @@ import subprocess
 import sys
 import tempfile
 import shutil
+from datetime import datetime
 
 def build_base_image():
     """Build the base Docker image with all shared dependencies."""
@@ -49,6 +50,9 @@ def run_tasks():
     print(f"Found {len(agents)} agent(s): {', '.join(agents)}")
     print(f"Found {len(tasks)} task(s)")
     print()
+
+    # Generate timestamp for this benchmark run
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 
     for agent in agents:
         # Build the agent's docker image
@@ -118,8 +122,8 @@ def run_tasks():
                     expected_solution_path = os.path.join(staging_dir, solution_filename)
 
                     if os.path.exists(expected_solution_path):
-                        # Move it to the permanent solutions folder
-                        final_solution_dir = os.path.abspath(os.path.join("solutions", agent))
+                        # Move it to the permanent solutions folder with timestamp
+                        final_solution_dir = os.path.abspath(os.path.join("solutions", agent, f"-{timestamp}"))
                         os.makedirs(final_solution_dir, exist_ok=True)
                         final_solution_path = os.path.join(final_solution_dir, solution_filename)
 
