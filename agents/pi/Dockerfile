@@ -9,4 +9,4 @@ RUN apt-get update && apt-get install -y \
 RUN npm install -g @earendil-works/pi-coding-agent
 
 # Run the agent and send the session to the session directory
-CMD pi --model openrouter/gpt-5.4-nano -p "$TASK_PROMPT" && pi --export "$(find  ~/.pi/agent/sessions/ -name '*.jsonl' | head -1)"  "$SESSION"
+CMD pi --model openrouter/gpt-5.4-nano -p "$TASK_PROMPT" && cp "$(find  ~/.pi/agent/sessions/ -name '*.jsonl' | head -1)" "$SESSION"

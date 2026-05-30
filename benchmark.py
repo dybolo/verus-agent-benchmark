@@ -5,6 +5,7 @@ import subprocess
 import sys
 import tempfile
 import shutil
+import json
 from datetime import datetime
 
 def build_base_image():
@@ -17,6 +18,7 @@ def build_base_image():
     ], check=True)
     print()
 
+
 def build_agent_image(agent_name):
     """Build a specific agent's Docker image."""
     print(f"Building agent image: benchmark-{agent_name}")
@@ -25,6 +27,63 @@ def build_agent_image(agent_name):
         "docker", "build", "-t", f"benchmark-{agent_name}", agent_dir
     ], check=True)
     print()
+
+
+def verify_solution(staging_dir, task, solution_filename, original_task_path, staged_task_path) -> dict:
+    """Run Verus and Lynette checks on the generated solution."""
+    stats = {
+        "verus_passed": False,
+        "cheat_checker_passed": False
+    }
+
+    print("Running Verus verification...")
+    verus_cmd = [
+        "docker", "run", "--rm",
+        "-v", f"{staging_dir}:/workspace/task_env",
+        "benchmark-base:latest",
+        "verus", f"/workspace/task_env/{solution_filename}", "--output-json"
+    ]
+    verus_res = subprocess.run(verus_cmd, capture_output=True, text=True)
+
+    # We should try to find the JSON string in stdout since verus might output other lines
+    try:
+        verus_data = json.loads(verus_res.stdout)
+        stats["verus_passed"] = verus_data.get("verification-results", {}).get("success", False)
+    except json.JSONDecodeError:
+        # Attempt to find json inside stdout if there's surrounding text
+        try:
+            json_start = verus_res.stdout.find('{')
+            json_end = verus_res.stdout.rfind('}')
+            if json_start != -1 and json_end != -1:
+                verus_data = json.loads(verus_res.stdout[json_start:json_end+1])
+                stats["verus_passed"] = verus_data.get("verification-results", {}).get("success", False)
+            else:
+                stats["verus_passed"] = False
+        except Exception as e:
+            stats["verus_passed"] = False
+            print(f"Caught error while analysing Verus output: {e}")
+
+    print(f"Verus passed: {stats['verus_passed']}")
+
+    # Restore the original task file in case the agent modified it
+    shutil.copy2(original_task_path, staged_task_path)
+
+    # Run Lynette Cheat Checker validation
+    print("Running Lynette cheat checker...")
+    lynette_cmd = [
+        "docker", "run", "--rm",
+        "-v", f"{staging_dir}:/workspace/task_env",
+        "benchmark-base:latest",
+        "python3", "/opt/lynette.py",
+        f"/workspace/task_env/{task}",
+        f"/workspace/task_env/{solution_filename}"
+    ]
+    lynette_res = subprocess.run(lynette_cmd, capture_output=True, text=True)
+    stats["cheat_checker_passed"] = (lynette_res.returncode == 0)
+
+    print(f"Cheat checker passed: {stats['cheat_checker_passed']}")
+    return stats
+
 
 def run_tasks():
     """Main benchmark orchestration."""
@@ -54,9 +113,15 @@ def run_tasks():
     # Generate timestamp for this benchmark run
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 
+    run_stats = {
+        "timestamp": timestamp,
+        "agents": {}
+    }
+
     for agent in agents:
         # Build the agent's docker image
         build_agent_image(agent)
+        run_stats["agents"][agent] = {"tasks": {}}
 
         # Create an isolated staging directory too keep temporary dirs for tasks
         staging_base = os.path.abspath(".staging_areas")
@@ -72,6 +137,13 @@ def run_tasks():
             solution_filename = f"{task_base}_verified.rs"
             session_filename = f"{task_base}_session"
 
+            task_stats = {
+                "solution_generated": False,
+                "verus_passed": False,
+                "cheat_checker_passed": False
+            }
+            run_stats["agents"][agent]["tasks"][task] = task_stats
+
             with tempfile.TemporaryDirectory(dir=staging_base) as staging_dir:
                 # Copy the specific task file into the empty staging area
                 original_task_path = os.path.abspath(os.path.join("tasks", task))
@@ -81,7 +153,7 @@ def run_tasks():
                 # Format the prompt with the path to the task file inside the container
                 task_path_in_container = f"/workspace/task_env/{task}"
                 output_path_in_container = f"/workspace/task_env/{solution_filename}"
-                session_path_in_container = f"/workspace/task_env/{session_filename}"
+                session_path_in_container = f"/workspace/task_env/{session_filename}.jsonl" # NOTE for now the agent has to save session in jsonl format
                 formatted_prompt = prompt_template.format(task=task_path_in_container, output=output_path_in_container)
 
                 # Run the container
@@ -126,14 +198,20 @@ def run_tasks():
                     expected_solution_path = os.path.join(staging_dir, solution_filename)
 
                     if os.path.exists(expected_solution_path):
+                        task_stats["solution_generated"] = True
+
                         # Move it to the permanent solutions folder with timestamp
                         final_solution_dir = os.path.abspath(os.path.join("solutions", agent, f"{timestamp}"))
                         os.makedirs(final_solution_dir, exist_ok=True)
                         final_solution_path = os.path.join(final_solution_dir, solution_filename)
-
                         shutil.copy2(expected_solution_path, final_solution_path)
                         print(f"✓ Solution extracted to {final_solution_path}")
+
+                        verification_status = verify_solution(staging_dir, task, solution_filename, original_task_path, staged_task_path)
+                        task_stats.update(verification_status)
+
                     else:
+                        task_stats["solution_generated"] = False
                         print(f"✗ Agent did not produce the expected file: {solution_filename}")
 
                     if result.returncode != 0:
@@ -157,6 +235,15 @@ def run_tasks():
                     print(f"✗ Agent {agent} failed on task {task}: {e}")
 
                 print()
+
+    # Save run statistics to JSON file
+    os.makedirs("runs", exist_ok=True)
+    stats_file = os.path.join("runs", f"{timestamp}.json")
+    with open(stats_file, "w") as f:
+        json.dump(run_stats, f, indent=2)
+    print("=" * 60)
+    print(f"Benchmark complete. Run statistics saved to {stats_file}")
+    print("=" * 60)
 
 if __name__ == "__main__":
     run_tasks()
