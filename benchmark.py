@@ -149,7 +149,7 @@ def run_tasks():
             # Strip .rs extension and create the expected output filename
             task_base = task[:-3] if task.endswith(".rs") else task
             solution_filename = f"{task_base}_verified.rs"
-            session_filename = f"{task_base}_session"
+            session_filename = f"{task_base}_session.jsonl" # NOTE for now the agent has to save session in jsonl format
 
             task_stats = {
                 "solution_generated": False,
@@ -167,7 +167,7 @@ def run_tasks():
                 # Format the prompt with the path to the task file inside the container
                 task_path_in_container = f"/workspace/task_env/{task}"
                 output_path_in_container = f"/workspace/task_env/{solution_filename}"
-                session_path_in_container = f"/workspace/task_env/{session_filename}.jsonl" # NOTE for now the agent has to save session in jsonl format
+                session_path_in_container = f"/workspace/task_env/{session_filename}"
                 formatted_prompt = prompt_template.format(task=task_path_in_container, output=output_path_in_container)
 
                 # Run the container
