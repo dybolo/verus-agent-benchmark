@@ -6,6 +6,7 @@ import sys
 import tempfile
 import shutil
 import json
+import uuid
 from datetime import datetime
 
 def build_base_image():
@@ -30,58 +31,71 @@ def build_agent_image(agent_name):
 
 
 def verify_solution(staging_dir, task, solution_filename, original_task_path, staged_task_path) -> dict:
-    """Run Verus and Lynette checks on the generated solution."""
+    """Run Verus and Lynette checks on the generated solution using a single persistent container."""
     stats = {
         "verus_passed": False,
         "cheat_checker_passed": False
     }
 
-    print("Running Verus verification...")
-    verus_cmd = [
-        "docker", "run", "--rm",
-        "-v", f"{staging_dir}:/workspace/task_env",
-        "benchmark-base:latest",
-        "verus", f"/workspace/task_env/{solution_filename}", "--output-json"
-    ]
-    verus_res = subprocess.run(verus_cmd, capture_output=True, text=True)
+    container_name = f"verify_{uuid.uuid4().hex[:8]}"
 
-    # We should try to find the JSON string in stdout since verus might output other lines
     try:
-        verus_data = json.loads(verus_res.stdout)
-        stats["verus_passed"] = verus_data.get("verification-results", {}).get("success", False)
-    except json.JSONDecodeError:
-        # Attempt to find json inside stdout if there's surrounding text
+        print(f"Starting verification container {container_name}...")
+        # Start the container in detached mode running sleep infinity
+        subprocess.run([
+            "docker", "run", "-d", "--rm", "--name", container_name,
+            "-v", f"{staging_dir}:/workspace/task_env",
+            "benchmark-base:latest",
+            "sleep", "infinity"
+        ], check=True, capture_output=True)
+
+        print("Running Verus verification...")
+        verus_cmd = [
+            "docker", "exec", container_name,
+            "verus", f"/workspace/task_env/{solution_filename}", "--output-json"
+        ]
+        verus_res = subprocess.run(verus_cmd, capture_output=True, text=True)
+
+        # We should try to find the JSON string in stdout since verus might output other lines
         try:
-            json_start = verus_res.stdout.find('{')
-            json_end = verus_res.stdout.rfind('}')
-            if json_start != -1 and json_end != -1:
-                verus_data = json.loads(verus_res.stdout[json_start:json_end+1])
-                stats["verus_passed"] = verus_data.get("verification-results", {}).get("success", False)
-            else:
+            verus_data = json.loads(verus_res.stdout)
+            stats["verus_passed"] = verus_data.get("verification-results", {}).get("success", False)
+        except json.JSONDecodeError:
+            # Attempt to find json inside stdout if there's surrounding text
+            try:
+                json_start = verus_res.stdout.find('{')
+                json_end = verus_res.stdout.rfind('}')
+                if json_start != -1 and json_end != -1:
+                    verus_data = json.loads(verus_res.stdout[json_start:json_end+1])
+                    stats["verus_passed"] = verus_data.get("verification-results", {}).get("success", False)
+                else:
+                    stats["verus_passed"] = False
+            except Exception as e:
                 stats["verus_passed"] = False
-        except Exception as e:
-            stats["verus_passed"] = False
-            print(f"Caught error while analysing Verus output: {e}")
+                print(f"Caught error while analysing Verus output: {e}")
 
-    print(f"Verus passed: {stats['verus_passed']}")
+        print(f"Verus passed: {stats['verus_passed']}")
 
-    # Restore the original task file in case the agent modified it
-    shutil.copy2(original_task_path, staged_task_path)
+        # Restore the original task file in case the agent modified it
+        shutil.copy2(original_task_path, staged_task_path)
 
-    # Run Lynette Cheat Checker validation
-    print("Running Lynette cheat checker...")
-    lynette_cmd = [
-        "docker", "run", "--rm",
-        "-v", f"{staging_dir}:/workspace/task_env",
-        "benchmark-base:latest",
-        "python3", "/opt/lynette.py",
-        f"/workspace/task_env/{task}",
-        f"/workspace/task_env/{solution_filename}"
-    ]
-    lynette_res = subprocess.run(lynette_cmd, capture_output=True, text=True)
-    stats["cheat_checker_passed"] = (lynette_res.returncode == 0)
+        # Run Lynette Cheat Checker validation
+        print("Running Lynette cheat checker...")
+        lynette_cmd = [
+            "docker", "exec", container_name,
+            "python3", "/opt/lynette.py",
+            f"/workspace/task_env/{task}",
+            f"/workspace/task_env/{solution_filename}"
+        ]
+        lynette_res = subprocess.run(lynette_cmd, capture_output=True, text=True)
+        stats["cheat_checker_passed"] = (lynette_res.returncode == 0)
 
-    print(f"Cheat checker passed: {stats['cheat_checker_passed']}")
+        print(f"Cheat checker passed: {stats['cheat_checker_passed']}")
+
+    finally:
+        print(f"Cleaning up verification container {container_name}...")
+        subprocess.run(["docker", "kill", container_name], capture_output=True)
+
     return stats
 
 
