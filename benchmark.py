@@ -169,7 +169,8 @@ def run_tasks():
             task_stats = {
                 "solution_generated": False,
                 "verus_passed": False,
-                "cheat_checker_passed": False
+                "cheat_checker_passed": False,
+                "timed_out": False
             }
             run_stats["agents"][agent_name]["tasks"][task] = task_stats
 
@@ -186,8 +187,9 @@ def run_tasks():
                 formatted_prompt = prompt_template.format(task=task_path_in_container, output=output_path_in_container)
 
                 # Run the container
+                container_name = f"agent_{uuid.uuid4().hex[:8]}"
                 cmd = [
-                    "docker", "run", "--rm",
+                    "docker", "run", "--rm", "--name", container_name,
                     "-v", f"{staging_dir}:/workspace/task_env",
                     "-e", "TASK_PROMPT",
                     "-e", "SESSION",
@@ -212,7 +214,8 @@ def run_tasks():
                         env=env,
                         check=False,
                         capture_output=True,
-                        text=True
+                        text=True,
+                        timeout=2400
                     )
 
                     # Display captured output
@@ -259,6 +262,12 @@ def run_tasks():
                         print(f"✓ Session extracted to {final_session_path}")
                     else:
                         print(f"✗ Could not find the expected session file: {session_filename}")
+
+                except subprocess.TimeoutExpired:
+                    task_stats["timed_out"] = True
+                    print(f"✗ Agent {agent_name} timed out on task {task} (40 minutes)")
+                    subprocess.run(["docker", "kill", container_name], capture_output=True, check=False)
+                    subprocess.run(["docker", "rm", "-f", container_name], capture_output=True, check=False)
 
                 except subprocess.CalledProcessError as e:
                     print(f"✗ Agent {agent_name} failed on task {task}: {e}")
