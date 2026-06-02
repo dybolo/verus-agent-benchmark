@@ -20,12 +20,11 @@ def build_base_image():
     print()
 
 
-def build_agent_image(agent_name):
+def build_agent_image(agent_tag, agent_path):
     """Build a specific agent's Docker image."""
-    print(f"Building agent image: benchmark-{agent_name}")
-    agent_dir = os.path.join("agents", agent_name)
+    print(f"Building agent image: benchmark-{agent_tag}")
     subprocess.run([
-        "docker", "build", "-t", f"benchmark-{agent_name}", agent_dir
+        "docker", "build", "-t", f"benchmark-{agent_tag}", agent_path
     ], check=True)
     print()
 
@@ -108,9 +107,21 @@ def run_tasks():
     with open("prompt.txt", "r") as f:
         prompt_template = f.read()
 
-    # Discover agents and tasks
-    agents = [d for d in os.listdir("agents") if os.path.isdir(os.path.join("agents", d))]
+    # Discover agents and tasks (agents are now agent/model)
     tasks = [f for f in os.listdir("tasks") if f.endswith(".rs")]
+    agents = []
+    if os.path.exists("agents"):
+        for agent_dir in sorted(os.listdir("agents")):
+            agent_path = os.path.join("agents", agent_dir)
+            if not os.path.isdir(agent_path):
+                continue
+            for model_dir in sorted(os.listdir(agent_path)):
+                model_path = os.path.join(agent_path, model_dir)
+                if os.path.isdir(model_path) and os.path.exists(os.path.join(model_path, "Dockerfile")):
+                    agents.append({
+                        "name": f"{agent_dir}/{model_dir}",
+                        "tag": f"{agent_dir}-{model_dir}"
+                    })
 
     if not agents:
         print("Error: No agents found in agents/ directory")
@@ -120,7 +131,7 @@ def run_tasks():
         print("Error: No tasks found in tasks/ directory")
         sys.exit(1)
 
-    print(f"Found {len(agents)} agent(s): {', '.join(agents)}")
+    print(f"Found {len(agents)} agent(s): {', '.join(a['name'] for a in agents)}")
     print(f"Found {len(tasks)} task(s)")
     print()
 
@@ -133,9 +144,13 @@ def run_tasks():
     }
 
     for agent in agents:
+        agent_name = agent["name"]
+        agent_tag = agent["tag"]
+        agent_path = os.path.join("agents", agent_name)
+
         # Build the agent's docker image
-        build_agent_image(agent)
-        run_stats["agents"][agent] = {"tasks": {}}
+        build_agent_image(agent_tag, agent_path)
+        run_stats["agents"][agent_name] = {"tasks": {}}
 
         # Create an isolated staging directory too keep temporary dirs for tasks
         staging_base = os.path.abspath(".staging_areas")
@@ -143,7 +158,7 @@ def run_tasks():
 
         for task in tasks:
             print("=" * 60)
-            print(f"Running agent '{agent}' on task '{task}'")
+            print(f"Running agent '{agent_name}' on task '{task}'")
             print("=" * 60)
 
             # Strip .rs extension and create the expected output filename
@@ -156,7 +171,7 @@ def run_tasks():
                 "verus_passed": False,
                 "cheat_checker_passed": False
             }
-            run_stats["agents"][agent]["tasks"][task] = task_stats
+            run_stats["agents"][agent_name]["tasks"][task] = task_stats
 
             with tempfile.TemporaryDirectory(dir=staging_base) as staging_dir:
                 # Copy the specific task file into the empty staging area
@@ -183,7 +198,7 @@ def run_tasks():
                     if key in os.environ:
                         cmd.extend(["-e", key])
 
-                cmd.append(f"benchmark-{agent}")
+                cmd.append(f"benchmark-{agent_tag}")
 
                 # Build the environment for the subprocess that runs docker
                 env = os.environ.copy()
@@ -215,7 +230,7 @@ def run_tasks():
                         task_stats["solution_generated"] = True
 
                         # Move it to the permanent solutions folder with timestamp
-                        final_solution_dir = os.path.abspath(os.path.join("solutions", agent, f"{timestamp}"))
+                        final_solution_dir = os.path.abspath(os.path.join("solutions", agent_name, f"{timestamp}"))
                         os.makedirs(final_solution_dir, exist_ok=True)
                         final_solution_path = os.path.join(final_solution_dir, solution_filename)
                         shutil.copy2(expected_solution_path, final_solution_path)
@@ -229,14 +244,14 @@ def run_tasks():
                         print(f"✗ Agent did not produce the expected file: {solution_filename}")
 
                     if result.returncode != 0:
-                        print(f"⚠ Agent {agent} exited with code {result.returncode} on task {task}")
+                        print(f"⚠ Agent {agent_name} exited with code {result.returncode} on task {task}")
 
                     # And the session
                     expected_session_path = os.path.join(staging_dir, session_filename)
 
                     if os.path.exists(expected_session_path):
                         # Move it to the permanent sessions folder with timestamp
-                        final_session_dir = os.path.abspath(os.path.join("sessions", agent, f"{timestamp}"))
+                        final_session_dir = os.path.abspath(os.path.join("sessions", agent_name, f"{timestamp}"))
                         os.makedirs(final_session_dir, exist_ok=True)
                         final_session_path = os.path.join(final_session_dir, session_filename)
 
@@ -246,7 +261,7 @@ def run_tasks():
                         print(f"✗ Could not find the expected session file: {session_filename}")
 
                 except subprocess.CalledProcessError as e:
-                    print(f"✗ Agent {agent} failed on task {task}: {e}")
+                    print(f"✗ Agent {agent_name} failed on task {task}: {e}")
 
                 print()
 
