@@ -25,6 +25,9 @@ RUN python3 fetch_verus_release.py
 ENV PATH="/usr/local/cargo/bin:/usr/local/rustup/bin:${PATH}"
 # Add the downloaded Verus binaries to the system PATH so the agent can just run `verus`
 ENV PATH="/opt/.verus:${PATH}"
+
+# fetch_verus_release.py automatically detects and installs the required Rust toolchain
+
 # Add Lynette to the system PATH so the agent can just run `lynette`
 RUN ln -s /opt/lynette.py /usr/local/bin/lynette
 

@@ -3,6 +3,7 @@
 import os
 import stat
 import json
+import subprocess
 import urllib.request
 import platform
 import shutil
@@ -29,6 +30,63 @@ def get_platform_info():
         raise ValueError(f"Unsupported architecture: {machine}")
 
     return os_name, arch
+
+def get_rust_host_triple():
+    machine = platform.machine().lower()
+    if machine in ["x86_64", "amd64"]:
+        arch = "x86_64"
+    elif machine in ["arm64", "aarch64"]:
+        arch = "aarch64"
+    else:
+        raise ValueError(f"Unsupported architecture: {machine}")
+
+    sys_name = platform.system().lower()
+    if sys_name == "linux":
+        return f"{arch}-unknown-linux-gnu"
+    elif sys_name == "darwin":
+        return f"{arch}-apple-darwin"
+    elif sys_name == "windows":
+        return f"{arch}-pc-windows-msvc"
+    else:
+        raise ValueError(f"Unsupported OS: {sys_name}")
+
+def install_required_toolchain(release_data):
+    tag = release_data.get('tag_name')
+    if tag:
+        url = f"https://raw.githubusercontent.com/verus-lang/verus/{tag}/rust-toolchain.toml"
+    else:
+        url = "https://raw.githubusercontent.com/verus-lang/verus/main/rust-toolchain.toml"
+
+    print(f"Fetching rust-toolchain.toml...")
+    req = urllib.request.Request(url, headers={'User-Agent': 'Verus-Benchmark-Agent'})
+
+    try:
+        with urllib.request.urlopen(req) as response:
+            content = response.read().decode()
+    except Exception as e:
+        print(f"Warning: Could not fetch rust-toolchain.toml: {e}")
+        return
+
+    channel = None
+    for line in content.splitlines():
+        line = line.strip()
+        if line.startswith("channel"):
+            channel = line.split("=", 1)[1].strip().strip('"').strip("'")
+            break
+
+    if not channel:
+        print("Warning: Could not parse channel from rust-toolchain.toml")
+        return
+
+    host_triple = get_rust_host_triple()
+    toolchain = f"{channel}-{host_triple}"
+
+    print(f"Installing required Rust toolchain: {toolchain}...")
+    result = subprocess.run(["rustup", "install", toolchain], capture_output=True, text=True)
+    if result.returncode == 0:
+        print(result.stdout.strip())
+    else:
+        print(f"Warning: Failed to install toolchain: {result.stderr.strip()}")
 
 def fetch_latest_verus_release():
     target_dir = Path(".verus")
@@ -97,6 +155,8 @@ def fetch_latest_verus_release():
                     file_path = Path(root) / file
                     st = os.stat(file_path)
                     os.chmod(file_path, st.st_mode | stat.S_IEXEC)
+
+    install_required_toolchain(release_data)
 
     print(f"Successfully downloaded and extracted Verus to ./{target_dir}")
 
