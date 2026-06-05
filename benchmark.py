@@ -98,6 +98,34 @@ def verify_solution(staging_dir, task, solution_filename, original_task_path, st
     return stats
 
 
+def compute_session_statistics(agent_name, session_path) -> dict:
+    """Run the agent's statistics.py on a session file and return the parsed stats."""
+    agent_dir = agent_name.split("/")[0]
+    stats_script = os.path.join("agents", agent_dir, "statistics.py")
+    if not os.path.exists(stats_script):
+        print(f"  (no statistics.py found for agent '{agent_dir}')")
+        return {}
+
+    result = subprocess.run(
+        [sys.executable, stats_script, session_path],
+        capture_output=True, text=True
+    )
+
+    if result.returncode != 0:
+        print(f"⚠ statistics.py exited with code {result.returncode}")
+        if result.stderr:
+            print(f"   stderr: {result.stderr.strip()}")
+        return {}
+
+    try:
+        stats = json.loads(result.stdout)
+        print("✓ Session statistics recorded")
+        return stats
+    except json.JSONDecodeError:
+        print("⚠ Could not parse statistics output")
+        return {}
+
+
 def run_tasks():
     """Main benchmark orchestration."""
     # Build the base docker image once
@@ -260,6 +288,9 @@ def run_tasks():
 
                         shutil.copy2(expected_session_path, final_session_path)
                         print(f"✓ Session extracted to {final_session_path}")
+
+                        session_stats = compute_session_statistics(agent_name, expected_session_path)
+                        task_stats.update(session_stats)
                     else:
                         print(f"✗ Could not find the expected session file: {session_filename}")
 
