@@ -283,5 +283,22 @@ def run_tasks():
     print(f"Benchmark complete. Run statistics saved to {stats_file}")
     print("=" * 60)
 
+    # Commit only the artifacts from this run
+    subprocess.run(
+        ["git", "add",
+         f"solutions/**/{timestamp}/**",
+         f"sessions/**/{timestamp}/**",
+         f"runs/{timestamp}.json"],
+        capture_output=True, text=True
+    )
+    result = subprocess.run(
+        ["git", "commit", "-m", f"run {timestamp}"],
+        capture_output=True, text=True
+    )
+    if result.returncode == 0:
+        print(f"✓ Committed run artifacts: 'run {timestamp}'")
+    else:
+        print(f"⚠ Git commit skipped: {result.stderr.strip()}")
+
 if __name__ == "__main__":
     run_tasks()
