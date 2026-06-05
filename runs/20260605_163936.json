@@ -1,0 +1,167 @@
+{
+  "timestamp": "20260605_163936",
+  "agents": {
+    "copilot/gpt-5.4-nano": {
+      "tasks": {
+        "AC__vreplicaset_controller__proof__helper_invariants__proof__lemma_always_there_is_no_request_msg_to_external_from_controller.rs": {
+          "solution_generated": true,
+          "verus_passed": false,
+          "cheat_checker_passed": true,
+          "timed_out": false,
+          "input_tokens": 1616553,
+          "output_tokens": 10353,
+          "cache_read_tokens": 1500160,
+          "cache_write_tokens": 0,
+          "reasoning_tokens": 0,
+          "total_tokens": 3127066,
+          "total_requests": 51,
+          "total_cost": 0,
+          "total_turns": 51,
+          "total_tool_calls": 70,
+          "duration_seconds": 178.241
+        },
+        "AC__vreplicaset_controller__proof__helper_invariants__proof__lemma_always_vrs_reconcile_request_only_interferes_with_itself.rs": {
+          "solution_generated": true,
+          "verus_passed": false,
+          "cheat_checker_passed": true,
+          "timed_out": false,
+          "input_tokens": 2171752,
+          "output_tokens": 14239,
+          "cache_read_tokens": 2070528,
+          "cache_write_tokens": 0,
+          "reasoning_tokens": 0,
+          "total_tokens": 4256519,
+          "total_requests": 60,
+          "total_cost": 0,
+          "total_turns": 60,
+          "total_tool_calls": 79,
+          "duration_seconds": 218.831
+        },
+        "AC__vreplicaset_controller__proof__helper_invariants__proof__lemma_always_each_vrs_in_reconcile_implies_filtered_pods_owned_by_vrs.rs": {
+          "solution_generated": true,
+          "verus_passed": false,
+          "cheat_checker_passed": true,
+          "timed_out": false,
+          "input_tokens": 1477916,
+          "output_tokens": 4600,
+          "cache_read_tokens": 1404416,
+          "cache_write_tokens": 0,
+          "reasoning_tokens": 0,
+          "total_tokens": 2886932,
+          "total_requests": 21,
+          "total_cost": 0,
+          "total_turns": 21,
+          "total_tool_calls": 36,
+          "duration_seconds": 67.266
+        },
+        "AC__vreplicaset_controller__proof__helper_invariants__proof__lemma_always_every_msg_from_vrs_controller_carries_vrs_key.rs": {
+          "solution_generated": true,
+          "verus_passed": false,
+          "cheat_checker_passed": true,
+          "timed_out": false,
+          "input_tokens": 6468669,
+          "output_tokens": 29728,
+          "cache_read_tokens": 6242304,
+          "cache_write_tokens": 0,
+          "reasoning_tokens": 0,
+          "total_tokens": 12740701,
+          "total_requests": 145,
+          "total_cost": 0,
+          "total_turns": 55,
+          "total_tool_calls": 253,
+          "duration_seconds": 500.54
+        },
+        "AC__vreplicaset_controller__proof__guarantee__guarantee_condition_holds.rs": {
+          "solution_generated": true,
+          "verus_passed": false,
+          "cheat_checker_passed": true,
+          "timed_out": false,
+          "input_tokens": 1307669,
+          "output_tokens": 8320,
+          "cache_read_tokens": 1233920,
+          "cache_write_tokens": 0,
+          "reasoning_tokens": 0,
+          "total_tokens": 2549909,
+          "total_requests": 38,
+          "total_cost": 0,
+          "total_turns": 38,
+          "total_tool_calls": 60,
+          "duration_seconds": 114.928
+        }
+      }
+    },
+    "pi/gpt-5.4-nano": {
+      "tasks": {
+        "AC__vreplicaset_controller__proof__helper_invariants__proof__lemma_always_there_is_no_request_msg_to_external_from_controller.rs": {
+          "solution_generated": false,
+          "verus_passed": false,
+          "cheat_checker_passed": false,
+          "timed_out": true
+        },
+        "AC__vreplicaset_controller__proof__helper_invariants__proof__lemma_always_vrs_reconcile_request_only_interferes_with_itself.rs": {
+          "solution_generated": true,
+          "verus_passed": false,
+          "cheat_checker_passed": true,
+          "timed_out": false,
+          "input_tokens": 124747,
+          "output_tokens": 253944,
+          "cache_read_tokens": 4251136,
+          "cache_write_tokens": 0,
+          "total_tokens": 4629827,
+          "cost_input": 0.0249494,
+          "cost_output": 0.31743,
+          "cost_cache_read": 0.08502272,
+          "cost_cache_write": 0.0,
+          "cost_total": 0.42740212,
+          "total_turns": 114,
+          "total_tool_calls": 113,
+          "duration_seconds": 2335.562
+        },
+        "AC__vreplicaset_controller__proof__helper_invariants__proof__lemma_always_each_vrs_in_reconcile_implies_filtered_pods_owned_by_vrs.rs": {
+          "solution_generated": true,
+          "verus_passed": true,
+          "cheat_checker_passed": false,
+          "timed_out": false,
+          "input_tokens": 315998,
+          "output_tokens": 175771,
+          "cache_read_tokens": 10381312,
+          "cache_write_tokens": 0,
+          "total_tokens": 10873081,
+          "cost_input": 0.0631996,
+          "cost_output": 0.21971375,
+          "cost_cache_read": 0.20762624,
+          "cost_cache_write": 0.0,
+          "cost_total": 0.49053959,
+          "total_turns": 160,
+          "total_tool_calls": 160,
+          "duration_seconds": 1728.321
+        },
+        "AC__vreplicaset_controller__proof__helper_invariants__proof__lemma_always_every_msg_from_vrs_controller_carries_vrs_key.rs": {
+          "solution_generated": false,
+          "verus_passed": false,
+          "cheat_checker_passed": false,
+          "timed_out": true
+        },
+        "AC__vreplicaset_controller__proof__guarantee__guarantee_condition_holds.rs": {
+          "solution_generated": true,
+          "verus_passed": false,
+          "cheat_checker_passed": false,
+          "timed_out": false,
+          "input_tokens": 138205,
+          "output_tokens": 269211,
+          "cache_read_tokens": 5345792,
+          "cache_write_tokens": 0,
+          "total_tokens": 5753208,
+          "cost_input": 0.027641,
+          "cost_output": 0.33651375,
+          "cost_cache_read": 0.10691584,
+          "cost_cache_write": 0.0,
+          "cost_total": 0.47107059,
+          "total_turns": 139,
+          "total_tool_calls": 138,
+          "duration_seconds": 2345.767
+        }
+      }
+    }
+  }
+}
