@@ -76,7 +76,12 @@ def verify_solution(staging_dir, task, solution_filename, original_task_path, st
         print(f"Verus passed: {stats['verus_passed']}")
 
         # Restore the original task file in case the agent modified it
-        shutil.copy2(original_task_path, staged_task_path)
+        try:
+            shutil.copy2(original_task_path, staged_task_path)
+        except PermissionError:
+            os.chmod(staged_task_path, 0o644)
+            os.remove(staged_task_path)
+            shutil.copy2(original_task_path, staged_task_path)
 
         # Run Lynette Cheat Checker validation
         print("Running Lynette cheat checker...")
