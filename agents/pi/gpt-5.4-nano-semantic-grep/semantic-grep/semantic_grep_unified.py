@@ -9,19 +9,22 @@ Usage:
     python semantic_grep_unified.py --search [--type proofs|specs] [--db-path <path>]
 """
 
+import pdb
 import os
 import sys
 import re
 import json
 import argparse
-import subprocess
 import asyncio
 import aiohttp
+import chromadb
+import yaml
+import requests
 from pathlib import Path
 from typing import Optional, List, Dict, Any
-import chromadb
+from ast_grep_py import register_dynamic_language
+from ast_grep_py import SgRoot
 
-import pdb
 
 def log(*args, **kwargs):
     kwargs.setdefault('file', sys.stderr)
@@ -32,12 +35,13 @@ class SemanticGrepConfig:
     """Configuration for the semantic grep tool."""
 
     def __init__(self, repo_path: str = ".", db_path: Optional[str] = None,
-                 patterns_file: Optional[str] = None, skip_descriptions: bool = False):
+                 patterns_file: Optional[str] = None, skip_descriptions: bool = False,
+                 tree_sitter_verus_path: Optional[str] = None):
         self.repo_path = Path(repo_path).resolve()
         self.db_path = Path(db_path) if db_path else self.repo_path / ".semantic_grep_db"
         self.patterns_file = patterns_file or self._find_patterns_file()
         self.skip_descriptions = skip_descriptions
-        self.ast_grep_config_file = self._find_config_file()
+        self.tree_sitter_verus_path = Path(tree_sitter_verus_path) if tree_sitter_verus_path else None
 
         self.chunks_file = self.repo_path / "ast-grep_chunks.json"
         self.processed_chunks_file = self.repo_path / "ast-grep_chunks_processed.json"
@@ -45,18 +49,6 @@ class SemanticGrepConfig:
 
         # Embedding settings
         self.embedding_model = "openai/text-embedding-3-small"
-
-    def _find_config_file(self) -> str:
-        """Look for the config file for ast-grep"""
-        candidates = [
-            self.repo_path / "sgconfig.yml",
-            Path(__file__).parent / "sgconfig.yml"
-        ]
-        for candidate in candidates:
-            if candidate.exists():
-                return str(candidate)
-        raise FileNotFoundError("Could not find config file (sgconfig.yml)")
-
 
     def _find_patterns_file(self) -> str:
         """Look for patterns file in common locations."""
@@ -76,61 +68,78 @@ class SemanticGrepConfig:
             raise ValueError(f"Repository path does not exist: {self.repo_path}")
         if not self.patterns_file or not Path(self.patterns_file).exists():
             raise ValueError(f"Patterns file does not exist: {self.patterns_file}")
+        if not self.tree_sitter_verus_path or not self.tree_sitter_verus_path.exists():
+            raise ValueError(f"Tree-sitter Verus library path does not exist: {self.tree_sitter_verus_path}")
 
 
 class AstGrepChunker:
-    """Handles code extraction using ast-grep."""
+    """Handles code extraction using the ast-grep Python API."""
 
     def __init__(self, config: SemanticGrepConfig):
         self.config = config
+        self._register_language()
+
+    def _register_language(self):
+        """Register the Verus custom language from the provided library path."""
+        register_dynamic_language({
+            "verus": {
+                "library_path": str(self.config.tree_sitter_verus_path),
+                "extensions": ["rs"],
+            }
+        })
+
+    def _load_rules(self) -> List[Dict]:
+        """Load rules from the patterns YAML file."""
+        rules = []
+        with open(self.config.patterns_file) as f:
+            for doc in yaml.safe_load_all(f):
+                if doc:
+                    rules.append(doc)
+        return rules
 
     def run(self) -> List[Dict]:
-        """Run ast-grep to extract code chunks."""
-        log("\n[1/4] Running ast-grep scan...")
+        """Run ast-grep via Python API to extract code chunks."""
 
-        try:
-            # Change to repo directory for ast-grep execution
-            original_cwd = os.getcwd()
-            os.chdir(self.config.repo_path)
+        log("\n[1/4] Running ast-grep scan (Python API)...")
 
-            # Run ast-grep with proper configuration
-            cmd = [
-                "ast-grep", "scan",
-                "--config", self.config.ast_grep_config_file,
-                "--rule", self.config.patterns_file,
-                "--context", "50",
-                "--json=pretty"
-            ]
+        rules = self._load_rules()
+        repo = self.config.repo_path
 
-            result = subprocess.run(cmd, capture_output=True, text=True, timeout=300)
+        chunks = []
+        rs_files = sorted(repo.rglob("*.rs"))
 
-            if result.returncode != 0:
-                log("Error running ast-grep:")
-                log(result.stderr)
-                raise RuntimeError("ast-grep execution failed")
+        for file_idx, file_path in enumerate(rs_files):
+            rel_path = file_path.relative_to(repo)
 
-            # Parse JSON output
-            chunks = json.loads(result.stdout)
-            log(f"✓ Extracted {len(chunks)} chunks")
+            with open(file_path) as f:
+                content = f.read()
+            lines = content.split("\n")
+            root = SgRoot(content, "verus").root()
 
-            # Save chunks to file
-            with open(self.config.chunks_file, "w") as f:
-                json.dump(chunks, f, indent=2)
+            for rule in rules:
+                config_dict = {"rule": rule["rule"]}
+                matches = root.find_all(config=config_dict)
+                for node in matches:
+                    r = node.range()
+                    ctx_start = max(0, r.start.line - 50)
+                    ctx_end = min(len(lines), r.end.line + 50)
+                    chunks.append({
+                        "text": "\n".join(lines[ctx_start:ctx_end]),
+                        "file": str(rel_path),
+                        "range": {
+                            "start": {"line": r.start.line},
+                            "end": {"line": r.end.line},
+                        },
+                        "ruleId": rule["id"],
+                        "language": rule.get("language", "verus"),
+                    })
 
-            os.chdir(original_cwd)
-            return chunks
+        log(f"✓ Extracted {len(chunks)} chunks")
 
-        except FileNotFoundError:
-            log("Error: ast-grep is not installed. Install it with: brew install ast-grep")
-            sys.exit(1)
-        except subprocess.TimeoutExpired:
-            log("Error: ast-grep scan timed out")
-            sys.exit(1)
-        except json.JSONDecodeError as e:
-            log(f"Error: Failed to parse ast-grep output: {e}")
-            sys.exit(1)
-        finally:
-            os.chdir(original_cwd)
+        with open(self.config.chunks_file, "w") as f:
+            json.dump(chunks, f, indent=2)
+
+        return chunks
 
 
 class DescriptionGenerator:
@@ -234,7 +243,6 @@ class EmbeddingGenerator:
 
     def encode(self, texts: List[str]) -> List:
         """Encode texts to embeddings via API."""
-        import requests
 
         log(f"\nGenerating embeddings for {len(texts)} chunks...")
 
@@ -589,6 +597,8 @@ Examples:
     parser.add_argument("--num-results", type=int, default=10, help="Number of results to return (default: 10)")
     parser.add_argument("--type", choices=["proofs", "specs"],
                         help="Filter results by type: 'proofs' or 'specs' (default: all)")
+    parser.add_argument("--tree-sitter-verus-path", required=True,
+                        help="Path to the Verus tree-sitter shared library (.so / .dylib)")
     parser.add_argument("--skip-descriptions", action="store_true",
                         help="Skip LLM description generation (faster indexing)")
     parser.add_argument("--text", action="store_true",
@@ -606,7 +616,8 @@ Examples:
             repo_path=args.repo_path,
             db_path=args.db_path,
             patterns_file=args.patterns,
-            skip_descriptions=args.skip_descriptions
+            skip_descriptions=args.skip_descriptions,
+            tree_sitter_verus_path=args.tree_sitter_verus_path,
         )
 
         # Create semantic grep instance
@@ -628,4 +639,3 @@ Examples:
 
 if __name__ == "__main__":
     main()
-
