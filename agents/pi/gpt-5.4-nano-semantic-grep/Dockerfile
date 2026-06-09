@@ -1,0 +1,44 @@
+FROM benchmark-base:latest
+
+# Install Node.js and build tools in one layer
+RUN apt-get update && apt-get install -y \
+    curl \
+    python3-venv \
+    build-essential \
+    git \
+    && rm -rf /var/lib/apt/lists/* \
+    && curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
+    && apt-get install -y nodejs
+
+# Global npm packages
+RUN npm install -g --force \
+    @earendil-works/pi-coding-agent \
+    tree-sitter-cli \
+    @ast-grep/cli
+
+# Tree-sitter Verus setup
+RUN git clone https://github.com/secure-foundations/tree-sitter-verus.git /opt/tree-sitter-verus \
+    && cd /opt/tree-sitter-verus \
+    && npm install \
+    && tree-sitter generate
+
+# Create virtual environment
+RUN python3 -m venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+
+# Semantic grep setup
+COPY semantic-grep/ /opt/semantic-grep/
+RUN pip install --upgrade pip && \
+    pip install -r /opt/semantic-grep/requirements.txt
+
+# Create wrapper script for the command-line tool
+RUN echo '#!/bin/bash' > /usr/local/bin/semantic_grep && \
+    echo 'exec /opt/venv/bin/python3 /opt/semantic-grep/semantic_grep_unified.py "$@"' >> /usr/local/bin/semantic_grep && \
+    chmod +x /usr/local/bin/semantic_grep
+
+# Create directories
+RUN mkdir -p /root/.pi/agent/extensions
+
+COPY semantic-grep/semantic-grep-tool.ts /root/.pi/agent/extensions/semantic-grep-tool.ts
+
+CMD pi --model openrouter/gpt-5.4-nano -p "$TASK_PROMPT" && cp "$(find ~/.pi/agent/sessions/ -name '*.jsonl' | head -1)" "$SESSION"
