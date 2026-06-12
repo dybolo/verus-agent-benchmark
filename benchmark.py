@@ -131,6 +131,36 @@ def compute_session_statistics(agent_name, session_path) -> dict:
         return {}
 
 
+def extract_solution_file(staging_dir, solution_filename, agent_name, timestamp) -> dict:
+    """Extract the solution file from the staging directory to the permanent solutions folder."""
+    expected_solution_path = os.path.join(staging_dir, solution_filename)
+    if os.path.exists(expected_solution_path):
+        final_solution_dir = os.path.abspath(os.path.join("solutions", agent_name, f"{timestamp}"))
+        os.makedirs(final_solution_dir, exist_ok=True)
+        final_solution_path = os.path.join(final_solution_dir, solution_filename)
+        shutil.copy2(expected_solution_path, final_solution_path)
+        print(f"✓ Solution extracted to {final_solution_path}")
+        return {"solution_generated": True}
+    else:
+        print(f"✗ Agent did not produce the expected file: {solution_filename}")
+        return {"solution_generated": False}
+
+
+def extract_session_file(staging_dir, session_filename, agent_name, timestamp) -> dict:
+    """Extract the session file from the staging directory to the permanent sessions folder."""
+    expected_session_path = os.path.join(staging_dir, session_filename)
+    if os.path.exists(expected_session_path):
+        final_session_dir = os.path.abspath(os.path.join("sessions", agent_name, f"{timestamp}"))
+        os.makedirs(final_session_dir, exist_ok=True)
+        final_session_path = os.path.join(final_session_dir, session_filename)
+        shutil.copy2(expected_session_path, final_session_path)
+        print(f"✓ Session extracted to {final_session_path}")
+        return {"session_extracted": True}
+    else:
+        print(f"✗ Could not find the expected session file: {session_filename}")
+        return {"session_extracted": False}
+
+
 def run_tasks():
     """Main benchmark orchestration."""
     # Build the base docker image once
@@ -259,54 +289,39 @@ def run_tasks():
                         print("[STDERR]")
                         print(result.stderr)
 
-                    # After the container finishes, extract the solution file
-                    expected_solution_path = os.path.join(staging_dir, solution_filename)
-
-                    if os.path.exists(expected_solution_path):
-                        task_stats["solution_generated"] = True
-
-                        # Move it to the permanent solutions folder with timestamp
-                        final_solution_dir = os.path.abspath(os.path.join("solutions", agent_name, f"{timestamp}"))
-                        os.makedirs(final_solution_dir, exist_ok=True)
-                        final_solution_path = os.path.join(final_solution_dir, solution_filename)
-                        shutil.copy2(expected_solution_path, final_solution_path)
-                        print(f"✓ Solution extracted to {final_solution_path}")
-
-                        verification_status = verify_solution(staging_dir, task, solution_filename, original_task_path, staged_task_path)
-                        task_stats.update(verification_status)
-
-                    else:
-                        task_stats["solution_generated"] = False
-                        print(f"✗ Agent did not produce the expected file: {solution_filename}")
-
                     if result.returncode != 0:
                         print(f"⚠ Agent {agent_name} exited with code {result.returncode} on task {task}")
 
-                    # And the session
-                    expected_session_path = os.path.join(staging_dir, session_filename)
-
-                    if os.path.exists(expected_session_path):
-                        # Move it to the permanent sessions folder with timestamp
-                        final_session_dir = os.path.abspath(os.path.join("sessions", agent_name, f"{timestamp}"))
-                        os.makedirs(final_session_dir, exist_ok=True)
-                        final_session_path = os.path.join(final_session_dir, session_filename)
-
-                        shutil.copy2(expected_session_path, final_session_path)
-                        print(f"✓ Session extracted to {final_session_path}")
-
-                        session_stats = compute_session_statistics(agent_name, expected_session_path)
-                        task_stats.update(session_stats)
-                    else:
-                        print(f"✗ Could not find the expected session file: {session_filename}")
 
                 except subprocess.TimeoutExpired:
                     task_stats["timed_out"] = True
                     print(f"✗ Agent {agent_name} timed out on task {task} (40 minutes)")
                     subprocess.run(["docker", "kill", container_name], capture_output=True, check=False)
-                    subprocess.run(["docker", "rm", "-f", container_name], capture_output=True, check=False)
 
                 except subprocess.CalledProcessError as e:
                     print(f"✗ Agent {agent_name} failed on task {task}: {e}")
+
+                finally:
+                    subprocess.run(["docker", "rm", "-f", container_name], capture_output=True, check=False)
+
+                # Extract the solution file
+                extracted = extract_solution_file(staging_dir, solution_filename, agent_name, timestamp)
+                task_stats.update(extracted)
+
+                # Verify the solution
+                if extracted["solution_generated"]:
+                    verification_status = verify_solution(staging_dir, task, solution_filename, original_task_path, staged_task_path)
+                    task_stats.update(verification_status)
+
+                # Extract the session file
+                session_extracted = extract_session_file(staging_dir, session_filename, agent_name, timestamp)
+                task_stats.update(session_extracted)
+
+                # Compute session statistics
+                if session_extracted["session_extracted"]:
+                    expected_session_path = os.path.join(staging_dir, session_filename)
+                    session_stats = compute_session_statistics(agent_name, expected_session_path)
+                    task_stats.update(session_stats)
 
                 print()
 
@@ -315,6 +330,7 @@ def run_tasks():
     stats_file = os.path.join("runs", f"{timestamp}.json")
     with open(stats_file, "w") as f:
         json.dump(run_stats, f, indent=2)
+
     print("=" * 60)
     print(f"Benchmark complete. Run statistics saved to {stats_file}")
     print("=" * 60)

@@ -34,7 +34,7 @@ export default function (pi: ExtensionAPI) {
 	pi.registerTool({
 		name: "semantic_grep",
 		label: "Semantic Grep",
-        description: `Semantic search over Verus proofs and specifications using natural language queries.
+        	description: `Semantic search over Verus proofs and specifications using natural language queries.
 		Supports both indexing (to build a searchable vector database) and semantic search. Use natural
 		language queries to explore and understand proof structures, find similar proof patterns,
 		or locate relevant specifications. Automatically indexes and classifies code (proofs vs specs), generates
