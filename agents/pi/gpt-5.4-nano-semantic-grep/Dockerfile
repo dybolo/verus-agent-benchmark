@@ -19,7 +19,8 @@ RUN npm install -g --force \
 RUN git clone https://github.com/secure-foundations/tree-sitter-verus.git /opt/tree-sitter-verus \
     && cd /opt/tree-sitter-verus \
     && npm install \
-    && tree-sitter generate
+    && tree-sitter generate \
+    && tree-sitter build
 
 # tool setup
 RUN python3 -m venv /opt/venv
