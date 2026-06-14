@@ -9,7 +9,6 @@ Usage:
     python semantic_grep_unified.py --search [--type proofs|specs] [--db-path <path>]
 """
 
-import pdb
 import os
 import sys
 import re
@@ -108,7 +107,7 @@ class AstGrepChunker:
         chunks = []
         rs_files = sorted(repo.rglob("*.rs"))
 
-        for file_idx, file_path in enumerate(rs_files):
+        for _, file_path in enumerate(rs_files):
             rel_path = file_path.relative_to(repo)
 
             with open(file_path) as f:
@@ -121,8 +120,8 @@ class AstGrepChunker:
                 matches = root.find_all(config=config_dict)
                 for node in matches:
                     r = node.range()
-                    ctx_start = max(0, r.start.line - 50)
-                    ctx_end = min(len(lines), r.end.line + 50)
+                    ctx_start = max(0, r.start.line)
+                    ctx_end = min(len(lines), r.end.line)
                     chunks.append({
                         "text": "\n".join(lines[ctx_start:ctx_end]),
                         "file": str(rel_path),
@@ -399,10 +398,9 @@ class SemanticGrep:
                 for chunk in processed_chunks:
                     chunk["description"] = "[Skipped]"
 
-            # Update content field to embed ONLY the natural language description
-            # This ensures plan-to-plan semantic matching without code token dilution
+            # Update content field to embed (description + code)
             for chunk in processed_chunks:
-                chunk["content"] = chunk["description"]
+                chunk["content"] = chunk["description"] + "\n" + chunk["code"]
 
             # Save processed chunks
             with open(self.config.processed_chunks_file, "w") as f:
