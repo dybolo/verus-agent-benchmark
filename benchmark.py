@@ -226,6 +226,10 @@ def run_tasks():
                 staged_task_path = os.path.join(staging_dir, task)
                 shutil.copy2(original_task_path, staged_task_path)
 
+                # create the directory to store sessions
+                session_dir_staging = os.path.join(staging_dir, "session")
+                os.makedirs(session_dir_staging)
+
                 # Format the prompt with the path to the task file inside the container
                 task_path_in_container = f"/workspace/task_env/{task}"
                 output_path_in_container = f"/workspace/task_env/{solution_filename}"
@@ -294,7 +298,6 @@ def run_tasks():
                     task_stats.update(verification_status)
 
                 # Extract session files to permanent directory and compute statistics
-                session_dir_staging = os.path.join(staging_dir, "session")
                 session_dir_path = os.path.abspath(os.path.join("sessions", agent_name, f"{timestamp}", task_base))
                 try:
                     shutil.copytree(session_dir_staging, session_dir_path)
