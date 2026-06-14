@@ -35,3 +35,6 @@ WORKDIR /workspace
 
 # Add symbolic link from vstd of the verus release to the working directory
 RUN ln -s /opt/.verus/vstd /workspace/vstd
+
+# Give agents access to needed folders 
+RUN chmod -R a+rwX /opt /workspace /root

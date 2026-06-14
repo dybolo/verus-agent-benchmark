@@ -12,7 +12,7 @@ def parse_timestamp(ts_str):
 
 def main():
     if len(sys.argv) < 2:
-        print(json.dumps({"error": "usage: statistics.py <session-dir>"}))
+        print("usage: statistics.py <session-dir>", file=sys.stderr)
         sys.exit(1)
 
     session_dir = sys.argv[1]
@@ -20,7 +20,7 @@ def main():
     if os.path.isdir(session_dir):
         jsonl_files = sorted(f for f in os.listdir(session_dir) if f.endswith(".jsonl"))
         if not jsonl_files:
-            print(json.dumps({"error": f"no .jsonl files found in {session_dir}"}))
+            print(f"no .jsonl files found in {session_dir}", file=sys.stderr)
             sys.exit(1)
         path = os.path.join(session_dir, jsonl_files[0])
     else:
@@ -81,7 +81,7 @@ def main():
                             tool_call_count += 1
 
     if first_ts is None or last_ts is None:
-        print(json.dumps({"error": "could not determine session timestamps"}))
+        print("could not determine session timestamps", file=sys.stderr)
         sys.exit(1)
 
     duration_seconds = (last_ts - first_ts).total_seconds()

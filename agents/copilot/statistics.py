@@ -39,7 +39,7 @@ def parse_timestamp(ts_str):
 
 def main():
     if len(sys.argv) < 2:
-        print(json.dumps({"error": "usage: statistics.py <session-dir>"}))
+        print("usage: statistics.py <session-dir>", file=sys.stderr)
         sys.exit(1)
 
     session_dir = sys.argv[1]
@@ -47,7 +47,7 @@ def main():
         pattern = os.path.join(session_dir, "session-state", "*", "*.jsonl")
         jsonl_files = sorted(glob.glob(pattern))
         if not jsonl_files:
-            print(json.dumps({"error": f"no .jsonl files found in {session_dir}"}))
+            print(f"no .jsonl files found in {session_dir}", file=sys.stderr)
             sys.exit(1)
         path = jsonl_files[0]
     else:
@@ -83,7 +83,7 @@ def main():
                 turn_count += 1
 
     if shutdown is None:
-        print(json.dumps({"error": "no session.shutdown event found"}))
+        print("no session.shutdown event found in session: could not retrieve copilot session stats", file=sys.stderr)
         sys.exit(1)
 
     data = shutdown["data"]

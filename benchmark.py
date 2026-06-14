@@ -240,6 +240,8 @@ def run_tasks():
                 container_name = f"agent_{uuid.uuid4().hex[:8]}"
                 cmd = [
                     "docker", "run", "--rm", "--name", container_name,
+                    "--user", f"{os.getuid()}:{os.getgid()}",
+                    "-e", "HOME=/root",
                     "-v", f"{staging_dir}:/workspace/task_env",
                     "-e", "TASK_PROMPT",
                     "-e", "SESSION",
@@ -265,7 +267,7 @@ def run_tasks():
                         check=False,
                         capture_output=True,
                         text=True,
-                        timeout=2400
+                        timeout=1200
                     )
 
                     # Display captured output
@@ -282,8 +284,8 @@ def run_tasks():
 
                 except subprocess.TimeoutExpired:
                     task_stats["timed_out"] = True
-                    print(f"✗ Agent {agent_name} timed out on task {task} (40 minutes)")
-                    subprocess.run(["docker", "kill", container_name], capture_output=True, check=False)
+                    print(f"✗ Agent {agent_name} timed out on task {task} (20 minutes)")
+                    subprocess.run(["docker", "stop", container_name], capture_output=True, check=False)
 
                 except subprocess.CalledProcessError as e:
                     print(f"✗ Agent {agent_name} failed on task {task}: {e}")
