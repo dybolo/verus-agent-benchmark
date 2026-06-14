@@ -12,6 +12,6 @@ RUN apt-get update && apt-get install -y \
 
 RUN npm install -g @github/copilot
 
-CMD export COPILOT_PROVIDER_API_KEY="$OPENROUTER_API_KEY" && export COPILOT_HOME="$SESSION" && \
-    copilot --autopilot --model gpt-5.4-nano -p "$TASK_PROMPT" --allow-all-tools --allow-all-paths -s ; \
-    chmod -R 777 "$SESSION"
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+CMD ["/entrypoint.sh"]
