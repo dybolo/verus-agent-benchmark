@@ -75,13 +75,12 @@ def verify_solution(staging_dir, task, solution_filename, original_task_path, st
 
         print(f"Verus passed: {stats['verus_passed']}")
 
-        # Restore the original task file in case the agent modified it
+        # clear original file in case agent has modify it to check changes with cheat checker
         try:
-            shutil.copy2(original_task_path, staged_task_path)
-        except PermissionError:
-            os.chmod(staged_task_path, 0o644)
             os.remove(staged_task_path)
-            shutil.copy2(original_task_path, staged_task_path)
+        except FileNotFoundError:
+            pass
+        shutil.copy2(original_task_path, staged_task_path)
 
         # Run Lynette Cheat Checker validation
         print("Running Lynette cheat checker...")
@@ -144,21 +143,6 @@ def extract_solution_file(staging_dir, solution_filename, agent_name, timestamp)
     else:
         print(f"✗ Agent did not produce the expected file: {solution_filename}")
         return {"solution_generated": False}
-
-
-def extract_session_file(staging_dir, session_filename, agent_name, timestamp) -> dict:
-    """Extract the session file from the staging directory to the permanent sessions folder."""
-    expected_session_path = os.path.join(staging_dir, session_filename)
-    if os.path.exists(expected_session_path):
-        final_session_dir = os.path.abspath(os.path.join("sessions", agent_name, f"{timestamp}"))
-        os.makedirs(final_session_dir, exist_ok=True)
-        final_session_path = os.path.join(final_session_dir, session_filename)
-        shutil.copy2(expected_session_path, final_session_path)
-        print(f"✓ Session extracted to {final_session_path}")
-        return {"session_extracted": True}
-    else:
-        print(f"✗ Could not find the expected session file: {session_filename}")
-        return {"session_extracted": False}
 
 
 def run_tasks():
@@ -227,7 +211,6 @@ def run_tasks():
             # Strip .rs extension and create the expected output filename
             task_base = task[:-3] if task.endswith(".rs") else task
             solution_filename = f"{task_base}_verified.rs"
-            session_filename = f"{task_base}_session.jsonl" # NOTE for now the agent has to save session in jsonl format
 
             task_stats = {
                 "solution_generated": False,
@@ -246,7 +229,7 @@ def run_tasks():
                 # Format the prompt with the path to the task file inside the container
                 task_path_in_container = f"/workspace/task_env/{task}"
                 output_path_in_container = f"/workspace/task_env/{solution_filename}"
-                session_path_in_container = f"/workspace/task_env/{session_filename}"
+                session_path_in_container = "/workspace/task_env/session"
                 formatted_prompt = prompt_template.format(task=task_path_in_container, output=output_path_in_container)
 
                 # Run the container
@@ -301,9 +284,6 @@ def run_tasks():
                 except subprocess.CalledProcessError as e:
                     print(f"✗ Agent {agent_name} failed on task {task}: {e}")
 
-                finally:
-                    subprocess.run(["docker", "rm", "-f", container_name], capture_output=True, check=False)
-
                 # Extract the solution file
                 extracted = extract_solution_file(staging_dir, solution_filename, agent_name, timestamp)
                 task_stats.update(extracted)
@@ -313,16 +293,16 @@ def run_tasks():
                     verification_status = verify_solution(staging_dir, task, solution_filename, original_task_path, staged_task_path)
                     task_stats.update(verification_status)
 
-                # Extract the session file
-                session_extracted = extract_session_file(staging_dir, session_filename, agent_name, timestamp)
-                task_stats.update(session_extracted)
-
-                # Compute session statistics
-                if session_extracted["session_extracted"]:
-                    expected_session_path = os.path.join(staging_dir, session_filename)
-                    session_stats = compute_session_statistics(agent_name, expected_session_path)
+                # Extract session files to permanent directory and compute statistics
+                session_dir_staging = os.path.join(staging_dir, "session")
+                session_dir_path = os.path.abspath(os.path.join("sessions", agent_name, f"{timestamp}", task_base))
+                try:
+                    shutil.copytree(session_dir_staging, session_dir_path)
+                    session_stats = compute_session_statistics(agent_name, session_dir_path)
                     task_stats.update(session_stats)
-
+                except Exception as e:
+                    print(f"Failed to capture statistics for the agent: {e}")
+                 
                 print()
 
     # Save run statistics to JSON file

@@ -19,14 +19,13 @@ COPY fetch_vstd.py fetch_verus_release.py ./
 COPY lynette/ ./
 
 # Execute the scripts to bake vstd and verus into the Docker image
+# fetch_verus_release.py automatically detects and installs the required Rust toolchain
 RUN python3 fetch_verus_release.py
 
 # Add Cargo and Rustup to the PATH
 ENV PATH="/usr/local/cargo/bin:/usr/local/rustup/bin:${PATH}"
 # Add the downloaded Verus binaries to the system PATH so the agent can just run `verus`
 ENV PATH="/opt/.verus:${PATH}"
-
-# fetch_verus_release.py automatically detects and installs the required Rust toolchain
 
 # Add Lynette to the system PATH so the agent can just run `lynette`
 RUN ln -s /opt/lynette.py /usr/local/bin/lynette

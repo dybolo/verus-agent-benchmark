@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 
+import glob
 import json
+import os
 import sys
 from datetime import datetime
 
@@ -37,10 +39,19 @@ def parse_timestamp(ts_str):
 
 def main():
     if len(sys.argv) < 2:
-        print(json.dumps({"error": "usage: statistics.py <session.jsonl>"}))
+        print(json.dumps({"error": "usage: statistics.py <session-dir>"}))
         sys.exit(1)
 
-    path = sys.argv[1]
+    session_dir = sys.argv[1]
+    if os.path.isdir(session_dir):
+        pattern = os.path.join(session_dir, "session-state", "*", "*.jsonl")
+        jsonl_files = sorted(glob.glob(pattern))
+        if not jsonl_files:
+            print(json.dumps({"error": f"no .jsonl files found in {session_dir}"}))
+            sys.exit(1)
+        path = jsonl_files[0]
+    else:
+        path = session_dir
 
     shutdown = None
     tool_call_count = 0

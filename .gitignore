@@ -3,3 +3,5 @@
 todo.txt
 *.zip
 .staging_areas/
+**/.venv/**
+**/venv/**

@@ -40,4 +40,4 @@ RUN mkdir -p /root/.pi/agent/extensions
 
 COPY semantic-grep/semantic-grep-tool.ts /root/.pi/agent/extensions/semantic-grep-tool.ts
 
-CMD pi --model openrouter/gpt-5.4-nano -p "$TASK_PROMPT" && cp "$(find ~/.pi/agent/sessions/ -name '*.jsonl' | head -1)" "$SESSION"
+CMD pi --model openrouter/gpt-5.4-nano --session-dir "$SESSION" -p "$TASK_PROMPT"
