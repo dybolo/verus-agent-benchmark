@@ -50,7 +50,7 @@ def verify_solution(staging_dir, task, solution_filename, original_task_path, st
     container_name = f"verify_{uuid.uuid4().hex[:8]}"
 
     try:
-        print(f"Starting verification container {container_name}...")
+        safe_print(f"Starting verification container {container_name}...")
         # Start the container in detached mode running sleep infinity
         subprocess.run([
             "docker", "run", "-d", "--rm", "--name", container_name,
@@ -59,7 +59,7 @@ def verify_solution(staging_dir, task, solution_filename, original_task_path, st
             "sleep", "infinity"
         ], check=True, capture_output=True)
 
-        print("Running Verus verification...")
+        safe_print("Running Verus verification...")
         verus_cmd = [
             "docker", "exec", container_name,
             "verus", f"/workspace/task_env/{solution_filename}", "--output-json"
@@ -82,9 +82,9 @@ def verify_solution(staging_dir, task, solution_filename, original_task_path, st
                     stats["verus_passed"] = False
             except Exception as e:
                 stats["verus_passed"] = False
-                print(f"Caught error while analysing Verus output: {e}")
+                safe_print(f"Caught error while analysing Verus output: {e}")
 
-        print(f"Verus passed: {stats['verus_passed']}")
+        safe_print(f"Verus passed: {stats['verus_passed']}")
 
         # clear original file in case agent has modify it to check changes with cheat checker
         try:
@@ -94,7 +94,7 @@ def verify_solution(staging_dir, task, solution_filename, original_task_path, st
         shutil.copy2(original_task_path, staged_task_path)
 
         # Run Lynette Cheat Checker validation
-        print("Running Lynette cheat checker...")
+        safe_print("Running Lynette cheat checker...")
         lynette_cmd = [
             "docker", "exec", container_name,
             "python3", "/opt/lynette.py",
@@ -104,10 +104,10 @@ def verify_solution(staging_dir, task, solution_filename, original_task_path, st
         lynette_res = subprocess.run(lynette_cmd, capture_output=True, text=True)
         stats["cheat_checker_passed"] = (lynette_res.returncode == 0)
 
-        print(f"Cheat checker passed: {stats['cheat_checker_passed']}")
+        safe_print(f"Cheat checker passed: {stats['cheat_checker_passed']}")
 
     finally:
-        print(f"Cleaning up verification container {container_name}...")
+        safe_print(f"Cleaning up verification container {container_name}...")
         subprocess.run(["docker", "kill", container_name], capture_output=True)
 
     return stats
@@ -118,7 +118,7 @@ def compute_session_statistics(agent_name, session_path) -> dict:
     agent_dir = agent_name.split("/")[0]
     stats_script = os.path.join("agents", agent_dir, "statistics.py")
     if not os.path.exists(stats_script):
-        print(f"  (no statistics.py found for agent '{agent_dir}')")
+        safe_print(f"  (no statistics.py found for agent '{agent_dir}')")
         return {}
 
     result = subprocess.run(
@@ -127,17 +127,17 @@ def compute_session_statistics(agent_name, session_path) -> dict:
     )
 
     if result.returncode != 0:
-        print(f"⚠ statistics.py exited with code {result.returncode}")
+        safe_print(f"⚠ statistics.py exited with code {result.returncode}")
         if result.stderr:
-            print(f"   stderr: {result.stderr.strip()}")
+            safe_print(f"   stderr: {result.stderr.strip()}")
         return {}
 
     try:
         stats = json.loads(result.stdout)
-        print("✓ Session statistics recorded")
+        safe_print("✓ Session statistics recorded")
         return stats
     except json.JSONDecodeError:
-        print("⚠ Could not parse statistics output")
+        safe_print("⚠ Could not parse statistics output")
         return {}
 
 
@@ -149,10 +149,10 @@ def extract_solution_file(staging_dir, solution_filename, agent_name, timestamp)
         os.makedirs(final_solution_dir, exist_ok=True)
         final_solution_path = os.path.join(final_solution_dir, solution_filename)
         shutil.copy2(expected_solution_path, final_solution_path)
-        print(f"✓ Solution extracted to {final_solution_path}")
+        safe_print(f"✓ Solution extracted to {final_solution_path}")
         return {"solution_generated": True}
     else:
-        print(f"✗ Agent did not produce the expected file: {solution_filename}")
+        safe_print(f"✗ Agent did not produce the expected file: {solution_filename}")
         return {"solution_generated": False}
 
 
