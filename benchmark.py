@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import argparse
 import os
 import subprocess
 import sys
@@ -7,6 +8,8 @@ import tempfile
 import shutil
 import json
 import uuid
+import threading
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
 
 def build_base_image():
@@ -18,6 +21,14 @@ def build_base_image():
         "docker", "build", "-t", "benchmark-base:latest", "-f", "Dockerfile", "."
     ], check=True)
     print()
+
+
+print_lock = threading.Lock()
+
+
+def safe_print(*args, **kwargs):
+    with print_lock:
+        print(*args, **kwargs)
 
 
 def build_agent_image(agent_tag, agent_path):
@@ -145,7 +156,98 @@ def extract_solution_file(staging_dir, solution_filename, agent_name, timestamp)
         return {"solution_generated": False}
 
 
-def run_tasks():
+def run_single_job(agent_name, agent_tag, task, timestamp, prompt_template, staging_base) -> dict:
+    """Run a single agent on a single task and return its stats."""
+    task_base = task[:-3] if task.endswith(".rs") else task
+    solution_filename = f"{task_base}_verified.rs"
+
+    task_stats = {
+        "solution_generated": False,
+        "verus_passed": False,
+        "cheat_checker_passed": False,
+        "timed_out": False
+    }
+
+    with tempfile.TemporaryDirectory(dir=staging_base) as staging_dir:
+        original_task_path = os.path.abspath(os.path.join("tasks", task))
+        staged_task_path = os.path.join(staging_dir, task)
+        shutil.copy2(original_task_path, staged_task_path)
+
+        session_dir_staging = os.path.join(staging_dir, "session")
+        os.makedirs(session_dir_staging)
+
+        task_path_in_container = f"/workspace/task_env/{task}"
+        output_path_in_container = f"/workspace/task_env/{solution_filename}"
+        session_path_in_container = "/workspace/task_env/session"
+        formatted_prompt = prompt_template.format(task=task_path_in_container, output=output_path_in_container)
+
+        container_name = f"agent_{uuid.uuid4().hex[:8]}"
+        cmd = [
+            "docker", "run", "--rm", "--name", container_name,
+            "--user", f"{os.getuid()}:{os.getgid()}",
+            "-e", "HOME=/root",
+            "-v", f"{staging_dir}:/workspace/task_env",
+            "-e", "TASK_PROMPT",
+            "-e", "SESSION",
+        ]
+
+        for key in ["ANTHROPIC_API_KEY", "OPENAI_API_KEY", "GEMINI_API_KEY", "OPENCODE_API_KEY", "OPENROUTER_API_KEY"]:
+            if key in os.environ:
+                cmd.extend(["-e", key])
+
+        cmd.append(f"benchmark-{agent_tag}")
+
+        env = os.environ.copy()
+        env["TASK_PROMPT"] = formatted_prompt
+        env["SESSION"] = session_path_in_container
+
+        try:
+            result = subprocess.run(
+                cmd,
+                env=env,
+                check=False,
+                capture_output=True,
+                text=True,
+                timeout=1200
+            )
+
+            if result.stdout:
+                safe_print("[STDOUT]")
+                safe_print(result.stdout)
+            if result.stderr:
+                safe_print("[STDERR]")
+                safe_print(result.stderr)
+
+            if result.returncode != 0:
+                safe_print(f"⚠ Agent {agent_name} exited with code {result.returncode} on task {task}")
+
+        except subprocess.TimeoutExpired:
+            task_stats["timed_out"] = True
+            safe_print(f"✗ Agent {agent_name} timed out on task {task} (20 minutes)")
+            subprocess.run(["docker", "stop", container_name], capture_output=True, check=False)
+
+        except subprocess.CalledProcessError as e:
+            safe_print(f"✗ Agent {agent_name} failed on task {task}: {e}")
+
+        extracted = extract_solution_file(staging_dir, solution_filename, agent_name, timestamp)
+        task_stats.update(extracted)
+
+        if extracted["solution_generated"]:
+            verification_status = verify_solution(staging_dir, task, solution_filename, original_task_path, staged_task_path)
+            task_stats.update(verification_status)
+
+        session_dir_path = os.path.abspath(os.path.join("sessions", agent_name, f"{timestamp}", task_base))
+        try:
+            shutil.copytree(session_dir_staging, session_dir_path)
+            session_stats = compute_session_statistics(agent_name, session_dir_path)
+            task_stats.update(session_stats)
+        except Exception as e:
+            safe_print(f"Failed to capture statistics for the agent: {e}")
+
+    return {task: task_stats}
+
+
+def run_tasks(max_workers):
     """Main benchmark orchestration."""
     # Build the base docker image once
     build_base_image()
@@ -203,112 +305,14 @@ def run_tasks():
         staging_base = os.path.abspath(".staging_areas")
         os.makedirs(staging_base, exist_ok=True)
 
-        for task in tasks:
-            print("=" * 60)
-            print(f"Running agent '{agent_name}' on task '{task}'")
-            print("=" * 60)
-
-            # Strip .rs extension and create the expected output filename
-            task_base = task[:-3] if task.endswith(".rs") else task
-            solution_filename = f"{task_base}_verified.rs"
-
-            task_stats = {
-                "solution_generated": False,
-                "verus_passed": False,
-                "cheat_checker_passed": False,
-                "timed_out": False
+        print(f"Submitting {len(tasks)} tasks for agent '{agent_name}' to thread pool ({max_workers} workers)...")
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            futures = {
+                executor.submit(run_single_job, agent_name, agent_tag, task, timestamp, prompt_template, staging_base): task
+                for task in tasks
             }
-            run_stats["agents"][agent_name]["tasks"][task] = task_stats
-
-            with tempfile.TemporaryDirectory(dir=staging_base) as staging_dir:
-                # Copy the specific task file into the empty staging area
-                original_task_path = os.path.abspath(os.path.join("tasks", task))
-                staged_task_path = os.path.join(staging_dir, task)
-                shutil.copy2(original_task_path, staged_task_path)
-
-                # create the directory to store sessions
-                session_dir_staging = os.path.join(staging_dir, "session")
-                os.makedirs(session_dir_staging)
-
-                # Format the prompt with the path to the task file inside the container
-                task_path_in_container = f"/workspace/task_env/{task}"
-                output_path_in_container = f"/workspace/task_env/{solution_filename}"
-                session_path_in_container = "/workspace/task_env/session"
-                formatted_prompt = prompt_template.format(task=task_path_in_container, output=output_path_in_container)
-
-                # Run the container
-                container_name = f"agent_{uuid.uuid4().hex[:8]}"
-                cmd = [
-                    "docker", "run", "--rm", "--name", container_name,
-                    "--user", f"{os.getuid()}:{os.getgid()}",
-                    "-e", "HOME=/root",
-                    "-v", f"{staging_dir}:/workspace/task_env",
-                    "-e", "TASK_PROMPT",
-                    "-e", "SESSION",
-                ]
-
-                # Pass through API keys to Docker
-                for key in ["ANTHROPIC_API_KEY", "OPENAI_API_KEY", "GEMINI_API_KEY", "OPENCODE_API_KEY", "OPENROUTER_API_KEY"]:
-                    if key in os.environ:
-                        cmd.extend(["-e", key])
-
-                cmd.append(f"benchmark-{agent_tag}")
-
-                # Build the environment for the subprocess that runs docker
-                env = os.environ.copy()
-                env["TASK_PROMPT"] = formatted_prompt
-                env["SESSION"] = session_path_in_container
-
-                try:
-                    # Create a simple wrapper script to run the agent inside the container with the prompt
-                    result = subprocess.run(
-                        cmd,
-                        env=env,
-                        check=False,
-                        capture_output=True,
-                        text=True,
-                        timeout=1200
-                    )
-
-                    # Display captured output
-                    if result.stdout:
-                        print("[STDOUT]")
-                        print(result.stdout)
-                    if result.stderr:
-                        print("[STDERR]")
-                        print(result.stderr)
-
-                    if result.returncode != 0:
-                        print(f"⚠ Agent {agent_name} exited with code {result.returncode} on task {task}")
-
-
-                except subprocess.TimeoutExpired:
-                    task_stats["timed_out"] = True
-                    print(f"✗ Agent {agent_name} timed out on task {task} (20 minutes)")
-                    subprocess.run(["docker", "stop", container_name], capture_output=True, check=False)
-
-                except subprocess.CalledProcessError as e:
-                    print(f"✗ Agent {agent_name} failed on task {task}: {e}")
-
-                # Extract the solution file
-                extracted = extract_solution_file(staging_dir, solution_filename, agent_name, timestamp)
-                task_stats.update(extracted)
-
-                # Verify the solution
-                if extracted["solution_generated"]:
-                    verification_status = verify_solution(staging_dir, task, solution_filename, original_task_path, staged_task_path)
-                    task_stats.update(verification_status)
-
-                # Extract session files to permanent directory and compute statistics
-                session_dir_path = os.path.abspath(os.path.join("sessions", agent_name, f"{timestamp}", task_base))
-                try:
-                    shutil.copytree(session_dir_staging, session_dir_path)
-                    session_stats = compute_session_statistics(agent_name, session_dir_path)
-                    task_stats.update(session_stats)
-                except Exception as e:
-                    print(f"Failed to capture statistics for the agent: {e}")
-                 
-                print()
+            for future in as_completed(futures):
+                run_stats["agents"][agent_name]["tasks"].update(future.result())
 
     # Save run statistics to JSON file
     os.makedirs("runs", exist_ok=True)
@@ -337,5 +341,13 @@ def run_tasks():
     else:
         print(f"⚠ Git commit skipped: {result.stderr.strip()}")
 
+def main():
+    parser = argparse.ArgumentParser(description="Run benchmarks")
+    parser.add_argument("--parallel", "-j", type=int, default=os.cpu_count() or 4,
+                        help="Max parallel tasks (default: CPU count)")
+    args = parser.parse_args()
+    run_tasks(max_workers=args.parallel)
+
+
 if __name__ == "__main__":
-    run_tasks()
+    main()
