@@ -1,0 +1,5 @@
+# sgconfig.yml
+customLanguages:
+  verus:
+    libraryPath: /opt/tree-sitter-verus/verus.so
+    extensions: [rs]
