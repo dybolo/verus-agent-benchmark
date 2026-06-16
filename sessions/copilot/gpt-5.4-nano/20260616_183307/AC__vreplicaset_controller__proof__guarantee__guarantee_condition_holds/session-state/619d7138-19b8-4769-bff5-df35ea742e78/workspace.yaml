@@ -1,0 +1,8 @@
+id: 619d7138-19b8-4769-bff5-df35ea742e78
+cwd: /workspace
+client_name: github/cli
+name: The file /workspace/task_env/AC__vreplicaset_controller__proof__guarantee__guarantee_condition_holds.rs cannot be verified by Verus, a verification tool for Rust programs, yet. Please add proof annotations to /workspace/task_env/AC__vreplicaset_controller__proof__guarantee__guarantee_condition_holds.rs so that it can be successfully verified by Verus, and write the resulting code with proof into a new file with the name /workspace/task_env/AC__vreplicaset_controller__proof__guarantee__guarantee_...
+user_named: false
+summary_count: 0
+created_at: 2026-06-16T17:33:11.998Z
+updated_at: 2026-06-16T17:33:12.746Z

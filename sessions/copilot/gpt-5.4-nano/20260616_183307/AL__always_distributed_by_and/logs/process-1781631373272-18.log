@@ -1,0 +1,210 @@
+2026-06-16T17:36:13.275Z [WARNING] Model "gpt-5.4-nano" works best with wireApi: "responses". Set COPILOT_PROVIDER_WIRE_API=responses to enable full model capabilities.
+2026-06-16T17:36:13.276Z [INFO] Shell completions: no supported shell detected, skipping
+2026-06-16T17:36:13.310Z [INFO] Session indexing debug: SESSION_INDEXING=true, repository=undefined
+2026-06-16T17:36:13.607Z [INFO] Workspace initialized: b14a5539-69a1-4918-af87-c0ad9c3917d7 (checkpoints: 0)
+2026-06-16T17:36:13.613Z [INFO] Starting Copilot CLI: 1.0.62
+2026-06-16T17:36:13.614Z [INFO] Node.js version: v24.16.0
+2026-06-16T17:36:13.820Z [INFO] Using custom provider: type=openai, baseUrl=https://openrouter.ai/api/v1, wireApi=completions
+2026-06-16T17:36:13.821Z [INFO]  
+2026-06-16T17:36:13.821Z [INFO] --- Start of group: Custom provider configured settings: ---
+2026-06-16T17:36:13.821Z [INFO] --- End of group ---
+2026-06-16T17:36:13.932Z [INFO] --- Start of group: Completion request configuration:  ---
+2026-06-16T17:36:13.933Z [INFO] --- End of group ---
+2026-06-16T17:36:14.130Z [INFO] CompactionProcessor: Utilization 5.5% (14903/272000 tokens) below threshold 80%
+2026-06-16T17:36:14.144Z [INFO] --- Start of group: Sending request to the AI model ---
+2026-06-16T17:36:16.864Z [INFO] --- End of group ---
+2026-06-16T17:36:17.068Z [INFO] CompactionProcessor: Utilization 5.9% (16041/272000 tokens) below threshold 80%
+2026-06-16T17:36:17.090Z [INFO] --- Start of group: Sending request to the AI model ---
+2026-06-16T17:36:19.383Z [INFO] --- End of group ---
+2026-06-16T17:36:19.420Z [INFO] CompactionProcessor: Utilization 6.3% (17218/272000 tokens) below threshold 80%
+2026-06-16T17:36:19.443Z [INFO] --- Start of group: Sending request to the AI model ---
+2026-06-16T17:36:21.539Z [INFO] Successfully downloaded package, restart to update to version 1.0.63
+2026-06-16T17:36:21.539Z [INFO] Downloading updated linux-x64 binary...
+2026-06-16T17:36:24.744Z [INFO] --- End of group ---
+2026-06-16T17:36:24.789Z [INFO] CompactionProcessor: Utilization 6.6% (17839/272000 tokens) below threshold 80%
+2026-06-16T17:36:24.811Z [INFO] --- Start of group: Sending request to the AI model ---
+2026-06-16T17:36:26.901Z [INFO] --- End of group ---
+2026-06-16T17:36:27.008Z [INFO] CompactionProcessor: Utilization 6.6% (18060/272000 tokens) below threshold 80%
+2026-06-16T17:36:27.030Z [INFO] --- Start of group: Sending request to the AI model ---
+2026-06-16T17:36:29.025Z [INFO] --- End of group ---
+2026-06-16T17:36:29.059Z [INFO] CompactionProcessor: Utilization 8.0% (21672/272000 tokens) below threshold 80%
+2026-06-16T17:36:29.084Z [INFO] --- Start of group: Sending request to the AI model ---
+2026-06-16T17:36:35.088Z [WARNING] Failed to update binary: Error: EACCES: permission denied, mkdir '/usr/lib/node_modules/@github/copilot/node_modules/@github/copilot-linux-x64/.copilot-update-1781631395063'
+2026-06-16T17:36:35.337Z [INFO] --- End of group ---
+2026-06-16T17:36:35.386Z [INFO] CompactionProcessor: Utilization 8.2% (22247/272000 tokens) below threshold 80%
+2026-06-16T17:36:35.424Z [INFO] --- Start of group: Sending request to the AI model ---
+2026-06-16T17:36:37.419Z [INFO] --- End of group ---
+2026-06-16T17:36:37.522Z [INFO] CompactionProcessor: Utilization 8.3% (22470/272000 tokens) below threshold 80%
+2026-06-16T17:36:37.556Z [INFO] --- Start of group: Sending request to the AI model ---
+2026-06-16T17:36:40.579Z [INFO] --- End of group ---
+2026-06-16T17:36:40.603Z [INFO] CompactionProcessor: Utilization 8.5% (23006/272000 tokens) below threshold 80%
+2026-06-16T17:36:40.623Z [INFO] --- Start of group: Sending request to the AI model ---
+2026-06-16T17:36:42.398Z [INFO] --- End of group ---
+2026-06-16T17:36:42.430Z [INFO] CompactionProcessor: Utilization 8.6% (23388/272000 tokens) below threshold 80%
+2026-06-16T17:36:42.464Z [INFO] --- Start of group: Sending request to the AI model ---
+2026-06-16T17:36:46.761Z [INFO] --- End of group ---
+2026-06-16T17:36:46.806Z [INFO] CompactionProcessor: Utilization 8.8% (23917/272000 tokens) below threshold 80%
+2026-06-16T17:36:46.842Z [INFO] --- Start of group: Sending request to the AI model ---
+2026-06-16T17:36:52.471Z [INFO] --- End of group ---
+2026-06-16T17:36:52.581Z [INFO] CompactionProcessor: Utilization 8.9% (24079/272000 tokens) below threshold 80%
+2026-06-16T17:36:52.606Z [INFO] --- Start of group: Sending request to the AI model ---
+2026-06-16T17:36:55.530Z [INFO] --- End of group ---
+2026-06-16T17:36:55.570Z [INFO] CompactionProcessor: Utilization 9.1% (24628/272000 tokens) below threshold 80%
+2026-06-16T17:36:55.608Z [INFO] --- Start of group: Sending request to the AI model ---
+2026-06-16T17:36:59.554Z [INFO] --- End of group ---
+2026-06-16T17:36:59.587Z [INFO] CompactionProcessor: Utilization 9.2% (25119/272000 tokens) below threshold 80%
+2026-06-16T17:36:59.609Z [INFO] --- Start of group: Sending request to the AI model ---
+2026-06-16T17:37:01.309Z [INFO] --- End of group ---
+2026-06-16T17:37:01.433Z [INFO] CompactionProcessor: Utilization 9.3% (25331/272000 tokens) below threshold 80%
+2026-06-16T17:37:01.472Z [INFO] --- Start of group: Sending request to the AI model ---
+2026-06-16T17:37:03.407Z [INFO] --- End of group ---
+2026-06-16T17:37:03.440Z [INFO] CompactionProcessor: Utilization 9.4% (25523/272000 tokens) below threshold 80%
+2026-06-16T17:37:03.463Z [INFO] --- Start of group: Sending request to the AI model ---
+2026-06-16T17:37:04.904Z [INFO] --- End of group ---
+2026-06-16T17:37:05.002Z [INFO] CompactionProcessor: Utilization 9.4% (25695/272000 tokens) below threshold 80%
+2026-06-16T17:37:05.026Z [INFO] --- Start of group: Sending request to the AI model ---
+2026-06-16T17:37:06.186Z [INFO] --- End of group ---
+2026-06-16T17:37:06.212Z [INFO] CompactionProcessor: Utilization 9.6% (26045/272000 tokens) below threshold 80%
+2026-06-16T17:37:06.242Z [INFO] --- Start of group: Sending request to the AI model ---
+2026-06-16T17:37:10.323Z [INFO] --- End of group ---
+2026-06-16T17:37:10.379Z [INFO] CompactionProcessor: Utilization 9.8% (26596/272000 tokens) below threshold 80%
+2026-06-16T17:37:10.417Z [INFO] --- Start of group: Sending request to the AI model ---
+2026-06-16T17:37:12.087Z [INFO] --- End of group ---
+2026-06-16T17:37:12.189Z [INFO] CompactionProcessor: Utilization 9.8% (26775/272000 tokens) below threshold 80%
+2026-06-16T17:37:12.227Z [INFO] --- Start of group: Sending request to the AI model ---
+2026-06-16T17:37:13.698Z [INFO] --- End of group ---
+2026-06-16T17:37:13.731Z [INFO] CompactionProcessor: Utilization 9.9% (26910/272000 tokens) below threshold 80%
+2026-06-16T17:37:13.766Z [INFO] --- Start of group: Sending request to the AI model ---
+2026-06-16T17:37:15.609Z [INFO] --- End of group ---
+2026-06-16T17:37:15.656Z [INFO] CompactionProcessor: Utilization 10.0% (27086/272000 tokens) below threshold 80%
+2026-06-16T17:37:15.710Z [INFO] --- Start of group: Sending request to the AI model ---
+2026-06-16T17:37:17.817Z [INFO] --- End of group ---
+2026-06-16T17:37:17.859Z [INFO] CompactionProcessor: Utilization 10.1% (27486/272000 tokens) below threshold 80%
+2026-06-16T17:37:17.890Z [INFO] --- Start of group: Sending request to the AI model ---
+2026-06-16T17:37:19.166Z [INFO] --- End of group ---
+2026-06-16T17:37:19.194Z [INFO] CompactionProcessor: Utilization 10.3% (27920/272000 tokens) below threshold 80%
+2026-06-16T17:37:19.223Z [INFO] --- Start of group: Sending request to the AI model ---
+2026-06-16T17:37:20.476Z [INFO] --- End of group ---
+2026-06-16T17:37:20.577Z [INFO] CompactionProcessor: Utilization 10.3% (28080/272000 tokens) below threshold 80%
+2026-06-16T17:37:20.607Z [INFO] --- Start of group: Sending request to the AI model ---
+2026-06-16T17:37:24.304Z [INFO] --- End of group ---
+2026-06-16T17:37:24.360Z [INFO] CompactionProcessor: Utilization 10.5% (28495/272000 tokens) below threshold 80%
+2026-06-16T17:37:24.395Z [INFO] --- Start of group: Sending request to the AI model ---
+2026-06-16T17:37:27.390Z [INFO] --- End of group ---
+2026-06-16T17:37:27.511Z [INFO] CompactionProcessor: Utilization 10.6% (28715/272000 tokens) below threshold 80%
+2026-06-16T17:37:27.552Z [INFO] --- Start of group: Sending request to the AI model ---
+2026-06-16T17:37:28.747Z [INFO] --- End of group ---
+2026-06-16T17:37:28.789Z [INFO] CompactionProcessor: Utilization 10.7% (29045/272000 tokens) below threshold 80%
+2026-06-16T17:37:28.829Z [INFO] --- Start of group: Sending request to the AI model ---
+2026-06-16T17:37:30.746Z [INFO] --- End of group ---
+2026-06-16T17:37:30.780Z [INFO] CompactionProcessor: Utilization 10.8% (29268/272000 tokens) below threshold 80%
+2026-06-16T17:37:30.809Z [INFO] --- Start of group: Sending request to the AI model ---
+2026-06-16T17:37:32.250Z [INFO] --- End of group ---
+2026-06-16T17:37:32.360Z [INFO] CompactionProcessor: Utilization 10.8% (29437/272000 tokens) below threshold 80%
+2026-06-16T17:37:32.399Z [INFO] --- Start of group: Sending request to the AI model ---
+2026-06-16T17:37:36.580Z [INFO] --- End of group ---
+2026-06-16T17:37:36.623Z [INFO] CompactionProcessor: Utilization 11.0% (29864/272000 tokens) below threshold 80%
+2026-06-16T17:37:36.649Z [INFO] --- Start of group: Sending request to the AI model ---
+2026-06-16T17:37:38.031Z [INFO] --- End of group ---
+2026-06-16T17:37:38.170Z [INFO] CompactionProcessor: Utilization 11.0% (30032/272000 tokens) below threshold 80%
+2026-06-16T17:37:38.209Z [INFO] --- Start of group: Sending request to the AI model ---
+2026-06-16T17:37:41.119Z [INFO] --- End of group ---
+2026-06-16T17:37:41.161Z [INFO] CompactionProcessor: Utilization 11.2% (30391/272000 tokens) below threshold 80%
+2026-06-16T17:37:41.206Z [INFO] --- Start of group: Sending request to the AI model ---
+2026-06-16T17:37:43.050Z [INFO] --- End of group ---
+2026-06-16T17:37:43.150Z [INFO] CompactionProcessor: Utilization 11.3% (30622/272000 tokens) below threshold 80%
+2026-06-16T17:37:43.186Z [INFO] --- Start of group: Sending request to the AI model ---
+2026-06-16T17:37:46.317Z [INFO] --- End of group ---
+2026-06-16T17:37:46.359Z [INFO] CompactionProcessor: Utilization 11.4% (30913/272000 tokens) below threshold 80%
+2026-06-16T17:37:46.389Z [INFO] --- Start of group: Sending request to the AI model ---
+2026-06-16T17:37:49.811Z [INFO] --- End of group ---
+2026-06-16T17:37:49.850Z [INFO] CompactionProcessor: Utilization 11.5% (31362/272000 tokens) below threshold 80%
+2026-06-16T17:37:49.884Z [INFO] --- Start of group: Sending request to the AI model ---
+2026-06-16T17:37:52.309Z [INFO] --- End of group ---
+2026-06-16T17:37:52.409Z [INFO] CompactionProcessor: Utilization 11.6% (31536/272000 tokens) below threshold 80%
+2026-06-16T17:37:52.438Z [INFO] --- Start of group: Sending request to the AI model ---
+2026-06-16T17:37:55.014Z [INFO] --- End of group ---
+2026-06-16T17:37:55.071Z [INFO] CompactionProcessor: Utilization 11.7% (31716/272000 tokens) below threshold 80%
+2026-06-16T17:37:55.110Z [INFO] --- Start of group: Sending request to the AI model ---
+2026-06-16T17:37:57.991Z [INFO] --- End of group ---
+2026-06-16T17:37:58.091Z [INFO] CompactionProcessor: Utilization 11.7% (31895/272000 tokens) below threshold 80%
+2026-06-16T17:37:58.120Z [INFO] --- Start of group: Sending request to the AI model ---
+2026-06-16T17:38:00.205Z [INFO] --- End of group ---
+2026-06-16T17:38:00.267Z [INFO] CompactionProcessor: Utilization 11.8% (32028/272000 tokens) below threshold 80%
+2026-06-16T17:38:00.311Z [INFO] --- Start of group: Sending request to the AI model ---
+2026-06-16T17:38:01.689Z [INFO] --- End of group ---
+2026-06-16T17:38:01.798Z [INFO] CompactionProcessor: Utilization 11.8% (32190/272000 tokens) below threshold 80%
+2026-06-16T17:38:01.842Z [INFO] --- Start of group: Sending request to the AI model ---
+2026-06-16T17:38:03.865Z [INFO] --- End of group ---
+2026-06-16T17:38:03.911Z [INFO] CompactionProcessor: Utilization 12.0% (32706/272000 tokens) below threshold 80%
+2026-06-16T17:38:03.952Z [INFO] --- Start of group: Sending request to the AI model ---
+2026-06-16T17:38:05.889Z [INFO] --- End of group ---
+2026-06-16T17:38:05.917Z [INFO] CompactionProcessor: Utilization 12.1% (32790/272000 tokens) below threshold 80%
+2026-06-16T17:38:05.943Z [INFO] --- Start of group: Sending request to the AI model ---
+2026-06-16T17:38:10.406Z [INFO] --- End of group ---
+2026-06-16T17:38:10.467Z [INFO] CompactionProcessor: Utilization 12.2% (33080/272000 tokens) below threshold 80%
+2026-06-16T17:38:10.507Z [INFO] --- Start of group: Sending request to the AI model ---
+2026-06-16T17:38:12.275Z [INFO] --- End of group ---
+2026-06-16T17:38:12.367Z [INFO] CompactionProcessor: Utilization 12.2% (33245/272000 tokens) below threshold 80%
+2026-06-16T17:38:12.404Z [INFO] --- Start of group: Sending request to the AI model ---
+2026-06-16T17:38:15.777Z [INFO] --- End of group ---
+2026-06-16T17:38:15.900Z [INFO] Using custom provider: type=openai, baseUrl=https://openrouter.ai/api/v1, wireApi=completions
+2026-06-16T17:38:15.900Z [INFO]  
+2026-06-16T17:38:15.900Z [INFO] --- Start of group: Custom provider configured settings: ---
+2026-06-16T17:38:15.900Z [INFO] --- End of group ---
+2026-06-16T17:38:15.939Z [INFO] --- Start of group: Completion request configuration:  ---
+2026-06-16T17:38:15.940Z [INFO] --- End of group ---
+2026-06-16T17:38:15.957Z [INFO] CompactionProcessor: Utilization 12.3% (33546/272000 tokens) below threshold 80%
+2026-06-16T17:38:15.984Z [INFO] --- Start of group: Sending request to the AI model ---
+2026-06-16T17:38:18.473Z [INFO] --- End of group ---
+2026-06-16T17:38:18.568Z [INFO] CompactionProcessor: Utilization 12.8% (34933/272000 tokens) below threshold 80%
+2026-06-16T17:38:18.607Z [INFO] --- Start of group: Sending request to the AI model ---
+2026-06-16T17:38:25.672Z [INFO] --- End of group ---
+2026-06-16T17:38:25.745Z [INFO] CompactionProcessor: Utilization 13.2% (35785/272000 tokens) below threshold 80%
+2026-06-16T17:38:25.784Z [INFO] --- Start of group: Sending request to the AI model ---
+2026-06-16T17:38:27.306Z [INFO] --- End of group ---
+2026-06-16T17:38:27.407Z [INFO] CompactionProcessor: Utilization 13.2% (35953/272000 tokens) below threshold 80%
+2026-06-16T17:38:27.443Z [INFO] --- Start of group: Sending request to the AI model ---
+2026-06-16T17:38:31.377Z [INFO] --- End of group ---
+2026-06-16T17:38:31.444Z [INFO] CompactionProcessor: Utilization 13.4% (36411/272000 tokens) below threshold 80%
+2026-06-16T17:38:31.486Z [INFO] --- Start of group: Sending request to the AI model ---
+2026-06-16T17:38:33.182Z [INFO] --- End of group ---
+2026-06-16T17:38:33.813Z [INFO] CompactionProcessor: Utilization 13.6% (37024/272000 tokens) below threshold 80%
+2026-06-16T17:38:33.858Z [INFO] --- Start of group: Sending request to the AI model ---
+2026-06-16T17:38:37.780Z [INFO] --- End of group ---
+2026-06-16T17:38:37.858Z [INFO] CompactionProcessor: Utilization 13.7% (37389/272000 tokens) below threshold 80%
+2026-06-16T17:38:37.899Z [INFO] --- Start of group: Sending request to the AI model ---
+2026-06-16T17:38:40.830Z [INFO] --- End of group ---
+2026-06-16T17:38:41.447Z [INFO] CompactionProcessor: Utilization 13.9% (37850/272000 tokens) below threshold 80%
+2026-06-16T17:38:41.496Z [INFO] --- Start of group: Sending request to the AI model ---
+2026-06-16T17:38:46.893Z [INFO] --- End of group ---
+2026-06-16T17:38:46.941Z [INFO] CompactionProcessor: Utilization 14.1% (38223/272000 tokens) below threshold 80%
+2026-06-16T17:38:46.987Z [INFO] --- Start of group: Sending request to the AI model ---
+2026-06-16T17:38:49.711Z [INFO] --- End of group ---
+2026-06-16T17:38:50.502Z [INFO] CompactionProcessor: Utilization 14.3% (38832/272000 tokens) below threshold 80%
+2026-06-16T17:38:50.545Z [INFO] --- Start of group: Sending request to the AI model ---
+2026-06-16T17:38:56.901Z [INFO] --- End of group ---
+2026-06-16T17:38:56.941Z [INFO] CompactionProcessor: Utilization 14.5% (39573/272000 tokens) below threshold 80%
+2026-06-16T17:38:56.986Z [INFO] --- Start of group: Sending request to the AI model ---
+2026-06-16T17:39:03.583Z [INFO] --- End of group ---
+2026-06-16T17:39:03.613Z [INFO] CompactionProcessor: Utilization 14.7% (39883/272000 tokens) below threshold 80%
+2026-06-16T17:39:03.660Z [INFO] --- Start of group: Sending request to the AI model ---
+2026-06-16T17:39:10.085Z [INFO] --- End of group ---
+2026-06-16T17:39:10.131Z [INFO] CompactionProcessor: Utilization 14.8% (40360/272000 tokens) below threshold 80%
+2026-06-16T17:39:10.177Z [INFO] --- Start of group: Sending request to the AI model ---
+2026-06-16T17:39:13.793Z [INFO] --- End of group ---
+2026-06-16T17:39:14.807Z [INFO] CompactionProcessor: Utilization 14.9% (40549/272000 tokens) below threshold 80%
+2026-06-16T17:39:14.853Z [INFO] --- Start of group: Sending request to the AI model ---
+2026-06-16T17:39:18.113Z [INFO] --- End of group ---
+2026-06-16T17:39:18.178Z [INFO] CompactionProcessor: Utilization 15.0% (40674/272000 tokens) below threshold 80%
+2026-06-16T17:39:18.223Z [INFO] --- Start of group: Sending request to the AI model ---
+2026-06-16T17:39:19.923Z [INFO] --- End of group ---
+2026-06-16T17:39:20.037Z [INFO] CompactionProcessor: Utilization 15.0% (40832/272000 tokens) below threshold 80%
+2026-06-16T17:39:20.083Z [INFO] --- Start of group: Sending request to the AI model ---
+2026-06-16T17:39:22.150Z [INFO] --- End of group ---
+2026-06-16T17:39:40.328Z [INFO] CompactionProcessor: Utilization 15.1% (40959/272000 tokens) below threshold 80%
+2026-06-16T17:39:40.374Z [INFO] --- Start of group: Sending request to the AI model ---
+2026-06-16T17:39:42.518Z [INFO] --- End of group ---
+2026-06-16T17:39:42.743Z [INFO] CompactionProcessor: Utilization 15.1% (41091/272000 tokens) below threshold 80%
+2026-06-16T17:39:42.784Z [INFO] --- Start of group: Sending request to the AI model ---
+2026-06-16T17:39:44.394Z [INFO] --- End of group ---
