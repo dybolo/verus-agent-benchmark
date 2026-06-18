@@ -40,4 +40,4 @@ RUN mkdir -p /root/.pi/agent/extensions
 
 COPY semantic-grep/semantic-grep-tool.ts /root/.pi/agent/extensions/semantic-grep-tool.ts
 
-CMD ["/bin/sh", "-c", "pi --model openrouter/gpt-5.4-nano --session-dir \"$SESSION\" -p \"$TASK_PROMPT\""]
+CMD ["/bin/sh", "-c", "pi --model openrouter/gpt-5.4-nano:xhigh --session-dir \"$SESSION\" -p \"$TASK_PROMPT\""]
