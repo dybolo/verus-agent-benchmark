@@ -6,7 +6,3 @@ RUN apt-get update && apt-get install -y curl \
     && rm -rf /var/lib/apt/lists/*
 
 RUN npm i -g opencode-ai@latest
-
-COPY entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh
-CMD ["/entrypoint.sh"]
