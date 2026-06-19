@@ -7,10 +7,16 @@
 
 ## Adding Agents
 
-- Add a new agent by creating a new directory under `agents/<agent_name>/<model_name>/` and adding a Dockerfile that defines the agent's environment. The `<model_name>` should just be the model identifier (e.g. `gpt-5.4-nano`) keeping any provider logic inside the Dockerfile (e.g. `--model openrouter/gpt-5.4-nano`).
-- The prompt to give the agent is stored in the `TASK_PROMPT` environment variable inside the container.
-- The directory to save sessions to is given by the `SESSION` environment variable inside the container.
-- A `statistics.py` file must be placed at `agents/<agent_name>/statistics.py`to retrieve information from each agent specific session format. It receives a path to a session directory and returns a JSON dict containing the session's token usage, cost, turn count, tool calls, duration, etc.
+- Add a new agent by creating a directory under `agents/<agent_name>/` with:
+  - `Dockerfile` — defines the agent's environment (dependencies, tooling). No `CMD` needed — the entrypoint is provided at runtime.
+  - `<model_name>.model` — an executable entrypoint script named after the model (e.g. `gpt-5.4-nano.model`). It receives a prompt for the task in the `TASK_PROMPT` environment variable and the directory to save session logs to in the `SESSION` environment variable.
+  - `statistics.py` — placed at `agents/<agent_name>/statistics.py` to parse that agent's session format. It receives a session directory path and returns a JSON dict with token usage, cost, turns, tool calls, duration, etc.
+- To test the same agent with a different model, just add another `.model` file (no new Dockerfile needed).
+- Keep any provider/model logic inside the entrypoint script (e.g. `pi --model openrouter/gpt-5.4-nano:xhigh ...`).
+
+### How it works
+
+Each agent has a single `Dockerfile` shared by all its entrypoints. When the benchmark runs, it builds the agent image once, then for each `.model` file it starts a container with `--entrypoint /workspace/task_env/<model>.model`, staging the entrypoint alongside the task files.
 
 ## How to run
 
@@ -19,5 +25,6 @@
 
 ## Important
 
-- The script uses the user current environment variables for provider credentials.
+- The script uses the user's current environment variables for provider credentials.
 - Make sure to run the agents with a provider with the credentials set in the environment.
+- `.model` entrypoint files must be executable (`chmod +x`).
