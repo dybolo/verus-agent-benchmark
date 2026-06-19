@@ -6,6 +6,7 @@ import subprocess
 import sys
 import tempfile
 import shutil
+import glob
 import json
 import uuid
 import threading
@@ -156,7 +157,7 @@ def extract_solution_file(staging_dir, solution_filename, agent_name, timestamp)
         return {"solution_generated": False}
 
 
-def run_single_job(agent_name, agent_tag, task, timestamp, prompt_template, staging_base) -> dict:
+def run_single_job(agent_name, agent_tag, agent_dir, entrypoint, task, timestamp, prompt_template, staging_base) -> dict:
     """Run a single agent on a single task and return its stats."""
     task_base = task[:-3] if task.endswith(".rs") else task
     solution_filename = f"{task_base}_verified.rs"
@@ -175,6 +176,10 @@ def run_single_job(agent_name, agent_tag, task, timestamp, prompt_template, stag
 
         session_dir_staging = os.path.join(staging_dir, "session")
         os.makedirs(session_dir_staging)
+
+        entrypoint_path = os.path.join(os.path.abspath("agents"), agent_dir, entrypoint)
+        shutil.copy2(entrypoint_path, os.path.join(staging_dir, entrypoint))
+        os.chmod(os.path.join(staging_dir, entrypoint), 0o755)
 
         task_path_in_container = f"/workspace/task_env/{task}"
         output_path_in_container = f"/workspace/task_env/{solution_filename}"
@@ -195,7 +200,7 @@ def run_single_job(agent_name, agent_tag, task, timestamp, prompt_template, stag
             if key in os.environ:
                 cmd.extend(["-e", key])
 
-        cmd.append(f"benchmark-{agent_tag}")
+        cmd.extend(["--entrypoint", f"/workspace/task_env/{entrypoint}", f"benchmark-{agent_tag}"])
 
         env = os.environ.copy()
         env["TASK_PROMPT"] = formatted_prompt
@@ -256,7 +261,7 @@ def run_tasks(max_workers):
     with open("prompt.txt", "r") as f:
         prompt_template = f.read()
 
-    # Discover agents and tasks (agents are now agent/model)
+    # Discover agents and tasks
     tasks = [f for f in os.listdir("tasks") if f.endswith(".rs")]
     agents = []
     if os.path.exists("agents"):
@@ -264,13 +269,18 @@ def run_tasks(max_workers):
             agent_path = os.path.join("agents", agent_dir)
             if not os.path.isdir(agent_path):
                 continue
-            for model_dir in sorted(os.listdir(agent_path)):
-                model_path = os.path.join(agent_path, model_dir)
-                if os.path.isdir(model_path) and os.path.exists(os.path.join(model_path, "Dockerfile")):
-                    agents.append({
-                        "name": f"{agent_dir}/{model_dir}",
-                        "tag": f"{agent_dir}-{model_dir}"
-                    })
+            if not os.path.exists(os.path.join(agent_path, "Dockerfile")):
+                continue
+            build_agent_image(agent_dir, agent_path)
+            for model_file in sorted(glob.glob(os.path.join(agent_path, "*.model"))):
+                model_name = os.path.basename(model_file)
+                name_no_ext = os.path.splitext(model_name)[0]
+                agents.append({
+                    "name": f"{agent_dir}/{name_no_ext}",
+                    "tag": agent_dir,
+                    "entrypoint": model_name,
+                    "agent_dir": agent_dir,
+                })
 
     if not agents:
         print("Error: No agents found in agents/ directory")
@@ -292,23 +302,19 @@ def run_tasks(max_workers):
         "agents": {}
     }
 
+    # Create an isolated staging directory to keep temporary dirs for tasks
+    staging_base = os.path.abspath(".staging_areas")
+    os.makedirs(staging_base, exist_ok=True)
+
     for agent in agents:
         agent_name = agent["name"]
         agent_tag = agent["tag"]
-        agent_path = os.path.join("agents", agent_name)
-
-        # Build the agent's docker image
-        build_agent_image(agent_tag, agent_path)
         run_stats["agents"][agent_name] = {"tasks": {}}
-
-        # Create an isolated staging directory too keep temporary dirs for tasks
-        staging_base = os.path.abspath(".staging_areas")
-        os.makedirs(staging_base, exist_ok=True)
 
         print(f"Submitting {len(tasks)} tasks for agent '{agent_name}' to thread pool ({max_workers} workers)...")
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
             futures = {
-                executor.submit(run_single_job, agent_name, agent_tag, task, timestamp, prompt_template, staging_base): task
+                executor.submit(run_single_job, agent_name, agent_tag, agent["agent_dir"], agent["entrypoint"], task, timestamp, prompt_template, staging_base): task
                 for task in tasks
             }
             for future in as_completed(futures):

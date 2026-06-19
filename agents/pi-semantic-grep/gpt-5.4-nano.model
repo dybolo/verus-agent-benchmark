@@ -1,0 +1,2 @@
+#!/bin/sh
+pi --model openrouter/gpt-5.4-nano:xhigh --session-dir "$SESSION" -t read,bash,edit,write,find,ls,semantic_grep -p "$TASK_PROMPT"
