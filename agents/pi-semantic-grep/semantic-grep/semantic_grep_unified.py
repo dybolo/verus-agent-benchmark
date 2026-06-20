@@ -451,7 +451,7 @@ class SemanticGrep:
                 "kind": (
                     "spec" if chunk.get("ruleId", "").startswith("capture-spec")
                     else "proof" if (chunk.get("ruleId", "").startswith("capture-proof")
-                                      or chunk.get("ruleId", "") == "capture-asserts")
+                                      or chunk.get("ruleId", "") == "capture-functions-with-contracts")
                     else "unknown"
                 ),
                 "file": file_path,
