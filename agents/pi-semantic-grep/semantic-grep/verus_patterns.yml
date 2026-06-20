@@ -1,86 +1,60 @@
-# Rule 1: Capture Spec Functions
-# Matches functions with 'spec' keyword in their qualifiers (both with and without bodies)
 id: capture-spec-functions
 language: verus
 rule:
-  any:
-    - kind: function_item
-      has:
-        kind: function_mode
-        regex: "spec"
-    - kind: function_signature_item
-      has:
-        kind: function_mode
-        regex: "spec"
+  kind: declaration_with_attrs
+  has:
+    any:
+      - kind: function_item
+        has:
+          kind: function_mode
+          regex: "spec"
+      - kind: function_signature_item
+        has:
+          kind: function_mode
+          regex: "spec"
 
 ---
-# Rule 2: Capture Proof Functions
-# Matches functions with 'proof' keyword (both with and without bodies)
 id: capture-proof-functions
 language: verus
 rule:
-  any:
-    - kind: function_item
-      has:
-        kind: function_mode
-        regex: "proof"
-    - kind: function_signature_item
-      has:
-        kind: function_mode
-        regex: "proof"
+  kind: declaration_with_attrs
+  has:
+    any:
+      - kind: function_item
+        has:
+          kind: function_mode
+          regex: "proof"
+      - kind: function_signature_item
+        has:
+          kind: function_mode
+          regex: "proof"
 
 ---
-# Rule 3: Capture Proof Blocks
-# Matches proof { ... } expressions
 id: capture-proof-blocks
 language: verus
 rule:
   kind: proof_block
 
-# ---
-# # Rule 4: Capture asserts
-# # Matches assert { ... } expressions
-# id: capture-asserts
-# language: verus
-# rule:
-#     any:
-#         - kind: assert_forall_expression
-#         - kind: assert_expression
-
 ---
-# Rule 5: Capture Functions with Contracts
-# Matches functions that have requires, ensures, or decreases clauses
 id: capture-functions-with-contracts
 language: verus
 rule:
-  any:
-    - kind: function_item
-      has:
-        kind: fn_qualifier
+  kind: declaration_with_attrs
+  has:
+    any:
+      - kind: function_item
         has:
-          kind: requires_clause
-    - kind: function_item
-      has:
-        kind: fn_qualifier
+          kind: fn_qualifier
+          has:
+            any:
+              - kind: requires_clause
+              - kind: ensures_clause
+              - kind: decreases_clause
+      - kind: function_signature_item
         has:
-          kind: ensures_clause
-    - kind: function_item
-      has:
-        kind: fn_qualifier
-        has:
-          kind: decreases_clause
-    - kind: function_signature_item
-      has:
-        kind: fn_qualifier
-        has:
-          kind: requires_clause
-    - kind: function_signature_item
-      has:
-        kind: fn_qualifier
-        has:
-          kind: ensures_clause
-    - kind: function_signature_item
-      has:
-        kind: fn_qualifier
-        has:
-          kind: decreases_clause
+          kind: fn_qualifier
+          has:
+            any:
+              - kind: requires_clause
+              - kind: ensures_clause
+              - kind: decreases_clause

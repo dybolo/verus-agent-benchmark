@@ -1,0 +1,62 @@
+Analyze this code and provide a high-level natural language, verus-independent proof plan.
+Be specific about the intent and logic. Keep it as short as you can.
+IMPORTANT: Output ONLY plain text. Do not use any markdown formatting, headings, bold text, or bullet points.
+
+Here is an example of a well-structured proof plan for reference:
+
+What needs to be shown:
+
+The combined liveness assumptions and all accumulated phase invariants are stable. In other words, if these facts hold for an execution, then they continue to hold after shifting to any later suffix of that execution.
+
+Also show the same stability property for each "before phase n" condition through phase 5.
+
+Assumptions:
+
+- The base invariant package is already known to be stable.
+- The desired-state condition is required to hold forever, so it remains true on every suffix.
+- Each phase-specific invariant package is already known to be stable.
+- Stability is preserved when stable conditions are combined with conjunction.
+- The before-phase condition is defined by accumulating the base assumptions and the phase invariant packages in order.
+
+Key ideas:
+
+- Stability is a suffix-closure property.
+- The all-phases condition is not proved stable from scratch; it is built from smaller stable pieces.
+- Each phase adds one more stable package of facts.
+- If a previous before-phase condition is stable, and the next phase package is stable, then their conjunction is stable.
+- Therefore stability follows by repeatedly accumulating stable facts.
+
+High-level strategy:
+
+First establish stability of the base facts: the global invariant package and the persistent desired-state assumption.
+
+Then establish stability of each phase package:
+
+- Phase I facts about disabled crash/drop/pod-monkey behavior and scheduled object identity.
+- Phase II facts about the reconcile object, deletion timestamp absence, and pending request/response relation.
+- Phase III facts excluding interfering requests and relating messages from the key to pending requests.
+- Phase IV facts preventing garbage collection from deleting VRS pods.
+- Phase V facts excluding other pending requests that interfere with the VRS reconcile.
+
+Finally combine these stable pieces. Since every component is stable, the full all-phases conjunction is stable. The before-phase conditions are handled similarly by accumulation.
+
+Subgoals:
+
+- Show the base invariant package is stable.
+- Show the persistent desired-state assumption is stable.
+- Show the phase I invariant package is stable.
+- Show the phase II invariant package is stable.
+- Show the phase III invariant package is stable.
+- Show the phase IV invariant package is stable.
+- Show the phase V invariant package is stable.
+- Combine all stable components to prove the all-phases condition stable.
+- For before phase 0, use that the condition is trivial.
+- For before phase 1, combine the base invariant package with the persistent desired-state assumption.
+- For before phase 2, add the stable phase I package.
+- For before phase 3, add the stable phase II package.
+- For before phase 4, add the stable phase III package.
+- For before phase 5, add the stable phase IV package.
+
+Your response for the code below should be structured similarly.
+Code:
+{code_text}
