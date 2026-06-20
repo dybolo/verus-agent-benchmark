@@ -1,5 +1,5 @@
 # sgconfig.yml
 customLanguages:
   verus:
-    libraryPath: /Users/pedro/Projects/tree-sitter-verus/verus.so # TODO dont commit this
+    libraryPath: /opt/tree-sitter-verus/verus.so
     extensions: [rs]
