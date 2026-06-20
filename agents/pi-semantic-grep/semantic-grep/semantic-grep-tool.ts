@@ -15,10 +15,10 @@ import { join } from "path";
 import { Type } from "typebox";
 
 const SemanticGrepParams = Type.Object({
-	index: Type.Optional(Type.Boolean({ description: "Index the repository for semantic search. Scans proof and specification code via ast-grep, generates natural language descriptions via LLM, computes embeddings, and stores them in a local ChromaDB vector database. Must be run at least once before any search queries will return results. Re-run periodically to keep the index up to date with code changes." })),
-	query: Type.Optional(Type.String({ description: "Search natural language query" })),
+	index: Type.Optional(Type.Boolean({ description: "Index the repository for semantic search. Scans proof and specification code via ast-grep, generates natural language descriptions via LLM, computes embeddings, and stores them in a local ChromaDB vector database. Must be run at least once before any proof-plan search queries will return results. Re-run periodically to keep the index up to date with code changes." })),
+	query: Type.Optional(Type.String({ description: "Structured proof plan to search for. After analysing the problem, produce a plan following this template: 'What needs to be shown', 'Assumptions', 'Key ideas', 'High-level strategy', 'Sub-goals'. The tool returns code snippets relevant to this plan." })),
 	numResults: Type.Optional(Type.Number({ description: "Number of results to return (default: 10)" })),
-	type: Type.Optional(Type.Enum(["proofs", "specs"], { description: "Filter results by type: 'proofs' for proof code or 'specs' for specifications (default: all)" })),
+	type: Type.Optional(Type.Enum(["proofs", "specs"], { description: "Filter results by type: 'proofs' for proof code or 'specs' for specifications (default: all). Use to narrow proof plan search to the relevant category." })),
 });
 
 interface SemanticGrepDetails {
@@ -34,12 +34,14 @@ export default function (pi: ExtensionAPI) {
 	pi.registerTool({
 		name: "semantic_grep",
 		label: "Semantic Grep",
-        	description: `Semantic search over Verus proofs and specifications using natural language queries.
-		Supports both indexing (to build a searchable vector database) and semantic search. Use natural
-		language queries to explore and understand proof structures, find similar proof patterns,
-		or locate relevant specifications. Automatically indexes and classifies code (proofs vs specs), generates
-		descriptions, and enables semantic similarity search to discover related proof strategies
-		and specifications across your repository.`,
+        description: `Semantic search over Verus proofs and specifications using structured proof plans as queries.
+		Supports both indexing (to build a searchable vector database) and semantic search.
+		After analysing a verification problem, supply a proof plan following the template:
+		"What needs to be shown", "Assumptions", "Key ideas", "High-level strategy", "Sub-goals".
+		The tool returns code snippets relevant to that plan — proof strategies, specifications,
+		and patterns that match the structure of your proof goal. Automatically indexes and
+		classifies code (proofs vs specs), generates descriptions, and enables semantic similarity
+		search to discover related proof strategies and specifications across your repository.`,
 		parameters: SemanticGrepParams,
 
 		async execute(_toolCallId, params, _signal, _onUpdate, ctx) {

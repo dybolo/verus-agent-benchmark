@@ -3,10 +3,21 @@
 Unified Semantic Grep Tool
 Combines indexing (ast-grep + embeddings) and searching in a single script.
 
+Supplies code snippets relevant to a proof plan.
+
 Usage:
     python semantic_grep_unified.py --index [--repo-path <path>] [--db-path <path>]
-    python semantic_grep_unified.py --search <query> [--type proofs|specs] [--db-path <path>] [--num-results 10]
+    python semantic_grep_unified.py --search <proof-plan> [--type proofs|specs] [--db-path <path>] [--num-results 10]
     python semantic_grep_unified.py --search [--type proofs|specs] [--db-path <path>]
+
+The --search argument accepts a proof plan as input — a structured analysis of the
+verification goal. The tool then returns code snippets relevant to that plan.
+The proof plan should follow this template:
+  - What needs to be shown
+  - Assumptions
+  - Key ideas
+  - High-level strategy
+  - Sub-goals
 """
 
 import os
@@ -147,6 +158,9 @@ class DescriptionGenerator:
     def __init__(self, skip: bool = False):
         self.skip = skip
         self.api_key = os.getenv("OPENROUTER_API_KEY")
+        prompts_dir = Path(__file__).parent / "prompts"
+        self.spec_prompt_template = (prompts_dir / "spec-prompt.txt").read_text()
+        self.proof_prompt_template = (prompts_dir / "proof-prompt.txt").read_text()
 
     async def generate_description(self, code_text: str, kind: str, session: aiohttp.ClientSession) -> str:
         """Generate description for a code chunk."""
@@ -161,25 +175,18 @@ class DescriptionGenerator:
             "Content-Type": "application/json",
         }
 
-        spec_prompt = f"""Analyze this code and provide a concise natural language description of what it does.
-Be specific about the intent and logic. Keep it to 2-3 sentences.
-IMPORTANT: Output ONLY plain text. Do not use any markdown formatting, headings, bold text, or bullet points.
-Code:
-{code_text}
-"""
-        proof_prompt = f"""Analyze this code and provide a concise natural language proof plan that explains how the proof was done.
-Be specific about the intent and logic. Keep it as short as you can.
-IMPORTANT: Output ONLY plain text. Do not use any markdown formatting, headings, bold text, or bullet points.
-Code:
-{code_text}
-"""
+        prompt = (
+            self.proof_prompt_template.format(code_text=code_text)
+            if kind == "proof"
+            else self.spec_prompt_template.format(code_text=code_text)
+        )
 
         payload = {
             "model": "openai/gpt-5.4-nano",
             "messages": [
                 {
                     "role": "user",
-                    "content": proof_prompt if kind == "proof" else spec_prompt
+                    "content": prompt,
                 }
             ],
         }
@@ -383,7 +390,7 @@ class SemanticGrep:
             if not chunks:
                 log("Warning: No chunks extracted")
                 return
-            
+
             # Step 2: Process chunks first to classify them by kind (spec vs proof)
             processed_chunks = self._process_chunks(chunks)
 
@@ -398,9 +405,9 @@ class SemanticGrep:
                 for chunk in processed_chunks:
                     chunk["description"] = "[Skipped]"
 
-            # Update content field to embed (description + code)
+            # Update content field to embed (previously was description + code, now just description)
             for chunk in processed_chunks:
-                chunk["content"] = chunk["description"] + "\n" + chunk["code"]
+                chunk["content"] = chunk["description"]
 
             # Save processed chunks
             with open(self.config.processed_chunks_file, "w") as f:
@@ -562,7 +569,7 @@ class SemanticGrep:
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Unified Semantic Grep: Index code and search with natural language",
+        description="Unified Semantic Grep: Index proof/spec code and search with proof plans. The agent supplies a structured proof plan, the tool returns relevant code snippets.",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
@@ -572,23 +579,23 @@ Examples:
   # Index specific repository
   python semantic_grep_unified.py --index --repo-path /path/to/repo
 
-  # Search (outputs JSON by default)
-  python semantic_grep_unified.py --search "proof of memory safety"
+  # Search with a proof plan (outputs JSON by default)
+  python semantic_grep_unified.py --search "What needs to be shown: Liveness assumptions are stable. Assumptions: Base invariant is stable..."
 
   # Search with formatted text output
-  python semantic_grep_unified.py --search "memory safety" --text
+  python semantic_grep_unified.py --search "What needs to be shown: ..." --text
 
   # Search for only proofs
-  python semantic_grep_unified.py --search "proof of memory safety" --type proofs
+  python semantic_grep_unified.py --search "What needs to be shown: ..." --type proofs
 
   # Search for only specs
-  python semantic_grep_unified.py --search "invariant" --type specs
+  python semantic_grep_unified.py --search "Assumptions: ..." --type specs
         """
     )
 
     parser.add_argument("--index", action="store_true", help="Index a repository")
-    parser.add_argument("--search", metavar="QUERY",
-                        help="Search for a query")
+    parser.add_argument("--search", metavar="PROOF_PLAN",
+                        help="Search for code relevant to a proof plan. The input should be a structured analysis of the verification goal, following the template: what needs to be shown, assumptions, key ideas, high-level strategy, sub-goals.")
     parser.add_argument("--repo-path", default=".", help="Path to repository (default: current directory)")
     parser.add_argument("--db-path", help="Path to ChromaDB database (default: <repo-path>/.semantic_grep_db)")
     parser.add_argument("--patterns", help="Path to ast-grep patterns file (auto-detected if not provided)")
