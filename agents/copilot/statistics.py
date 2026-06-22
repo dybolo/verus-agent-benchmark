@@ -1,10 +1,9 @@
-#!/usr/bin/env python3
-
 import glob
 import json
 import os
-import sys
 from datetime import datetime
+
+from stats_protocol import Stats
 
 MODEL_PRICING = {
     "gpt-4.1":              {"input": 2.00, "cachedInput": 0.50,  "output": 8.00},
@@ -37,18 +36,12 @@ def parse_timestamp(ts_str):
     return datetime.fromisoformat(ts_str.replace("Z", "+00:00"))
 
 
-def main():
-    if len(sys.argv) < 2:
-        print("usage: statistics.py <session-dir>", file=sys.stderr)
-        sys.exit(1)
-
-    session_dir = sys.argv[1]
+def compute_statistics(session_dir: str) -> Stats:
     if os.path.isdir(session_dir):
         pattern = os.path.join(session_dir, "session-state", "*", "*.jsonl")
         jsonl_files = sorted(glob.glob(pattern))
         if not jsonl_files:
-            print(f"no .jsonl files found in {session_dir}", file=sys.stderr)
-            sys.exit(1)
+            raise FileNotFoundError(f"no .jsonl files found in {session_dir}")
         path = jsonl_files[0]
     else:
         path = session_dir
@@ -83,12 +76,12 @@ def main():
                 turn_count += 1
 
     if shutdown is None:
-        print("no session.shutdown event found in session: could not retrieve copilot session stats", file=sys.stderr)
-        sys.exit(1)
+        raise RuntimeError("no session.shutdown event found in session: could not retrieve copilot session stats")
 
     data = shutdown["data"]
     model_metrics = data.get("modelMetrics", {})
 
+    # Detailed token and cost breakdown (available for inspection)
     input_tokens = 0
     output_tokens = 0
     cache_read_tokens = 0
@@ -122,26 +115,12 @@ def main():
     if total_duration_ms == 0 and first_ts and last_ts:
         total_duration_ms = (last_ts - first_ts).total_seconds() * 1000
 
-    result = {
-        "input_tokens": input_tokens,
-        "output_tokens": output_tokens,
-        "cache_read_tokens": cache_read_tokens,
-        "cache_write_tokens": cache_write_tokens,
-        "reasoning_tokens": reasoning_tokens,
-        "total_tokens": input_tokens + output_tokens + cache_read_tokens + cache_write_tokens,
-        "total_requests": total_requests,
-        "cost_input": round(cost_input, 8),
-        "cost_output": round(cost_output, 8),
-        "cost_cache_read": round(cost_cache_read, 8),
-        "cost_cache_write": round(cost_cache_write, 8),
-        "total_cost": round(cost_input + cost_output + cost_cache_read + cost_cache_write, 8),
-        "total_turns": turn_count,
-        "total_tool_calls": tool_call_count,
-        "duration_seconds": total_duration_ms / 1000,
-    }
+    # total_tokens = input_tokens + output_tokens + cache_read_tokens + cache_write_tokens
+    # total_cost = cost_input + cost_output + cost_cache_read + cost_cache_write
 
-    print(json.dumps(result, indent=2))
-
-
-if __name__ == "__main__":
-    main()
+    return Stats(
+        total_costs=round(cost_input + cost_output + cost_cache_read + cost_cache_write, 8),
+        total_turns=turn_count,
+        total_tool_calls=tool_call_count,
+        duration_seconds=total_duration_ms / 1000,
+    )
