@@ -8,6 +8,7 @@ class Stats:
     total_turns: int = 0
     total_tool_calls: int = 0
     duration_seconds: float = 0.0
+    session_file: str = ""
 
 
 @runtime_checkable

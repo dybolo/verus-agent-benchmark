@@ -83,4 +83,5 @@ def compute_statistics(session_dir: str) -> Stats:
         total_turns=assistant_msg_count,
         total_tool_calls=tool_call_count,
         duration_seconds=duration_seconds,
+        session_file=path,
     )

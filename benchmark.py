@@ -147,7 +147,7 @@ def compute_session_statistics(agent_name, session_path) -> dict:
         return {}
 
 
-def extract_solution_file(staging_dir, solution_filename, agent_name, timestamp) -> bool:
+def extract_solution_file(staging_dir, solution_filename, agent_name, timestamp) -> dict:
     """Extract the solution file from the staging directory to the permanent solutions folder."""
     expected_solution_path = os.path.join(staging_dir, solution_filename)
     if os.path.exists(expected_solution_path):
@@ -156,10 +156,10 @@ def extract_solution_file(staging_dir, solution_filename, agent_name, timestamp)
         final_solution_path = os.path.join(final_solution_dir, solution_filename)
         shutil.copy2(expected_solution_path, final_solution_path)
         safe_print(f"✓ Solution extracted to {final_solution_path}")
-        return True
+        return {"solution_file": final_solution_path}
     else:
         safe_print(f"✗ Agent did not produce the expected file: {solution_filename}")
-        return False
+        return {"solution_file": None}
 
 
 def run_single_job(agent_name, agent_tag, agent_dir, entrypoint, task, timestamp, prompt_template, staging_base) -> dict:
@@ -168,7 +168,6 @@ def run_single_job(agent_name, agent_tag, agent_dir, entrypoint, task, timestamp
     solution_filename = f"{task_base}_verified.rs"
 
     task_stats = {
-        "solution_generated": False,
         "verus_passed": False,
         "cheat_checker_passed": False,
         "timed_out": False
@@ -240,7 +239,8 @@ def run_single_job(agent_name, agent_tag, agent_dir, entrypoint, task, timestamp
             safe_print(f"✗ Agent {agent_name} failed on task {task}: {e}")
 
         extracted = extract_solution_file(staging_dir, solution_filename, agent_name, timestamp)
-        if extracted:
+        task_stats.update(extracted)
+        if extracted["solution_file"]:
             verification_status = verify_solution(staging_dir, task, solution_filename, original_task_path, staged_task_path)
             task_stats.update(verification_status)
 
