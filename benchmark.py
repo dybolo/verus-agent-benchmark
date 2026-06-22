@@ -2,6 +2,7 @@
 
 import argparse
 import dataclasses
+import fnmatch
 import importlib.util
 import os
 import subprocess
@@ -254,7 +255,7 @@ def run_single_job(agent_name, agent_tag, agent_dir, entrypoint, task, timestamp
     return {task: task_stats}
 
 
-def run_tasks(max_workers):
+def run_tasks(max_workers, agent_filter=None, model_filter=None):
     """Main benchmark orchestration."""
     # Build the base docker image once
     build_base_image()
@@ -273,10 +274,14 @@ def run_tasks(max_workers):
                 continue
             if not os.path.exists(os.path.join(agent_path, "Dockerfile")):
                 continue
+            if agent_filter and not fnmatch.fnmatch(agent_dir, agent_filter):
+                continue
             build_agent_image(agent_dir, agent_path)
             for model_file in sorted(glob.glob(os.path.join(agent_path, "*.model"))):
                 model_name = os.path.basename(model_file)
                 name_no_ext = os.path.splitext(model_name)[0]
+                if model_filter and not fnmatch.fnmatch(name_no_ext, model_filter):
+                    continue
                 agents.append({
                     "name": f"{agent_dir}/{name_no_ext}",
                     "tag": agent_dir,
@@ -353,8 +358,12 @@ def main():
     parser = argparse.ArgumentParser(description="Run benchmarks")
     parser.add_argument("--parallel", "-j", type=int, default=os.cpu_count() or 4,
                         help="Max parallel tasks (default: CPU count)")
+    parser.add_argument("--agent", "-a",
+                        help="Glob filter for agent directory name (e.g. 'opencode', 'open*')")
+    parser.add_argument("--model", "-m",
+                        help="Glob filter for model name (e.g. 'gpt-5.4', '*gpt*')")
     args = parser.parse_args()
-    run_tasks(max_workers=args.parallel)
+    run_tasks(max_workers=args.parallel, agent_filter=args.agent, model_filter=args.model)
 
 
 if __name__ == "__main__":
