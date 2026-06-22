@@ -156,7 +156,7 @@ def extract_solution_file(staging_dir, solution_filename, agent_name, timestamp)
         final_solution_path = os.path.join(final_solution_dir, solution_filename)
         shutil.copy2(expected_solution_path, final_solution_path)
         safe_print(f"✓ Solution extracted to {final_solution_path}")
-        return {"solution_file": final_solution_path}
+        return {"solution_file": os.path.relpath(final_solution_path)}
     else:
         safe_print(f"✗ Agent did not produce the expected file: {solution_filename}")
         return {"solution_file": None}
