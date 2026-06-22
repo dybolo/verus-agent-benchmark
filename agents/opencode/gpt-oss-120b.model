@@ -1,0 +1,8 @@
+#!/bin/bash
+set -e
+
+export XDG_DATA_HOME=$SESSION
+
+opencode run --dangerously-skip-permissions --format json \
+    -m openrouter/openai/gpt-oss-120b:free --variant xhigh "$TASK_PROMPT" \
+    > "$SESSION/session.jsonl"
