@@ -123,5 +123,5 @@ def compute_statistics(session_dir: str) -> Stats:
         total_turns=turn_count,
         total_tool_calls=tool_call_count,
         duration_seconds=total_duration_ms / 1000,
-        session_file=path,
+        session_file=os.path.relpath(path),
     )
