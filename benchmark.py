@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 
 import argparse
+import dataclasses
+import importlib.util
 import os
 import subprocess
 import sys
@@ -12,6 +14,8 @@ import uuid
 import threading
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
+
+from stats_protocol import StatsFn
 
 def build_base_image():
     """Build the base Docker image with all shared dependencies."""
@@ -115,34 +119,34 @@ def verify_solution(staging_dir, task, solution_filename, original_task_path, st
 
 
 def compute_session_statistics(agent_name, session_path) -> dict:
-    """Run the agent's statistics.py on a session file and return the parsed stats."""
+    """Import the agent's statistics module and call compute_statistics directly."""
     agent_dir = agent_name.split("/")[0]
     stats_script = os.path.join("agents", agent_dir, "statistics.py")
     if not os.path.exists(stats_script):
         safe_print(f"  (no statistics.py found for agent '{agent_dir}')")
         return {}
 
-    result = subprocess.run(
-        [sys.executable, stats_script, session_path],
-        capture_output=True, text=True
-    )
-
-    if result.returncode != 0:
-        safe_print(f"⚠ statistics.py exited with code {result.returncode}")
-        if result.stderr:
-            safe_print(f"   stderr: {result.stderr.strip()}")
+    spec = importlib.util.spec_from_file_location(f"agents_{agent_dir}_statistics", stats_script)
+    if spec is None:
+        safe_print(f"  (could not load statistics.py for agent '{agent_dir}')")
         return {}
 
+    mod = importlib.util.module_from_spec(spec)
     try:
-        stats = json.loads(result.stdout)
+        spec.loader.exec_module(mod)
+        fn = mod.compute_statistics
+        if not isinstance(fn, StatsFn):
+            safe_print(f"⚠ Agent '{agent_dir}' does not conform to the StatsFn protocol")
+            return {}
+        stats = fn(session_path)
         safe_print("✓ Session statistics recorded")
-        return stats
-    except json.JSONDecodeError:
-        safe_print("⚠ Could not parse statistics output")
+        return dataclasses.asdict(stats)
+    except Exception as e:
+        safe_print(f"⚠ Could not compute statistics: {e}")
         return {}
 
 
-def extract_solution_file(staging_dir, solution_filename, agent_name, timestamp) -> dict:
+def extract_solution_file(staging_dir, solution_filename, agent_name, timestamp) -> bool:
     """Extract the solution file from the staging directory to the permanent solutions folder."""
     expected_solution_path = os.path.join(staging_dir, solution_filename)
     if os.path.exists(expected_solution_path):
@@ -151,10 +155,10 @@ def extract_solution_file(staging_dir, solution_filename, agent_name, timestamp)
         final_solution_path = os.path.join(final_solution_dir, solution_filename)
         shutil.copy2(expected_solution_path, final_solution_path)
         safe_print(f"✓ Solution extracted to {final_solution_path}")
-        return {"solution_generated": True}
+        return True
     else:
         safe_print(f"✗ Agent did not produce the expected file: {solution_filename}")
-        return {"solution_generated": False}
+        return False
 
 
 def run_single_job(agent_name, agent_tag, agent_dir, entrypoint, task, timestamp, prompt_template, staging_base) -> dict:
@@ -235,9 +239,7 @@ def run_single_job(agent_name, agent_tag, agent_dir, entrypoint, task, timestamp
             safe_print(f"✗ Agent {agent_name} failed on task {task}: {e}")
 
         extracted = extract_solution_file(staging_dir, solution_filename, agent_name, timestamp)
-        task_stats.update(extracted)
-
-        if extracted["solution_generated"]:
+        if extracted:
             verification_status = verify_solution(staging_dir, task, solution_filename, original_task_path, staged_task_path)
             task_stats.update(verification_status)
 
