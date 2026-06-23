@@ -2,7 +2,7 @@
 
 ## Requirements
 
-- python 3.14
+- python
 - docker
 
 ## Adding Agents
@@ -10,7 +10,7 @@
 - Add a new agent by creating a directory under `agents/<agent_name>/` with:
   - `Dockerfile` — defines the agent's environment (dependencies, tooling). No `CMD` needed — the entrypoint is provided at runtime.
   - `<model_name>.model` — an executable entrypoint script named after the model (e.g. `gpt-5.4-nano.model`). It receives a prompt for the task in the `TASK_PROMPT` environment variable and the directory to save session logs to in the `SESSION` environment variable.
-  - `statistics.py` — placed at `agents/<agent_name>/statistics.py` to parse that agent's session format. It receives a session directory path and returns a JSON dict with token usage, cost, turns, tool calls, duration, etc.
+  - `statistics.py` — placed at `agents/<agent_name>/statistics.py` to parse that agent's session logs. It must expose a function `compute_statistics(session_dir: str) -> Stats` conforming to the `StatsFn` protocol (defined in `stats_protocol.py`).
 - To test the same agent with a different model, just add another `.model` file (no new Dockerfile needed).
 - Keep any provider/model logic inside the entrypoint script (e.g. `pi --model openrouter/gpt-5.4-nano:xhigh ...`).
 
@@ -22,6 +22,8 @@ Each agent has a single `Dockerfile` shared by all its entrypoints. When the ben
 
 - Run the benchmark with `python3 benchmark.py`.
 - Use the `-j` flag to set the number of parallel workers (defaults to the number of CPU cores).
+- Use `-a <pattern>` or `--agent <pattern>` to filter agents by glob pattern (e.g. `opencode`, `open*`).
+- Use `-m <pattern>` or `--model <pattern>` to filter models by glob pattern (e.g. `gpt-5.4`, `*gpt*`).
 
 ## Important
 
