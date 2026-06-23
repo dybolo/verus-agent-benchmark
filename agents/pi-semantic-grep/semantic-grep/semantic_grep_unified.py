@@ -46,7 +46,9 @@ class SemanticGrepConfig:
 
     def __init__(self, repo_path: str = ".", db_path: Optional[str] = None,
                  patterns_file: Optional[str] = None, skip_descriptions: bool = False,
-                 tree_sitter_verus_path: Optional[str] = None):
+                 tree_sitter_verus_path: Optional[str] = None,
+                 embedding_model: str = "openai/text-embedding-3-small",
+                 generation_model: str = "openai/gpt-5.4-nano"):
         self.repo_path = Path(repo_path).resolve()
         self.db_path = Path(db_path) if db_path else self.repo_path / ".semantic_grep_db"
         self.patterns_file = patterns_file or self._find_patterns_file()
@@ -57,8 +59,9 @@ class SemanticGrepConfig:
         self.processed_chunks_file = self.repo_path / "ast-grep_chunks_processed.json"
         self.collection_name = "code_chunks"
 
-        # Embedding settings
-        self.embedding_model = "openai/text-embedding-3-small"
+        # Embedding and generation settings
+        self.embedding_model = embedding_model
+        self.generation_model = generation_model
 
     def _find_patterns_file(self) -> str:
         """Look for patterns file in common locations."""
@@ -155,8 +158,9 @@ class AstGrepChunker:
 class DescriptionGenerator:
     """Generates natural language descriptions for code chunks using LLM."""
 
-    def __init__(self, skip: bool = False):
+    def __init__(self, model: str, skip: bool = False):
         self.skip = skip
+        self.model = model
         self.api_key = os.getenv("OPENROUTER_API_KEY")
         prompts_dir = Path(__file__).parent / "prompts"
         self.spec_prompt_template = (prompts_dir / "spec-prompt.txt").read_text()
@@ -182,7 +186,7 @@ class DescriptionGenerator:
         )
 
         payload = {
-            "model": "openai/gpt-5.4-nano",
+            "model": self.model,
             "messages": [
                 {
                     "role": "user",
@@ -370,7 +374,7 @@ class SemanticGrep:
     def __init__(self, config: SemanticGrepConfig):
         self.config = config
         self.chunker = AstGrepChunker(config)
-        self.description_gen = DescriptionGenerator(skip=config.skip_descriptions)
+        self.description_gen = DescriptionGenerator(skip=config.skip_descriptions, model=config.generation_model)
         self.embedding_gen = EmbeddingGenerator(config.embedding_model)
         self.db_manager = ChromaDBManager(config.db_path, config.collection_name)
 
@@ -606,6 +610,10 @@ Examples:
                         help="Path to the Verus tree-sitter shared library (.so / .dylib)")
     parser.add_argument("--skip-descriptions", action="store_true",
                         help="Skip LLM description generation (faster indexing)")
+    parser.add_argument("--embedding-model", default="openai/text-embedding-3-small",
+                        help="Embedding model to use (default: openai/text-embedding-3-small)")
+    parser.add_argument("--generation-model", default="openai/gpt-5.4-nano",
+                        help="Generation model to use (default: openai/gpt-5.4-nano)")
     parser.add_argument("--text", action="store_true",
                         help="Output search results as formatted text instead of JSON")
 
@@ -623,6 +631,8 @@ Examples:
             patterns_file=args.patterns,
             skip_descriptions=args.skip_descriptions,
             tree_sitter_verus_path=args.tree_sitter_verus_path,
+            embedding_model=args.embedding_model,
+            generation_model=args.generation_model,
         )
 
         # Create semantic grep instance
