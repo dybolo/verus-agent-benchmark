@@ -113,8 +113,6 @@ class AstGrepChunker:
     def run(self) -> List[Dict]:
         """Run ast-grep via Python API to extract code chunks."""
 
-        log("\n[1/4] Running ast-grep scan (Python API)...")
-
         rules = self._load_rules()
         repo = self.config.repo_path
 
@@ -197,9 +195,10 @@ class DescriptionGenerator:
 
         try:
             async with session.post("https://openrouter.ai/api/v1/chat/completions",
-                                    headers=headers, json=payload, timeout=30) as response:
+                                    headers=headers, json=payload, timeout=120) as response:
                 if response.status != 200:
                     return "[Error generating description]"
+
                 data = await response.json()
                 content = data["choices"][0]["message"]["content"].strip()
 
@@ -212,7 +211,7 @@ class DescriptionGenerator:
 
                 return content.strip()
         except Exception as e:
-            console.print(f"    [yellow]Warning: Failed to generate description: {e}[/yellow]")
+            log(f"Warning: Failed to generate description: {repr(e)}")
             return "[Error generating description]"
 
     async def generate_batch(self, chunks: List[Dict], max_concurrent: int = 5) -> List[str]:
@@ -220,10 +219,8 @@ class DescriptionGenerator:
         if self.skip:
             return ["[Skipped]"] * len(chunks)
 
-        descriptions = [None] * len(chunks)
+        descriptions = [""] * len(chunks)
         semaphore = asyncio.Semaphore(max_concurrent)
-
-        log("Generating descriptions...")
 
         async def bounded_request(index: int, code_text: str, kind: str, session: aiohttp.ClientSession):
                async with semaphore:
@@ -301,8 +298,8 @@ class ChromaDBManager:
         if recreate:
             try:
                 self.client.delete_collection(self.collection_name)
-            except:
-                pass
+            except Exception as e:
+                log(f"Note: Could not delete existing collection: {e}")
 
         self.collection = self.client.get_or_create_collection(
             name=self.collection_name,
@@ -311,7 +308,7 @@ class ChromaDBManager:
 
     def store_chunks(self, processed_chunks: List[Dict], embeddings: List):
         """Store chunks with embeddings in ChromaDB."""
-        log("\n[4/4] Storing vectors in ChromaDB...")
+        log("\nStoring vectors in ChromaDB...")
 
         documents = [chunk["content"] for chunk in processed_chunks]
         ids = [chunk["id"] for chunk in processed_chunks]
@@ -340,7 +337,7 @@ class ChromaDBManager:
 
         log(f"✓ Stored {len(processed_chunks)} chunks in ChromaDB")
 
-    def search(self, query: str, embedder: Any, num_results: int = 3, filter_type: Optional[str] = None) -> Dict:
+    def search(self, query: str, embedder: EmbeddingGenerator, num_results: int = 3, filter_type: Optional[str] = None) -> Dict:
         """Search the ChromaDB collection.
 
         Args:
@@ -390,17 +387,19 @@ class SemanticGrep:
             self.config.validate()
 
             # Step 1: Extract chunks using ast-grep
+            log("\n[1/4] Running ast-grep scan...")
             chunks = self.chunker.run()
             if not chunks:
                 log("Warning: No chunks extracted")
                 return
 
             # Step 2: Process chunks first to classify them by kind (spec vs proof)
+            log("\n[2/4] Processing chunks...")
             processed_chunks = self._process_chunks(chunks)
 
             # Step 3: Generate descriptions based on chunk kind
+            log("\n[3/4] Generating natural language descriptions...")
             if not self.config.skip_descriptions and self.description_gen.api_key:
-                log("\nGenerating natural language descriptions...")
                 descriptions = asyncio.run(self.description_gen.generate_batch(processed_chunks))
                 # Fill in the descriptions in processed chunks
                 for i, desc in enumerate(descriptions):
@@ -418,6 +417,7 @@ class SemanticGrep:
                 json.dump(processed_chunks, f, indent=2)
 
             # Step 4: Generate embeddings
+            log("\n[4/4] Generating embeddings...")
             documents = [chunk["content"] for chunk in processed_chunks]
             embeddings = self.embedding_gen.encode(documents)
 
@@ -547,7 +547,7 @@ class SemanticGrep:
         distances = results.get('distances', [[0] * len(docs)])[0]
 
         result_list = []
-        for i, (doc_id, metadata, distance) in enumerate(zip(ids, metadatas, distances)):
+        for _, (doc_id, metadata, distance) in enumerate(zip(ids, metadatas, distances)):
             similarity = 1 - (distance / 2)  # Convert distance to similarity
 
             result_list.append({
