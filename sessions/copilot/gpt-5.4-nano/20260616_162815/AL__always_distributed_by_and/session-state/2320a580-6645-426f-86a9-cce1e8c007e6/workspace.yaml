@@ -1,8 +1,0 @@
-id: 2320a580-6645-426f-86a9-cce1e8c007e6
-cwd: /workspace
-client_name: github/cli
-name: The file /workspace/task_env/AL__always_distributed_by_and.rs cannot be verified by Verus, a verification tool for Rust programs, yet. Please add proof annotations to /workspace/task_env/AL__always_distributed_by_and.rs so that it can be successfully verified by Verus, and write the resulting code with proof into a new file with the name /workspace/task_env/AL__always_distributed_by_and_verified.rs. The /workspace/vstd folder is a copy of Verus' vstd definitions and helper lemmas; please feel fr...
-user_named: false
-summary_count: 0
-created_at: 2026-06-16T15:36:30.694Z
-updated_at: 2026-06-16T15:36:31.101Z
