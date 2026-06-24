@@ -1,8 +1,0 @@
-id: e623b9fa-9480-43b6-8b9d-72c539b76300
-cwd: /workspace
-client_name: github/cli
-name: The file /workspace/task_env/AC__vreplicaset_controller__proof__helper_invariants__proof__lemma_always_each_vrs_in_reconcile_implies_filtered_pods_owned_by_vrs.rs cannot be verified by Verus, a verification tool for Rust programs, yet. Please add proof annotations to /workspace/task_env/AC__vreplicaset_controller__proof__helper_invariants__proof__lemma_always_each_vrs_in_reconcile_implies_filtered_pods_owned_by_vrs.rs so that it can be successfully verified by Verus, and write the resulting code...
-user_named: false
-summary_count: 0
-created_at: 2026-06-16T17:33:12.026Z
-updated_at: 2026-06-16T17:33:12.774Z

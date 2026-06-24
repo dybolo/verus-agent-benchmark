@@ -1,8 +1,0 @@
-id: 4b65a8ae-1150-4fc2-9f3c-e39e3f20d580
-cwd: /workspace
-client_name: github/cli
-name: The file /workspace/task_env/AC__vreplicaset_controller__proof__helper_invariants__proof__lemma_always_there_is_no_request_msg_to_external_from_controller.rs cannot be verified by Verus, a verification tool for Rust programs, yet. Please add proof annotations to /workspace/task_env/AC__vreplicaset_controller__proof__helper_invariants__proof__lemma_always_there_is_no_request_msg_to_external_from_controller.rs so that it can be successfully verified by Verus, and write the resulting code with proo...
-user_named: false
-summary_count: 0
-created_at: 2026-06-18T17:18:35.687Z
-updated_at: 2026-06-18T17:18:36.045Z

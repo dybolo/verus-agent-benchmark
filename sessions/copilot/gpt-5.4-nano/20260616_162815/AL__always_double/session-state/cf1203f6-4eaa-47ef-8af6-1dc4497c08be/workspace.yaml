@@ -1,8 +1,0 @@
-id: cf1203f6-4eaa-47ef-8af6-1dc4497c08be
-cwd: /workspace
-client_name: github/cli
-name: The file /workspace/task_env/AL__always_double.rs cannot be verified by Verus, a verification tool for Rust programs, yet. Please add proof annotations to /workspace/task_env/AL__always_double.rs so that it can be successfully verified by Verus, and write the resulting code with proof into a new file with the name /workspace/task_env/AL__always_double_verified.rs. The /workspace/vstd folder is a copy of Verus' vstd definitions and helper lemmas; please feel free to check it when needed. You shou...
-user_named: false
-summary_count: 0
-created_at: 2026-06-16T15:37:19.140Z
-updated_at: 2026-06-16T15:37:20.598Z
