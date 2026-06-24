@@ -52,6 +52,10 @@ pub open spec fn always<T>(temp_pred: TempPred<T>) -> TempPred<T> {
     TempPred::new(|ex: Execution<T>| forall |i: nat| #[trigger] temp_pred.satisfied_by(ex.suffix(i)))
 }
 
+pub open spec fn tla_forall<T, A>(a_to_temp_pred: spec_fn(A) -> TempPred<T>) -> TempPred<T> {
+    TempPred::new(|ex: Execution<T>| forall |a: A| #[trigger] a_to_temp_pred(a).satisfied_by(ex))
+}
+
 pub open spec fn valid<T>(temp_pred: TempPred<T>) -> bool {
     forall |ex: Execution<T>| temp_pred.satisfied_by(ex)
 }
@@ -59,9 +63,17 @@ pub open spec fn valid<T>(temp_pred: TempPred<T>) -> bool {
 
 // File: rules.rs
 	#[verifier::external_body]
-pub proof fn execution_equality<T>(ex1: Execution<T>, ex2: Execution<T>)
-    requires forall |i: nat| #[trigger] (ex1.nat_to_state)(i) == (ex2.nat_to_state)(i),
-    ensures ex1 == ex2,
+proof fn always_unfold<T>(ex: Execution<T>, p: TempPred<T>)
+    requires always(p).satisfied_by(ex),
+    ensures forall |i: nat| p.satisfied_by(#[trigger] ex.suffix(i)),
+	{
+		unimplemented!()
+	}
+
+	#[verifier::external_body]
+proof fn tla_forall_unfold<T, A>(ex: Execution<T>, a_to_p: spec_fn(A) -> TempPred<T>)
+    requires tla_forall(a_to_p).satisfied_by(ex),
+    ensures forall |a| #[trigger] a_to_p(a).satisfied_by(ex),
 	{
 		unimplemented!()
 	}
@@ -76,22 +88,9 @@ pub proof fn temp_pred_equality<T>(p: TempPred<T>, q: TempPred<T>)
 		unimplemented!()
 	}
 
-proof fn always_double_equality<T>(p: TempPred<T>)
-    ensures always(always(p)) == always(p),
+pub proof fn tla_forall_always_equality<T, A>(a_to_p: spec_fn(A) -> TempPred<T>)
+    ensures tla_forall(|a: A| always(a_to_p(a))) == always(tla_forall(a_to_p)),
 {
-    assert forall |ex| #[trigger] always(p).satisfied_by(ex) implies always(always(p)).satisfied_by(ex) by {
-        assert forall |i| #[trigger] always(p).satisfied_by(ex.suffix(i)) by {
-            assert forall |j| #[trigger] p.satisfied_by(ex.suffix(i).suffix(j)) by {
-                execution_equality(ex.suffix(i).suffix(j), ex.suffix(i + j));
-                assert(p.satisfied_by(ex.suffix(i + j)));
-            }
-        }
-    }
-    assert forall |ex| #[trigger] always(always(p)).satisfied_by(ex) implies always(p).satisfied_by(ex) by {
-        execution_equality(ex.suffix(0), ex);
-        assert(always(p).satisfied_by(ex.suffix(0)));
-    }
-    temp_pred_equality::<T>(always(always(p)), always(p));
 }
 
 
