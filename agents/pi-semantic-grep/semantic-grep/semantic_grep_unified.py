@@ -310,7 +310,7 @@ class ChromaDBManager:
         """Store chunks with embeddings in ChromaDB."""
         log("\nStoring vectors in ChromaDB...")
 
-        documents = [chunk["content"] for chunk in processed_chunks]
+        documents = [chunk["description"] for chunk in processed_chunks]
         ids = [chunk["id"] for chunk in processed_chunks]
 
         metadatas = [
@@ -408,17 +408,13 @@ class SemanticGrep:
                 for chunk in processed_chunks:
                     chunk["description"] = "[Skipped]"
 
-            # Update content field to embed (previously was description + code, now just description)
-            for chunk in processed_chunks:
-                chunk["content"] = chunk["description"]
-
             # Save processed chunks
             with open(self.config.processed_chunks_file, "w") as f:
                 json.dump(processed_chunks, f, indent=2)
 
             # Step 4: Generate embeddings
             log("\n[4/4] Generating embeddings...")
-            documents = [chunk["content"] for chunk in processed_chunks]
+            documents = [chunk["description"] for chunk in processed_chunks]
             embeddings = self.embedding_gen.encode(documents)
 
             # Step 5: Store in ChromaDB
@@ -447,7 +443,6 @@ class SemanticGrep:
 
             processed.append({
                 "id": f"chunk_{i}",
-                "content": code_text,  # Will be combined with description later
                 "code": code_text,
                 "description": "",  # Placeholder, will be filled by generate_batch or set to "[Skipped]"
                 # preserve ast-grep rule id and add a simple classification
