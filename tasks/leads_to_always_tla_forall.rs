@@ -1,4 +1,5 @@
 use vstd::prelude::*;
+use vstd::map_lib::*;
 
 fn main() {}
 
@@ -41,6 +42,10 @@ impl<T> TempPred<T> {
         TempPred::new(|ex: Execution<T>| self.satisfied_by(ex) ==> other.satisfied_by(ex))
     }
 
+    pub open spec fn leads_to(self, other: Self) -> Self {
+        always(self.implies(eventually(other)))
+    }
+
     pub open spec fn entails(self, other: Self) -> bool {
         valid(self.implies(other))
     }
@@ -50,6 +55,10 @@ impl<T> TempPred<T> {
 
 pub open spec fn always<T>(temp_pred: TempPred<T>) -> TempPred<T> {
     TempPred::new(|ex: Execution<T>| forall |i: nat| #[trigger] temp_pred.satisfied_by(ex.suffix(i)))
+}
+
+pub open spec fn eventually<T>(temp_pred: TempPred<T>) -> TempPred<T> {
+    TempPred::new(|ex: Execution<T>| exists |i: nat| #[trigger] temp_pred.satisfied_by(ex.suffix(i)))
 }
 
 pub open spec fn tla_forall<T, A>(a_to_temp_pred: spec_fn(A) -> TempPred<T>) -> TempPred<T> {
@@ -73,30 +82,44 @@ proof fn implies_apply<T>(ex: Execution<T>, p: TempPred<T>, q: TempPred<T>)
 	}
 
 	#[verifier::external_body]
-proof fn tla_forall_always_implies_equality2<T, A>(p: TempPred<T>, a_to_q: spec_fn(A) -> TempPred<T>)
-    ensures tla_forall(|a: A| always(p.implies(a_to_q(a)))) == always(p.implies(tla_forall(a_to_q))),
+proof fn always_propagate_forwards<T>(ex: Execution<T>, p: TempPred<T>, i: nat)
+    requires always(p).satisfied_by(ex),
+    ensures always(p).satisfied_by(ex.suffix(i)),
 	{
 		unimplemented!()
 	}
 
 	#[verifier::external_body]
-pub proof fn spec_entails_tla_forall<T, A>(spec: TempPred<T>, a_to_p: spec_fn(A) -> TempPred<T>)
-    requires forall |a: A| spec.entails(#[trigger] a_to_p(a)),
-    ensures spec.entails(tla_forall(a_to_p)),
+proof fn eventually_proved_by_witness<T>(ex: Execution<T>, p: TempPred<T>, witness_idx: nat)
+    requires p.satisfied_by(ex.suffix(witness_idx)),
+    ensures eventually(p).satisfied_by(ex)
 	{
 		unimplemented!()
 	}
 
-pub proof fn always_implies_forall_intro<T, A>(spec: TempPred<T>, p: TempPred<T>, a_to_q: spec_fn(A) -> TempPred<T>)
-    requires forall |a: A| #[trigger] spec.entails(always(p.implies(a_to_q(a)))),
-    ensures spec.entails(always(p.implies(tla_forall(a_to_q)))),
+spec fn eventually_choose_witness<T>(ex: Execution<T>, p: TempPred<T>) -> nat
+    recommends exists |i| p.satisfied_by(#[trigger] ex.suffix(i)),
 {
-    let a_to_always_p_implies_q = |a: A| always(p.implies(a_to_q(a)));
-    spec_entails_tla_forall::<T, A>(spec, a_to_always_p_implies_q);
-    assert forall |ex| #[trigger] spec.satisfied_by(ex) implies always(p.implies(tla_forall(a_to_q))).satisfied_by(ex) by {
-        implies_apply::<T>(ex, spec, tla_forall(a_to_always_p_implies_q));
-        tla_forall_always_implies_equality2::<T, A>(p, a_to_q)
-    };
+    let witness = choose |i| p.satisfied_by(#[trigger] ex.suffix(i));
+    witness
+}
+
+	#[verifier::external_body]
+pub proof fn execution_equality<T>(ex1: Execution<T>, ex2: Execution<T>)
+    requires forall |i: nat| #[trigger] (ex1.nat_to_state)(i) == (ex2.nat_to_state)(i),
+    ensures ex1 == ex2,
+	{
+		unimplemented!()
+	}
+
+pub proof fn leads_to_always_tla_forall<T, A>(spec: TempPred<T>, p: TempPred<T>, a_to_p: spec_fn(A)->TempPred<T>, domain: Set<A>)
+    requires
+        forall |a: A| spec.entails(p.leads_to(always(#[trigger] a_to_p(a)))),
+        domain.finite(),
+        domain.len() > 0,
+        forall |a: A| #[trigger] domain.contains(a),
+    ensures spec.entails(p.leads_to(always(tla_forall(a_to_p)))),
+{
 }
 
 

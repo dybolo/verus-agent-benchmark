@@ -45,11 +45,23 @@ impl<T> TempPred<T> {
         TempPred::new(|ex: Execution<T>| self.satisfied_by(ex) ==> other.satisfied_by(ex))
     }
 
+    pub open spec fn leads_to(self, other: Self) -> Self {
+        always(self.implies(eventually(other)))
+    }
+
+    pub open spec fn entails(self, other: Self) -> bool {
+        valid(self.implies(other))
+    }
+
 }
 
 
 pub open spec fn always<T>(temp_pred: TempPred<T>) -> TempPred<T> {
     TempPred::new(|ex: Execution<T>| forall |i: nat| #[trigger] temp_pred.satisfied_by(ex.suffix(i)))
+}
+
+pub open spec fn eventually<T>(temp_pred: TempPred<T>) -> TempPred<T> {
+    TempPred::new(|ex: Execution<T>| exists |i: nat| #[trigger] temp_pred.satisfied_by(ex.suffix(i)))
 }
 
 pub open spec fn valid<T>(temp_pred: TempPred<T>) -> bool {
@@ -59,15 +71,34 @@ pub open spec fn valid<T>(temp_pred: TempPred<T>) -> bool {
 
 // File: rules.rs
 	#[verifier::external_body]
-proof fn always_unfold<T>(ex: Execution<T>, p: TempPred<T>)
-    requires always(p).satisfied_by(ex),
-    ensures forall |i: nat| p.satisfied_by(#[trigger] ex.suffix(i)),
+proof fn leads_to_unfold<T>(ex: Execution<T>, p: TempPred<T>, q: TempPred<T>)
+    requires p.leads_to(q).satisfied_by(ex),
+    ensures forall |i: nat| p.implies(eventually(q)).satisfied_by(#[trigger] ex.suffix(i)),
 	{
 		unimplemented!()
 	}
 
-proof fn always_distributed_by_and<T>(p: TempPred<T>, q: TempPred<T>)
-    ensures valid(always(p.and(q)).implies(always(p).and(always(q)))),
+	#[verifier::external_body]
+proof fn implies_apply<T>(ex: Execution<T>, p: TempPred<T>, q: TempPred<T>)
+    requires
+        p.implies(q).satisfied_by(ex),
+        p.satisfied_by(ex),
+    ensures q.satisfied_by(ex),
+	{
+		unimplemented!()
+	}
+
+	#[verifier::external_body]
+proof fn always_propagate_forwards<T>(ex: Execution<T>, p: TempPred<T>, i: nat)
+    requires always(p).satisfied_by(ex),
+    ensures always(p).satisfied_by(ex.suffix(i)),
+	{
+		unimplemented!()
+	}
+
+pub proof fn pack_conditions_to_spec<T>(spec: TempPred<T>, c: TempPred<T>, p: TempPred<T>, q: TempPred<T>)
+    requires spec.entails(p.and(c).leads_to(q)),
+    ensures spec.and(always(c)).entails(p.leads_to(q)),
 {
 }
 
