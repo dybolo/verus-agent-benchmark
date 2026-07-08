@@ -1,0 +1,60 @@
+id: capture-spec-functions
+language: verus
+rule:
+  kind: declaration_with_attrs
+  has:
+    any:
+      - kind: function_item
+        has:
+          kind: function_mode
+          regex: "spec"
+      - kind: function_signature_item
+        has:
+          kind: function_mode
+          regex: "spec"
+
+---
+id: capture-proof-functions
+language: verus
+rule:
+  kind: declaration_with_attrs
+  has:
+    any:
+      - kind: function_item
+        has:
+          kind: function_mode
+          regex: "proof"
+      - kind: function_signature_item
+        has:
+          kind: function_mode
+          regex: "proof"
+
+---
+id: capture-proof-blocks
+language: verus
+rule:
+  kind: proof_block
+
+---
+id: capture-functions-with-contracts
+language: verus
+rule:
+  kind: declaration_with_attrs
+  has:
+    any:
+      - kind: function_item
+        has:
+          kind: fn_qualifier
+          has:
+            any:
+              - kind: requires_clause
+              - kind: ensures_clause
+              - kind: decreases_clause
+      - kind: function_signature_item
+        has:
+          kind: fn_qualifier
+          has:
+            any:
+              - kind: requires_clause
+              - kind: ensures_clause
+              - kind: decreases_clause

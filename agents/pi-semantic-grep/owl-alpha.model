@@ -1,0 +1,4 @@
+#!/bin/sh
+
+EXTRA_PROMPT="Please define a structured proof plan for your verification problem (covering: what needs to be shown, assumptions, key ideas, high-level strategy, sub-goals) and use the semantic_grep tool to help you complete your task."
+pi --model openrouter/owl-alpha --session-dir "$SESSION" -p "$TASK_PROMPT $EXTRA_PROMPT"
