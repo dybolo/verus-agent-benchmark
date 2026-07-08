@@ -15,7 +15,6 @@ import { join } from "path";
 import { Type } from "typebox";
 
 const SemanticGrepParams = Type.Object({
-	index: Type.Optional(Type.Boolean({ description: "Index the repository for semantic search. Scans proof and specification code via ast-grep, generates natural language descriptions via LLM, computes embeddings, and stores them in a local ChromaDB vector database. Must be run at least once before any proof-plan search queries will return results. Re-run periodically to keep the index up to date with code changes." })),
 	query: Type.Optional(Type.String({ description: "Structured proof plan to search for. After analysing the problem, produce a plan following this template: 'What needs to be shown', 'Assumptions', 'Key ideas', 'High-level strategy', 'Sub-goals'. The tool returns code snippets relevant to this plan." })),
 	numResults: Type.Optional(Type.Number({ description: "Number of results to return (default: 10)" })),
 	type: Type.Optional(Type.Enum(["proofs", "specs"], { description: "Filter results by type: 'proofs' for proof code or 'specs' for specifications (default: all). Use to narrow proof plan search to the relevant category." })),
@@ -27,7 +26,6 @@ interface SemanticGrepDetails {
 	resultCount: number;
 	truncation?: TruncationResult;
 	fullOutputPath?: string;
-	indexed?: boolean;
 }
 
 export default function (pi: ExtensionAPI) {
@@ -35,40 +33,22 @@ export default function (pi: ExtensionAPI) {
 		name: "semantic_grep",
 		label: "Semantic Grep",
         description: `Semantic search over Verus proofs and specifications using structured proof plans as queries.
-		Supports both indexing (to build a searchable vector database) and semantic search.
 		After analysing a verification problem, supply a proof plan following the template:
 		"What needs to be shown", "Assumptions", "Key ideas", "High-level strategy", "Sub-goals".
 		The tool returns code snippets relevant to that plan — proof strategies, specifications,
-		and patterns that match the structure of your proof goal. Automatically indexes and
-		classifies code (proofs vs specs), generates descriptions, and enables semantic similarity
-		search to discover related proof strategies and specifications across your repository.`,
+		and patterns that match the structure of your proof goal. Proofs and specs are automatically
+		classified, semantically embedded, and indexed for similarity search across your repository.
+
+		Example proof plan:
+		What needs to be shown: The combined liveness assumptions are stable across all execution suffixes.
+		Assumptions: Base invariant package is stable; desired-state condition holds forever.
+		Key ideas: Stability is preserved under conjunction; build the full condition from smaller stable pieces.
+		High-level strategy: Prove each phase invariant stable individually, then combine.
+		Sub-goals: Show phase I stable; show phase II stable; show phase III stable; combine all phases.`,
 		parameters: SemanticGrepParams,
 
 		async execute(_toolCallId, params, _signal, _onUpdate, ctx) {
-			const { index, query, numResults, type } = params;
-
-			if (index) {
-				let output: string;
-				try {
-					output = execSync("semantic_grep --index", {
-						cwd: ctx.cwd,
-						encoding: "utf-8",
-						maxBuffer: 100 * 1024 * 1024,
-					});
-				} catch (err: any) {
-					output = err.stdout ? err.stdout.toString() : "";
-					const stderr = err.stderr ? err.stderr.toString() : "";
-					if (!output && !stderr) {
-						throw new Error(`semantic_grep indexing failed: ${err.message}`);
-					}
-					output += "\n" + stderr;
-				}
-
-				return {
-					content: [{ type: "text", text: output.trim() || "Indexing completed successfully" }],
-					details: { resultCount: 0, indexed: true } as SemanticGrepDetails,
-				};
-			}
+			const { query, numResults, type } = params;
 
 			const args = [];
 
@@ -156,9 +136,6 @@ export default function (pi: ExtensionAPI) {
 
 		// Custom rendering of the tool call (shown before/during execution)
 		renderCall(args, theme, _context) {
-			if (args.index) {
-				return new Text(theme.fg("toolTitle", theme.bold("semantic_grep --index")), 0, 0);
-			}
 			let text = theme.fg("toolTitle", theme.bold("semantic_grep "));
 			if (args.query) {
 				text += theme.fg("accent", `"${args.query}"`);
@@ -179,11 +156,6 @@ export default function (pi: ExtensionAPI) {
 			// Handle streaming/partial results
 			if (isPartial) {
 				return new Text(theme.fg("warning", "Searching proofs..."), 0, 0);
-			}
-
-			// Indexing result
-			if (details?.indexed) {
-				return new Text(theme.fg("success", "Indexing complete"), 0, 0);
 			}
 
 			// No results case
