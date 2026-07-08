@@ -1,0 +1,5 @@
+Analyze this code and provide a natural language, verus-independent description of what it does.
+Be specific about the intent and logic. Keep it as short as you can.
+IMPORTANT: Output ONLY plain text. Do not use any markdown formatting, headings, bold text, or bullet points.
+Code:
+{code_text}
