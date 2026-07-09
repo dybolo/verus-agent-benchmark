@@ -200,7 +200,7 @@ def run_single_job(agent_name, agent_tag, agent_dir, entrypoint, task, timestamp
             "-e", "SESSION",
         ]
 
-        for key in ["ANTHROPIC_API_KEY", "OPENAI_API_KEY", "GEMINI_API_KEY", "OPENCODE_API_KEY", "OPENROUTER_API_KEY"]:
+        for key in ["ANTHROPIC_API_KEY", "OPENAI_API_KEY", "GEMINI_API_KEY", "OPENCODE_API_KEY", "OPENROUTER_API_KEY", "AWS_BEARER_TOKEN_BEDROCK"]:
             if key in os.environ:
                 cmd.extend(["-e", key])
 

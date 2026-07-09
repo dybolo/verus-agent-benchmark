@@ -1,0 +1,2 @@
+#!/bin/sh
+pi --model openrouter/owl-alpha --session-dir "$SESSION" -p "$TASK_PROMPT"

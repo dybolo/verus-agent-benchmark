@@ -20,16 +20,14 @@ The proof plan should follow this template:
   - Sub-goals
 """
 
-import os
 import sys
 import re
 import json
 import argparse
 import asyncio
-import aiohttp
+import litellm
 import chromadb
 import yaml
-import requests
 from pathlib import Path
 from typing import Optional, List, Dict, Any
 from ast_grep_py import register_dynamic_language
@@ -159,23 +157,14 @@ class DescriptionGenerator:
     def __init__(self, model: str, skip: bool = False):
         self.skip = skip
         self.model = model
-        self.api_key = os.getenv("OPENROUTER_API_KEY")
         prompts_dir = Path(__file__).parent / "prompts"
         self.spec_prompt_template = (prompts_dir / "spec-prompt.txt").read_text()
         self.proof_prompt_template = (prompts_dir / "proof-prompt.txt").read_text()
 
-    async def generate_description(self, code_text: str, kind: str, session: aiohttp.ClientSession) -> str:
+    async def generate_description(self, code_text: str, kind: str) -> str:
         """Generate description for a code chunk."""
         if self.skip:
             return "[Description generation skipped]"
-
-        if not self.api_key:
-            return "[OPENROUTER_API_KEY not set]"
-
-        headers = {
-            "Authorization": f"Bearer {self.api_key}",
-            "Content-Type": "application/json",
-        }
 
         prompt = (
             self.proof_prompt_template.format(code_text=code_text)
@@ -183,98 +172,65 @@ class DescriptionGenerator:
             else self.spec_prompt_template.format(code_text=code_text)
         )
 
-        payload = {
-            "model": self.model,
-            "messages": [
-                {
-                    "role": "user",
-                    "content": prompt,
-                }
-            ],
-        }
-
         try:
-            async with session.post("https://openrouter.ai/api/v1/chat/completions",
-                                    headers=headers, json=payload, timeout=120) as response:
-                if response.status != 200:
-                    return "[Error generating description]"
+            response = await litellm.acompletion(
+                model=self.model,
+                messages=[{"role": "user", "content": prompt}],
+            )
+            content = response.choices[0].message.content.strip()
 
-                data = await response.json()
-                content = data["choices"][0]["message"]["content"].strip()
+            content = re.sub(r'[*_]{1,3}', '', content)
+            content = re.sub(r'^#+\s*', '', content, flags=re.MULTILINE)
+            content = re.sub(r'\n+', ' ', content)
 
-                # Basic cleanup: remove markdown bold/italics and hash headings
-                content = re.sub(r'[*_]{1,3}', '', content)
-                content = re.sub(r'^#+\s*', '', content, flags=re.MULTILINE)
-
-                # Squish multiple newlines into a single space
-                content = re.sub(r'\n+', ' ', content)
-
-                return content.strip()
+            return content.strip()
         except Exception as e:
             log(f"Warning: Failed to generate description: {repr(e)}")
             return "[Error generating description]"
 
-    async def generate_batch(self, chunks: List[Dict], max_concurrent: int = 5) -> List[str]:
+    async def generate_batch(self, chunks: List[Dict], max_concurrent: int = 10) -> None:
         """Generate descriptions for multiple chunks concurrently."""
         if self.skip:
-            return ["[Skipped]"] * len(chunks)
+            return
 
-        descriptions = [""] * len(chunks)
         semaphore = asyncio.Semaphore(max_concurrent)
 
-        async def bounded_request(index: int, code_text: str, kind: str, session: aiohttp.ClientSession):
+        async def bounded_request(chunk: Dict):
                async with semaphore:
                    try:
-                       desc = await self.generate_description(code_text, kind, session)
-                       descriptions[index] = desc
+                       chunk["description"] = await self.generate_description(chunk["code"], chunk["kind"])
                    except Exception as e:
-                       log(f"Error proccessing chunk {index}: {e}")
-                       descriptions[index] = "[Error generating description]"
+                       log(f"Error processing chunk {chunk['id']}: {e}")
+                       chunk["description"] = "[Error generating description]"
 
-        async with aiohttp.ClientSession() as session:
-               tasks = [bounded_request(i, chunk["code"], chunk["kind"], session) for i, chunk in enumerate(chunks)]
-               await asyncio.gather(*tasks, return_exceptions=True)
-
-        return descriptions
+        tasks = [bounded_request(chunk) for chunk in chunks]
+        await asyncio.gather(*tasks, return_exceptions=True)
 
 
 class EmbeddingGenerator:
-    """Generates embeddings for code chunks via API."""
+    """Generates embeddings for code chunks via litellm."""
 
-    def __init__(self, model_name: str = "openai/text-embedding-3-small",
-                 api_key: Optional[str] = None,
-                 api_url: Optional[str] = None):
+    def __init__(self, model_name: str = "openai/text-embedding-3-small"):
         self.model_name = model_name
-        self.api_key = api_key or os.getenv("OPENROUTER_API_KEY")
-        self.api_url = api_url or "https://openrouter.ai/api/v1/embeddings"
 
     def encode(self, texts: List[str]) -> List:
-        """Encode texts to embeddings via API."""
+        """Encode texts to embeddings via litellm."""
 
         log(f"\nGenerating embeddings for {len(texts)} chunks...")
-
-        headers = {
-            "Authorization": f"Bearer {self.api_key}",
-            "Content-Type": "application/json",
-        }
 
         BATCH_SIZE = 128
         all_embeddings = []
 
         for i in range(0, len(texts), BATCH_SIZE):
             batch = texts[i:i + BATCH_SIZE]
-            payload = {
-                "input": batch,
-                "model": self.model_name,
-            }
 
-            response = requests.post(self.api_url, headers=headers, json=payload, timeout=120)
-            if response.status_code != 200:
-                raise RuntimeError(f"Embedding API error ({response.status_code}): {response.text}")
-
-            data = response.json()
-            embeddings = [d["embedding"] for d in sorted(data["data"], key=lambda x: x["index"])]
-            all_embeddings.extend(embeddings)
+            try:
+                response = litellm.embedding(model=self.model_name, input=batch)
+                embeddings = [item.embedding for item in response.data]
+                all_embeddings.extend(embeddings)
+            except Exception as e:
+                log(f"Error generating embeddings: {repr(e)}")
+                raise
 
         return all_embeddings
 
@@ -399,11 +355,8 @@ class SemanticGrep:
 
             # Step 3: Generate descriptions based on chunk kind
             log("\n[3/4] Generating natural language descriptions...")
-            if not self.config.skip_descriptions and self.description_gen.api_key:
-                descriptions = asyncio.run(self.description_gen.generate_batch(processed_chunks))
-                # Fill in the descriptions in processed chunks
-                for i, desc in enumerate(descriptions):
-                    processed_chunks[i]["description"] = desc
+            if not self.config.skip_descriptions:
+                asyncio.run(self.description_gen.generate_batch(processed_chunks))
             else:
                 for chunk in processed_chunks:
                     chunk["description"] = "[Skipped]"
