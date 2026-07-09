@@ -1,0 +1,30 @@
+#!/bin/sh
+
+cat > /tmp/litellm_config.yaml << 'EOF'
+model_list:
+  - model_name: bedrock-sonnet-4-6
+    litellm_params:
+      model: bedrock/global.anthropic.claude-sonnet-4-6
+      api_key: os.environ/AWS_BEARER_TOKEN_BEDROCK
+      aws_region_name: eu-west-1
+general_settings:
+  disable_master_key_required: true
+EOF
+
+litellm --port 11434 --config /tmp/litellm_config.yaml &
+LITELLM_PID=$!
+
+for i in $(seq 1 30); do
+  curl -s http://localhost:11434/health > /dev/null 2>&1 && break
+  sleep 0.5
+done
+
+export COPILOT_PROVIDER_TYPE="openai"
+export COPILOT_PROVIDER_BASE_URL="http://localhost:11434/v1"
+export COPILOT_MODEL_ID="bedrock-sonnet-4-6"
+export COPILOT_HOME="$SESSION"
+
+copilot --autopilot --reasoning-effort xhigh -p "$TASK_PROMPT" \
+    --allow-all-tools --allow-all-paths -s
+
+kill $LITELLM_PID 2>/dev/null
