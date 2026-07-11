@@ -309,6 +309,9 @@ def run_tasks(max_workers, agent_filter=None, model_filter=None):
         "agents": {}
     }
 
+    # currently parallelizing by tasks, so it does not make sense to have more threads than the number of tasks
+    max_workers = min(max_workers, len(tasks))
+
     # Create an isolated staging directory to keep temporary dirs for tasks
     staging_base = os.path.abspath(".staging_areas")
     os.makedirs(staging_base, exist_ok=True)
