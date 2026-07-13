@@ -1,0 +1,8 @@
+id: 5f36d793-3853-4567-9538-b380c7ec064d
+cwd: /workspace
+client_name: github/cli
+name: The file /workspace/task_env/pack_conditions_to_spec.rs cannot be verified by Verus, a verification tool for Rust programs, yet. Please add proof annotations to /workspace/task_env/pack_conditions_to_spec.rs so that it can be successfully verified by Verus, and write the resulting code with proof into a new file with the name /workspace/task_env/pack_conditions_to_spec_verified.rs. The /workspace/vstd folder is a copy of Verus' vstd definitions and helper lemmas; please feel free to check it whe...
+user_named: false
+summary_count: 0
+created_at: 2026-07-13T19:11:08.810Z
+updated_at: 2026-07-13T19:11:09.057Z

@@ -1,0 +1,12 @@
+2026-07-13T19:11:08.793Z [INFO] Shell completions: no supported shell detected, skipping
+2026-07-13T19:11:08.796Z [INFO] Session indexing debug: SESSION_INDEXING=true, repository=undefined
+2026-07-13T19:11:08.922Z [INFO] Workspace initialized: 60d787f2-7b50-4410-ab90-11f611f95876 (checkpoints: 0)
+2026-07-13T19:11:08.936Z [INFO] Starting Copilot CLI: 1.0.70
+2026-07-13T19:11:08.936Z [INFO] Node.js version: v24.16.0
+2026-07-13T19:11:09.065Z [INFO] Using custom provider: type=openai, baseUrl=http://localhost:11434/v1, wireApi=completions
+2026-07-13T19:11:09.066Z [INFO]  
+2026-07-13T19:11:09.066Z [INFO] --- Start of group: Custom provider configured settings: ---
+2026-07-13T19:11:09.066Z [INFO] --- End of group ---
+2026-07-13T19:11:09.103Z [INFO] --- Start of group: Completion request configuration:  ---
+2026-07-13T19:11:09.104Z [INFO] --- End of group ---
+2026-07-13T19:11:10.087Z [INFO] No update needed, current version is 1.0.70, fetched latest release is v1.0.70
