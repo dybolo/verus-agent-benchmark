@@ -254,22 +254,34 @@ class ChromaDBManager:
         self.client = None
         self.collection = None
 
-    def initialize(self, recreate: bool = False):
+    @property
+    def stored_embedding_model(self) -> Optional[str]:
+        if self.collection and self.collection.metadata:
+            return self.collection.metadata.get("embedding_model")
+        return None
+
+    def initialize(self, recreate: bool = False, embedding_model: Optional[str] = None):
         """Initialize ChromaDB client and collection."""
-        # Create DB directory if it doesn't exist
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
 
         self.client = chromadb.PersistentClient(path=str(self.db_path))
 
-        if recreate:
-            try:
-                self.client.delete_collection(self.collection_name)
-            except Exception as e:
-                log(f"Note: Could not delete existing collection: {e}")
+        if not recreate:
+            self.collection = self.client.get_or_create_collection(name=self.collection_name)
+            return
+
+        try:
+            self.client.delete_collection(self.collection_name)
+        except Exception as e:
+            log(f"Note: Could not delete existing collection: {e}")
+
+        meta = {"hnsw:space": "cosine"}
+        if embedding_model:
+            meta["embedding_model"] = embedding_model
 
         self.collection = self.client.get_or_create_collection(
             name=self.collection_name,
-            metadata={"hnsw:space": "cosine"}
+            metadata=meta
         )
 
     def store_chunks(self, processed_chunks: List[Dict], embeddings: List):
@@ -381,7 +393,7 @@ class SemanticGrep:
             embeddings = self.embedding_gen.encode(documents)
 
             # Step 5: Store in ChromaDB
-            self.db_manager.initialize(recreate=True)
+            self.db_manager.initialize(recreate=True, embedding_model=self.config.embedding_model)
             self.db_manager.store_chunks(processed_chunks, embeddings)
 
             log("\n" + "="*60 + "")
@@ -440,6 +452,16 @@ class SemanticGrep:
             if self.db_manager.collection.count() == 0:
                 log("Error: Database is empty. Run --index first.")
                 sys.exit(1)
+
+            # Auto-switch to the embedding model used during indexing
+            stored_model = self.db_manager.stored_embedding_model
+            if stored_model:
+                self.embedding_gen = EmbeddingGenerator(stored_model)
+            else:
+                log("Warning: No embedding model recorded in database.")
+                if stored_model != self.embedding_gen.model_name:
+                    log("Error: Embedding model used for search different than model used for indexing.")
+                    sys.exit(1)
 
             # Perform search with optional type filter
             results = self.db_manager.search(query, self.embedding_gen, num_results, filter_type)
