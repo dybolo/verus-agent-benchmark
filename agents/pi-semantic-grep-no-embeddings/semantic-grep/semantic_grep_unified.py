@@ -26,6 +26,7 @@ import re
 import json
 import argparse
 import asyncio
+import random
 import litellm
 import yaml
 from pathlib import Path
@@ -160,21 +161,30 @@ class DescriptionGenerator:
             else self.spec_prompt_template.format(code_text=code_text)
         )
 
-        try:
-            response = await litellm.acompletion(
-                model=self.model,
-                messages=[{"role": "user", "content": prompt}],
-            )
-            content = response.choices[0].message.content.strip()
+        for attempt in range(5):
+            try:
+                response = await litellm.acompletion(
+                    model=self.model,
+                    messages=[{"role": "user", "content": prompt}],
+                )
+                content = response.choices[0].message.content.strip()
 
-            content = re.sub(r'[*_]{1,3}', '', content)
-            content = re.sub(r'^#+\s*', '', content, flags=re.MULTILINE)
-            content = re.sub(r'\n+', ' ', content)
+                content = re.sub(r'[*_]{1,3}', '', content)
+                content = re.sub(r'^#+\s*', '', content, flags=re.MULTILINE)
+                content = re.sub(r'\n+', ' ', content)
 
-            return content.strip()
-        except Exception as e:
-            log(f"Warning: Failed to generate description: {repr(e)}")
-            return "[Error generating description]"
+                return content.strip()
+            except litellm.RateLimitError as e:
+                if attempt == 4:
+                    log(f"Warning: Failed to generate description after 5 retries: {repr(e)}")
+                    return "[Error generating description]"
+                wait = 2 ** attempt + random.uniform(0, 1)
+                log(f"Rate limited, retrying in {wait:.1f}s (attempt {attempt + 1})")
+                await asyncio.sleep(wait)
+                continue
+            except Exception as e:
+                log(f"Warning: Failed to generate description: {repr(e)}")
+                return "[Error generating description]"
 
     async def generate_batch(self, chunks: List[Dict], max_concurrent: int = 10) -> None:
         """Generate descriptions for multiple chunks concurrently."""

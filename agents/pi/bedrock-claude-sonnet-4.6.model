@@ -1,0 +1,2 @@
+#!/bin/sh
+pi --model amazon-bedrock/global.anthropic.claude-sonnet-4-6 --session-dir "$SESSION" -p "$TASK_PROMPT"
