@@ -1,0 +1,130 @@
+{
+  "timestamp": "20260714_121528",
+  "agents": {
+    "pi-semantic-grep-no-embeddings/bedrock-claude-sonnet-4.6": {
+      "tasks": {
+        "init_invariant.rs": {
+          "verus_passed": true,
+          "cheat_checker_passed": true,
+          "timed_out": false,
+          "solution_file": "solutions/pi-semantic-grep-no-embeddings/bedrock-claude-sonnet-4.6/20260714_121528/init_invariant_verified.rs",
+          "total_costs": 0.126699,
+          "total_turns": 8,
+          "total_tool_calls": 10,
+          "duration_seconds": 90.983,
+          "session_file": "sessions/pi-semantic-grep-no-embeddings/bedrock-claude-sonnet-4.6/20260714_121528/init_invariant/2026-07-14T11-15-34-292Z_019f6056-e114-71d3-ae70-fcc42e07f699.jsonl"
+        },
+        "pack_conditions_to_spec.rs": {
+          "verus_passed": true,
+          "cheat_checker_passed": true,
+          "timed_out": false,
+          "solution_file": "solutions/pi-semantic-grep-no-embeddings/bedrock-claude-sonnet-4.6/20260714_121528/pack_conditions_to_spec_verified.rs",
+          "total_costs": 0.1689237,
+          "total_turns": 10,
+          "total_tool_calls": 11,
+          "duration_seconds": 114.871,
+          "session_file": "sessions/pi-semantic-grep-no-embeddings/bedrock-claude-sonnet-4.6/20260714_121528/pack_conditions_to_spec/2026-07-14T11-15-33-779Z_019f6056-df13-7a50-bdf2-9ac698ef842b.jsonl"
+        },
+        "leads_to_trans.rs": {
+          "verus_passed": true,
+          "cheat_checker_passed": true,
+          "timed_out": false,
+          "solution_file": "solutions/pi-semantic-grep-no-embeddings/bedrock-claude-sonnet-4.6/20260714_121528/leads_to_trans_verified.rs",
+          "total_costs": 0.2498658,
+          "total_turns": 10,
+          "total_tool_calls": 10,
+          "duration_seconds": 158.365,
+          "session_file": "sessions/pi-semantic-grep-no-embeddings/bedrock-claude-sonnet-4.6/20260714_121528/leads_to_trans/2026-07-14T11-15-33-258Z_019f6056-dd0a-77f4-af6f-07b9e28dc9a2.jsonl"
+        },
+        "transform_leads_to_with_until.rs": {
+          "verus_passed": true,
+          "cheat_checker_passed": true,
+          "timed_out": false,
+          "solution_file": "solutions/pi-semantic-grep-no-embeddings/bedrock-claude-sonnet-4.6/20260714_121528/transform_leads_to_with_until_verified.rs",
+          "total_costs": 0.3227631,
+          "total_turns": 9,
+          "total_tool_calls": 10,
+          "duration_seconds": 195.936,
+          "session_file": "sessions/pi-semantic-grep-no-embeddings/bedrock-claude-sonnet-4.6/20260714_121528/transform_leads_to_with_until/2026-07-14T11-15-33-875Z_019f6056-df73-71f5-9734-12a32cdb57f8.jsonl"
+        },
+        "always_p_or_eventually_q.rs": {
+          "verus_passed": true,
+          "cheat_checker_passed": true,
+          "timed_out": false,
+          "solution_file": "solutions/pi-semantic-grep-no-embeddings/bedrock-claude-sonnet-4.6/20260714_121528/always_p_or_eventually_q_verified.rs",
+          "total_costs": 0.50433825,
+          "total_turns": 14,
+          "total_tool_calls": 15,
+          "duration_seconds": 269.154,
+          "session_file": "sessions/pi-semantic-grep-no-embeddings/bedrock-claude-sonnet-4.6/20260714_121528/always_p_or_eventually_q/2026-07-14T11-15-33-385Z_019f6056-dd89-76c6-a6f4-8cdde264c00f.jsonl"
+        },
+        "wf1.rs": {
+          "verus_passed": true,
+          "cheat_checker_passed": true,
+          "timed_out": false,
+          "solution_file": "solutions/pi-semantic-grep-no-embeddings/bedrock-claude-sonnet-4.6/20260714_121528/wf1_verified.rs",
+          "total_costs": 0.52021815,
+          "total_turns": 13,
+          "total_tool_calls": 15,
+          "duration_seconds": 288.592,
+          "session_file": "sessions/pi-semantic-grep-no-embeddings/bedrock-claude-sonnet-4.6/20260714_121528/wf1/2026-07-14T11-15-33-726Z_019f6056-dede-7216-a5e9-0bf564a116a5.jsonl"
+        },
+        "tla_forall_always_equality.rs": {
+          "verus_passed": true,
+          "cheat_checker_passed": true,
+          "timed_out": false,
+          "solution_file": "solutions/pi-semantic-grep-no-embeddings/bedrock-claude-sonnet-4.6/20260714_121528/tla_forall_always_equality_verified.rs",
+          "total_costs": 0.5943735,
+          "total_turns": 16,
+          "total_tool_calls": 19,
+          "duration_seconds": 343.773,
+          "session_file": "sessions/pi-semantic-grep-no-embeddings/bedrock-claude-sonnet-4.6/20260714_121528/tla_forall_always_equality/2026-07-14T11-15-33-821Z_019f6056-df3d-740c-bc65-a502d7121771.jsonl"
+        },
+        "leads_to_stable.rs": {
+          "verus_passed": true,
+          "cheat_checker_passed": true,
+          "timed_out": false,
+          "solution_file": "solutions/pi-semantic-grep-no-embeddings/bedrock-claude-sonnet-4.6/20260714_121528/leads_to_stable_verified.rs",
+          "total_costs": 0.64611675,
+          "total_turns": 25,
+          "total_tool_calls": 27,
+          "duration_seconds": 352.988,
+          "session_file": "sessions/pi-semantic-grep-no-embeddings/bedrock-claude-sonnet-4.6/20260714_121528/leads_to_stable/2026-07-14T11-15-33-754Z_019f6056-defa-7bbb-b5a3-2b4568bc7a53.jsonl"
+        },
+        "leads_to_always_combine.rs": {
+          "verus_passed": true,
+          "cheat_checker_passed": true,
+          "timed_out": false,
+          "solution_file": "solutions/pi-semantic-grep-no-embeddings/bedrock-claude-sonnet-4.6/20260714_121528/leads_to_always_combine_verified.rs",
+          "total_costs": 0.61823265,
+          "total_turns": 7,
+          "total_tool_calls": 9,
+          "duration_seconds": 369.049,
+          "session_file": "sessions/pi-semantic-grep-no-embeddings/bedrock-claude-sonnet-4.6/20260714_121528/leads_to_always_combine/2026-07-14T11-15-33-217Z_019f6056-dce1-7d45-a6ac-4492f41bfa5b.jsonl"
+        },
+        "vreplicaset_controller__proof__helper_invariants__proof__lemma_always_each_vrs_in_reconcile_implies_filtered_pods_owned_by_vrs.rs": {
+          "verus_passed": false,
+          "cheat_checker_passed": false,
+          "timed_out": false,
+          "solution_file": null,
+          "total_costs": 1.39048425,
+          "total_turns": 11,
+          "total_tool_calls": 12,
+          "duration_seconds": 1005.966,
+          "session_file": "sessions/pi-semantic-grep-no-embeddings/bedrock-claude-sonnet-4.6/20260714_121528/vreplicaset_controller__proof__helper_invariants__proof__lemma_always_each_vrs_in_reconcile_implies_filtered_pods_owned_by_vrs/2026-07-14T11-15-33-369Z_019f6056-dd79-7351-af98-b401ff7e7d19.jsonl"
+        },
+        "leads_to_always_tla_forall.rs": {
+          "verus_passed": false,
+          "cheat_checker_passed": true,
+          "timed_out": true,
+          "solution_file": "solutions/pi-semantic-grep-no-embeddings/bedrock-claude-sonnet-4.6/20260714_121528/leads_to_always_tla_forall_verified.rs",
+          "total_costs": 2.2168629,
+          "total_turns": 28,
+          "total_tool_calls": 40,
+          "duration_seconds": 1115.054,
+          "session_file": "sessions/pi-semantic-grep-no-embeddings/bedrock-claude-sonnet-4.6/20260714_121528/leads_to_always_tla_forall/2026-07-14T11-15-33-578Z_019f6056-de4a-7e2c-9956-9d30fdba6180.jsonl"
+        }
+      }
+    }
+  }
+}
