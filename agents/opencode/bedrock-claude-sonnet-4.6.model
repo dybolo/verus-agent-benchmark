@@ -1,0 +1,8 @@
+#!/bin/bash
+set -e
+
+export XDG_DATA_HOME=$SESSION
+
+opencode run --dangerously-skip-permissions --format json \
+    -m amazon-bedrock/global.anthropic.claude-sonnet-4-6 "$TASK_PROMPT" \
+    > "$SESSION/session.jsonl"
