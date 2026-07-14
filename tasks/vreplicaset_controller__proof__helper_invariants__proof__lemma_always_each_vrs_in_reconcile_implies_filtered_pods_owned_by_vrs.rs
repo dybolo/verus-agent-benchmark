@@ -1,6 +1,5 @@
 use vstd::prelude::*;
 use vstd::multiset::Multiset;
-use vstd::map_lib::lemma_values_finite;
 use verus_builtin::*;
 use verus_builtin_macros::*;
 
@@ -4618,7 +4617,7 @@ pub proof fn entails_and_temp<T>(spec: TempPred<T>, p: TempPred<T>, q: TempPred<
 		unimplemented!()
 	}
 
-
+	#[verifier::external_body]
 pub proof fn init_invariant<T>(spec: TempPred<T>, init: StatePred<T>, next: ActionPred<T>, inv: StatePred<T>)
     requires
         forall |s: T| #[trigger] init(s) ==> inv(s),
