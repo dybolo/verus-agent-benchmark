@@ -1,6 +1,5 @@
 use vstd::prelude::*;
 use vstd::multiset::Multiset;
-use vstd::map_lib::lemma_values_finite;
 use verus_builtin::*;
 use verus_builtin_macros::*;
 
@@ -57,7 +56,7 @@ pub type ReconcileId = nat;
 #[verifier::external_body]
 pub proof fn finite_set_to_seq_contains_all_set_elements<A>(s: Set<A>)
     requires s.finite(),
-    ensures forall |e: A| #[trigger] s.contains(e) <==> #[trigger] s.to_seq().contains(e), 
+    ensures forall |e: A| #[trigger] s.contains(e) <==> #[trigger] s.to_seq().contains(e),
 {
     unimplemented!()
 }
@@ -2614,7 +2613,7 @@ pub open spec fn reconcile_core(v_replica_set: VReplicaSetView, resp_o: Option<R
             let diff = *diff;
             let predicate1 = (resp_o is Some && resp_o.unwrap().is_KResponse() && resp_o.unwrap().get_KResponse_0().is_GetThenDeleteResponse());
             let predicate2 = resp_o.unwrap().get_KResponse_0().get_GetThenDeleteResponse_0().res;
-                
+
             if !(predicate1 && predicate2 is Ok) {
                 (error_state(state), None)
             } else if diff == 0 {
@@ -4090,7 +4089,7 @@ pub open spec fn each_vrs_in_reconcile_implies_filtered_pods_owned_by_vrs(contro
                 &&& triggering_cr.object_ref() == key
                 &&& triggering_cr.metadata().well_formed_for_namespaced()
                 &&& state.filtered_pods is Some ==>
-                // Maintained across deletes, 
+                // Maintained across deletes,
                 // maintained across creates since all new keys with generate_name
                 // are unique, maintained across updates since there are
                 // no updates.
@@ -4109,7 +4108,7 @@ pub open spec fn each_vrs_in_reconcile_implies_filtered_pods_owned_by_vrs(contro
                             < s.api_server.resource_version_counter
                     )
                 // Special case: the above property holds on a list response to the
-                // appropriate request. 
+                // appropriate request.
                 &&& state.reconcile_step.is_AfterListPods() ==> {
                     let req_msg = s.ongoing_reconciles(controller_id)[key].pending_req_msg->0;
                     &&& s.ongoing_reconciles(controller_id)[triggering_cr.object_ref()].pending_req_msg is Some
@@ -4130,14 +4129,14 @@ pub open spec fn each_vrs_in_reconcile_implies_filtered_pods_owned_by_vrs(contro
                         let resp_objs = msg.content.get_list_response().res.unwrap();
                         &&& msg.content.is_list_response()
                         &&& msg.content.get_list_response().res is Ok
-                        &&& resp_objs.filter(|o: DynamicObjectView| PodView::unmarshal(o).is_err()).len() == 0 
+                        &&& resp_objs.filter(|o: DynamicObjectView| PodView::unmarshal(o).is_err()).len() == 0
                         &&& forall |i| #![trigger resp_objs[i]] 0 <= i < resp_objs.len() ==>
                         (
                             resp_objs[i].metadata.namespace.is_some()
                             && resp_objs[i].metadata.namespace.unwrap() == triggering_cr.metadata.namespace.unwrap()
                             && ((s.resources().contains_key(resp_objs[i].object_ref())
                                     && s.resources()[resp_objs[i].object_ref()].metadata.resource_version
-                                    == resp_objs[i].metadata.resource_version) ==> 
+                                    == resp_objs[i].metadata.resource_version) ==>
                                     s.resources()[resp_objs[i].object_ref()].metadata
                                         == resp_objs[i].metadata)
                             && resp_objs[i].metadata.resource_version.is_some()
@@ -5028,7 +5027,6 @@ pub proof fn lemma_always_each_vrs_in_reconcile_implies_filtered_pods_owned_by_v
                                                 &&& o.object_ref().kind == req_msg.content.get_list_request().kind
                                             };
                                             let selected_elements = s.resources().values().filter(selector);
-                                            lemma_values_finite(s.resources());
                                             finite_set_to_seq_contains_all_set_elements(selected_elements);
                                             assert(resp_objs =~= selected_elements.to_seq());
                                             assert(selected_elements.contains(o));
@@ -5060,7 +5058,6 @@ pub proof fn lemma_always_each_vrs_in_reconcile_implies_filtered_pods_owned_by_v
                                                 &&& o.object_ref().kind == req_msg.content.get_list_request().kind
                                             };
                                             let selected_elements = s.resources().values().filter(selector);
-                                            lemma_values_finite(s.resources());
                                             finite_set_to_seq_contains_all_set_elements(selected_elements);
                                             assert(resp_objs =~= selected_elements.to_seq());
                                             assert(selected_elements.to_seq().contains(resp_objs[i]));
