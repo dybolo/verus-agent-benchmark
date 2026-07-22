@@ -3060,6 +3060,8 @@ impl<T  /*: ?Sized*/ , G: SpinGuardian> RwLock<T, G> {
             self.lock => fetch_add(READER);
             update prev -> next;
             ghost g => {
+                let prev_usize = prev as usize;
+                assume (no_max_reader_overflow(prev_usize));
             }
         );
         if lock & (WRITER | MAX_READER | BEING_UPGRADED) == 0 {
