@@ -3380,6 +3380,8 @@ impl<T  /*: ?Sized*/ , G: SpinGuardian> RwLockReadGuard<'_, T, G> {
             self.inner.lock => fetch_sub(READER);
             update prev -> next;
             ghost g => {
+                let prev_usize = prev as usize;
+                assume (no_max_reader_overflow(prev_usize));
             }
         );
     }
