@@ -1,10 +1,76 @@
 use crate::{utils::*, DeghostMode};
-use proc_macro2::TokenStream;
+use proc_macro2::{Delimiter, Group, TokenStream, TokenTree};
 use quote::ToTokens;
 use std::path::PathBuf;
 use syn_verus::Token;
 use syn_verus::TraitItemFn;
 use syn_verus::parse_quote;
+use syn_verus::visit_mut::VisitMut;
+
+/// Remove only the proof block from a well-formed `atomic_with_ghost!` macro.
+///
+/// The macro's target, operation, optional `update`/`returning` clauses, and
+/// ghost binding are retained.  Returning `None` for an unfamiliar shape is
+/// intentional: callers must then compare the macro unchanged.
+fn normalized_atomic_with_ghost_tokens(tokens: &TokenStream) -> Option<TokenStream> {
+    let mut trees: Vec<TokenTree> = tokens.clone().into_iter().collect();
+    let ghost_positions: Vec<usize> = trees
+        .iter()
+        .enumerate()
+        .filter_map(|(index, tree)| match tree {
+            TokenTree::Ident(ident) if ident == "ghost" => Some(index),
+            _ => None,
+        })
+        .collect();
+
+    if ghost_positions.len() != 1 {
+        return None;
+    }
+
+    let ghost = ghost_positions[0];
+    // The supported Verus grammar ends in: `ghost <identifier> => { ... }`.
+    if ghost + 5 != trees.len()
+        || !matches!(&trees[ghost + 1], TokenTree::Ident(_))
+        || !matches!(&trees[ghost + 2], TokenTree::Punct(p) if p.as_char() == '=')
+        || !matches!(&trees[ghost + 3], TokenTree::Punct(p) if p.as_char() == '>')
+    {
+        return None;
+    }
+
+    let body = match &trees[ghost + 4] {
+        TokenTree::Group(group) if group.delimiter() == Delimiter::Brace => group,
+        _ => return None,
+    };
+    let mut empty_body = Group::new(Delimiter::Brace, TokenStream::new());
+    empty_body.set_span(body.span());
+    trees[ghost + 4] = TokenTree::Group(empty_body);
+    Some(trees.into_iter().collect())
+}
+
+fn normalize_atomic_with_ghost_macro(mac: &mut syn_verus::Macro) {
+    if mac.path.is_ident("atomic_with_ghost") {
+        if let Some(tokens) = normalized_atomic_with_ghost_tokens(&mac.tokens) {
+            mac.tokens = tokens;
+        }
+    }
+}
+
+struct AtomicWithGhostNormalizer;
+
+impl VisitMut for AtomicWithGhostNormalizer {
+    fn visit_macro_mut(&mut self, mac: &mut syn_verus::Macro) {
+        normalize_atomic_with_ghost_macro(mac);
+    }
+}
+
+/// Normalize `atomic_with_ghost!` proof blocks without removing any other
+/// ghost code. This is used for non-target executable functions, which remain
+/// otherwise byte-for-byte equivalent at the syntax-tree level.
+pub fn normalize_atomic_with_ghost_block(block: &syn_verus::Block) -> syn_verus::Block {
+    let mut normalized = block.clone();
+    AtomicWithGhostNormalizer.visit_block_mut(&mut normalized);
+    normalized
+}
 
 fn remove_ghost_local(local: &syn_verus::Local, mode: &DeghostMode) -> Option<syn_verus::Local> {
     match local.ghost {
@@ -239,6 +305,11 @@ fn remove_ghost_expr(expr: &syn_verus::Expr, mode: &DeghostMode) -> Option<syn_v
                 None
             }
         }
+        syn_verus::Expr::Macro(m) => {
+            let mut normalized = m.clone();
+            normalize_atomic_with_ghost_macro(&mut normalized.mac);
+            Some(syn_verus::Expr::Macro(normalized))
+        }
         syn_verus::Expr::Assume(..)
         | syn_verus::Expr::AssertForall(..)
         | syn_verus::Expr::RevealHide(..)
@@ -269,7 +340,9 @@ fn remove_ghost_stmt(stmt: &syn_verus::Stmt, mode: &DeghostMode) -> Option<syn_v
         }
         syn_verus::Stmt::Expr(e, s) => remove_ghost_expr(e, mode).map(|e1| syn_verus::Stmt::Expr(e1, s.clone())),
         syn_verus::Stmt::Macro(e) => {
-            Some(syn_verus::Stmt::Macro(e.clone()))
+            let mut normalized = e.clone();
+            normalize_atomic_with_ghost_macro(&mut normalized.mac);
+            Some(syn_verus::Stmt::Macro(normalized))
         },
     }
 }
