@@ -436,10 +436,13 @@ fn main() {
 
     match args.command {
         Commands::Additions(args) => {
-            let res = check_allowed_additions_only(args.file1, args.file2).unwrap_or_else(|e| {
-                eprintln!("{}", e);
-                process::exit(1);
-            });
+            let res = match check_allowed_additions_only(args.file1, args.file2) {
+                Ok(result) => result,
+                Err(e) => {
+                    eprintln!("Checker error: {}", e);
+                    process::exit(2);
+                }
+            };
 
             if !res {
                 println!("Disallowed changes detected");
@@ -647,6 +650,7 @@ fn main() {
                                         output: sig.output.clone(),
                                         spec: syn_verus::SignatureSpec {
                                             prover: sig.spec.prover.clone(),
+                                            atomic_spec: sig.spec.atomic_spec.clone(),
                                             requires: if !pre { sig.spec.requires.clone() } else { None }, // Removed
                                             recommends: sig.spec.recommends.clone(),
                                             ensures: if !post { sig.spec.ensures.clone() } else { None }, // Removed

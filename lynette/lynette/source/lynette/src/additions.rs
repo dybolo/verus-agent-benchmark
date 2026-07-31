@@ -1,4 +1,5 @@
 use std::path::PathBuf;
+use std::fs;
 use proc_macro2::{Delimiter, TokenStream, TokenTree};
 use quote::ToTokens;
 use crate::{utils::*, DeghostMode};
@@ -557,7 +558,6 @@ fn check_items(original_items: &[syn_verus::Item], changed_items: &[syn_verus::I
                             // after deghost, check exact match.
                             // deghost removes spec from signature. also need to check that requires/ensures/recommends do not change
                             if deghosted_orig != deghosted_changed {
-
                                 // Print out error information
                                 println!("Disallowed changes found in the body of function: {}", myfun);
 
@@ -731,6 +731,8 @@ Safety check rules:
 pub fn check_allowed_additions_only(original_file: PathBuf, changed_file: PathBuf) -> Result<bool, Error> {
     let original = fload_file(&original_file)?;
     let changed = fload_file(&changed_file)?;
+    let original_source = fs::read_to_string(&original_file).map_err(Error::ReadFile)?;
+    let changed_source = fs::read_to_string(&changed_file).map_err(Error::ReadFile)?;
 
     let original_pure_file = remove_verus_macro(&original);
     let changed_pure_file = remove_verus_macro(&changed);
@@ -739,8 +741,8 @@ pub fn check_allowed_additions_only(original_file: PathBuf, changed_file: PathBu
         return Ok(false);
     }
 
-    extract_verus_macro(&original).and_then(|original_verus_macros| {
-        extract_verus_macro(&changed).and_then(|changed_verus_macros| {
+    extract_verus_macro_with_context(&original, &original_file, &original_source).and_then(|original_verus_macros| {
+        extract_verus_macro_with_context(&changed, &changed_file, &changed_source).and_then(|changed_verus_macros| {
 
             if original_verus_macros.len() != changed_verus_macros.len() {
                 println!("Disallowed changes made to Verus macros in the original files.");
