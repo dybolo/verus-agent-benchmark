@@ -63,6 +63,12 @@ impl VisitMut for AtomicWithGhostNormalizer {
     }
 }
 
+fn normalize_atomic_with_ghost_expr(expr: &syn_verus::Expr) -> syn_verus::Expr {
+    let mut normalized = expr.clone();
+    AtomicWithGhostNormalizer.visit_expr_mut(&mut normalized);
+    normalized
+}
+
 /// Normalize `atomic_with_ghost!` proof blocks without removing any other
 /// ghost code. This is used for non-target executable functions, which remain
 /// otherwise byte-for-byte equivalent at the syntax-tree level.
@@ -151,6 +157,7 @@ fn remove_ghost_expr(expr: &syn_verus::Expr, mode: &DeghostMode) -> Option<syn_v
                 func: c.func.clone(),
                 paren_token: c.paren_token.clone(),
                 args: new_args,
+                atomically: c.atomically.clone(),
             }))
         }
         syn_verus::Expr::Closure(c) => remove_ghost_expr(&*c.body, mode).map(|new_body| {
@@ -187,7 +194,7 @@ fn remove_ghost_expr(expr: &syn_verus::Expr, mode: &DeghostMode) -> Option<syn_v
                     attrs: w.attrs.clone(),
                     label: w.label.clone(),
                     while_token: w.while_token.clone(),
-                    cond: w.cond.clone(),
+                    cond: Box::new(normalize_atomic_with_ghost_expr(&w.cond)),
                     body: new_body,
                     invariant_except_break: None, // Removed
                     invariant: None,              // Removed
@@ -210,10 +217,12 @@ fn remove_ghost_expr(expr: &syn_verus::Expr, mode: &DeghostMode) -> Option<syn_v
                     for_token: f.for_token.clone(),
                     pat: f.pat.clone(),
                     in_token: f.in_token.clone(),
-                    expr: f.expr.clone(),
+                    expr: Box::new(normalize_atomic_with_ghost_expr(&f.expr)),
                     body: new_body,
                     expr_name: f.expr_name.clone(),
+                    invariant_except_break: None, // Removed
                     invariant: None, // Removed
+                    ensures: None, // Removed
                     decreases: None, // Removed
                 })
             })
@@ -241,7 +250,7 @@ fn remove_ghost_expr(expr: &syn_verus::Expr, mode: &DeghostMode) -> Option<syn_v
                         syn_verus::Expr::If(syn_verus::ExprIf {
                             attrs: i.attrs.clone(),
                             if_token: i.if_token.clone(),
-                            cond: i.cond.clone(),
+                            cond: Box::new(normalize_atomic_with_ghost_expr(&i.cond)),
                             then_branch: new_then_branch,
                             else_branch: Some((else_token.clone(), Box::new(new_else_branch))),
                         })
@@ -250,7 +259,7 @@ fn remove_ghost_expr(expr: &syn_verus::Expr, mode: &DeghostMode) -> Option<syn_v
                     Some(syn_verus::Expr::If(syn_verus::ExprIf {
                         attrs: i.attrs.clone(),
                         if_token: i.if_token.clone(),
-                        cond: i.cond.clone(),
+                        cond: Box::new(normalize_atomic_with_ghost_expr(&i.cond)),
                         then_branch: new_then_branch,
                         else_branch: None,
                     }))
@@ -403,6 +412,7 @@ pub fn remove_ghost_sig(
         },
         spec: syn_verus::SignatureSpec {
             prover: sig.spec.prover.clone(), // Removed
+            atomic_spec: None,
             // TODO: This fix needs to be propagated to other places using `Specification`
             requires: sig
                 .spec
@@ -504,6 +514,7 @@ fn remove_ghost_impl(i: &syn_verus::ItemImpl, mode: &DeghostMode) -> syn_verus::
         attrs: i.attrs.clone(),
         defaultness: i.defaultness.clone(),
         unsafety: i.unsafety.clone(),
+        constness: i.constness.clone(),
         impl_token: i.impl_token.clone(),
         generics: i.generics.clone(),
         trait_: i.trait_.clone(),
@@ -554,6 +565,7 @@ fn remove_ghost_item(item: &syn_verus::Item, mode: &DeghostMode) -> Option<syn_v
         syn_verus::Item::Trait(t) => Some(syn_verus::Item::Trait(syn_verus::ItemTrait {
             attrs: t.attrs.clone(),
             vis: t.vis.clone(),
+            constness: t.constness.clone(),
             unsafety: t.unsafety.clone(),
             auto_token: t.auto_token.clone(),
             trait_token: t.trait_token.clone(),
