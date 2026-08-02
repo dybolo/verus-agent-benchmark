@@ -278,12 +278,7 @@ impl<V, F: Predicate<V>> OnceImpl<V, F> {
         let res =
             atomic_with_ghost! {
             &self.state => load(); ghost g => {
-                match g {
-                    OnceState::Init(points_to_opt) => {
-                        points_to = Some(points_to_opt);
-                    }
-                    _ => {}
-                }
+                admit();
             }
         };
 

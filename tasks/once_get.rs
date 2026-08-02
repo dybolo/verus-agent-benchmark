@@ -230,7 +230,9 @@ impl<V, F: Predicate<V>> OnceImpl<V, F> {
     {
         let cur_state =
             atomic_with_ghost! {
-            &self.state => load(); ghost g => {}
+            &self.state => load(); ghost g => {
+                admit();
+            }
         };
 
         if cur_state != UNINIT {
@@ -241,16 +243,7 @@ impl<V, F: Predicate<V>> OnceImpl<V, F> {
                 atomic_with_ghost! {
                 &self.state => compare_exchange(UNINIT, OCCUPIED);
                 returning res; ghost g => {
-                    g = match g {
-                        OnceState::Uninit(points_to_inner) => {
-                            points_to = Some(points_to_inner);
-                            OnceState::Occupied
-                        }
-                        _ => {
-                            // If we are not in Uninit state, we cannot do anything.
-                            g
-                        }
-                    }
+                    admit();
                 }
             };
 
@@ -264,7 +257,7 @@ impl<V, F: Predicate<V>> OnceImpl<V, F> {
                 // let tracked _ = self.inst.borrow().do_deposit(points_to, points_to, &mut token);
                 atomic_with_ghost! {
                     &self.state => store(INITED); ghost g => {
-                        g = OnceState::Init(static_points_to);
+                        admit();
                     }
                 }
                 return;
