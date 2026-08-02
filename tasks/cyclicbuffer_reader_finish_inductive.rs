@@ -664,103 +664,49 @@ tokenized_state_machine! { CyclicBuffer<DT: Dispatch> {
     }
 
     #[inductive(advance_head_start)]
-    fn advance_head_start_inductive(pre: Self, post: Self, node_id: NodeId) { }
+    fn advance_head_start_inductive(pre: Self, post: Self, node_id: NodeId) { admit(); }
 
     #[inductive(advance_head_next)]
-    fn advance_head_next_inductive(pre: Self, post: Self, node_id: NodeId) { }
+    fn advance_head_next_inductive(pre: Self, post: Self, node_id: NodeId) { admit(); }
 
     #[inductive(advance_head_abort)]
-    fn advance_head_abort_inductive(pre: Self, post: Self, node_id: NodeId) { }
+    fn advance_head_abort_inductive(pre: Self, post: Self, node_id: NodeId) { admit(); }
 
     #[inductive(advance_head_finish)]
-    fn advance_head_finish_inductive(pre: Self, post: Self, node_id: NodeId) {
-        assert(post.local_versions.contains_key(node_id));
-    }
+    fn advance_head_finish_inductive(pre: Self, post: Self, node_id: NodeId) { admit(); }
 
     #[inductive(advance_tail_start)]
-    fn advance_tail_start_inductive(pre: Self, post: Self, node_id: NodeId) {
-        assert forall |n| 0 <= n < post.num_replicas as nat implies post.head <= post.local_versions[n] by {
-            assert(post.local_versions.contains_key(n));
-        }
-     }
+    fn advance_tail_start_inductive(pre: Self, post: Self, node_id: NodeId) { admit(); }
 
     #[inductive(advance_tail_abort)]
-    fn advance_tail_abort_inductive(pre: Self, post: Self, node_id: NodeId) { }
+    fn advance_tail_abort_inductive(pre: Self, post: Self, node_id: NodeId) { admit(); }
 
     #[inductive(advance_tail_finish)]
-    fn advance_tail_finish_inductive(pre: Self, post: Self, node_id: NodeId, new_tail: nat) {
-        assert(post.local_versions.contains_key(node_id));
-
-        let mycur_idx = post.combiner[node_id].get_Appending_cur_idx();
-        let mytail = post.combiner[node_id].get_Appending_tail();
-        assert(mycur_idx == pre.tail);
-
-        let min_local_versions = map_min_value(post.local_versions, (post.num_replicas - 1) as nat);
-        map_min_value_smallest(post.local_versions,  (post.num_replicas - 1) as nat);
-        assert(mycur_idx >= min_local_versions);
-    }
+    fn advance_tail_finish_inductive(pre: Self, post: Self, node_id: NodeId, new_tail: nat) { admit(); }
 
     #[inductive(append_flip_bit)]
-    fn append_flip_bit_inductive(pre: Self, post: Self, node_id: NodeId, deposited: StoredType<DT>) {
-        assert(post.local_versions.contains_key(node_id));
-
-        let myidx = pre.combiner[node_id].get_Appending_cur_idx();
-        let mytail = pre.combiner[node_id].get_Appending_tail();
-
-        let min_local_head = map_min_value(post.local_versions, (post.num_replicas - 1) as nat);
-        map_min_value_smallest(post.local_versions, (post.num_replicas - 1) as nat);
-
-        log_entry_idx_wrap_around(min_local_head, post.buffer_size, myidx);
-
-        assert(forall |i| min_local_head <= i < min_local_head + post.buffer_size && i != myidx ==>
-            log_entry_is_alive(pre.alive_bits, i, pre.buffer_size) == log_entry_is_alive(post.alive_bits, i, post.buffer_size));
-
-        // overlap check
-        assert forall |i, j| post.combiner.contains_key(i) && post.combiner.contains_key(j) && i != j
-            implies post.combiner[i].no_overlap_with(post.combiner[j]) by {
-            assert(pre.combiner[i].no_overlap_with(pre.combiner[j]));
-        }
-
-        // combiner state
-        assert forall |nid| #[trigger] post.combiner.contains_key(nid) implies
-            post.combiner_valid(nid, post.combiner[nid]) by
-        {
-            if nid != node_id {
-                assert(pre.combiner[node_id].no_overlap_with(pre.combiner[nid]));
-            }
-        };
-    }
+    fn append_flip_bit_inductive(pre: Self, post: Self, node_id: NodeId, deposited: StoredType<DT>) { admit(); }
 
     #[inductive(append_finish)]
-    fn append_finish_inductive(pre: Self, post: Self, node_id: NodeId) { }
+    fn append_finish_inductive(pre: Self, post: Self, node_id: NodeId) { admit(); }
 
     #[inductive(reader_start)]
-    fn reader_start_inductive(pre: Self, post: Self, node_id: NodeId) { }
+    fn reader_start_inductive(pre: Self, post: Self, node_id: NodeId) { admit(); }
 
     #[inductive(reader_enter)]
-    fn reader_enter_inductive(pre: Self, post: Self, node_id: NodeId) { }
+    fn reader_enter_inductive(pre: Self, post: Self, node_id: NodeId) { admit(); }
 
     #[inductive(reader_guard)]
-    fn reader_guard_inductive(pre: Self, post: Self, node_id: NodeId) {
-        assert(post.local_versions.contains_key(node_id));
-        assert forall |i, j| post.combiner.contains_key(i) && post.combiner.contains_key(j) && i != j
-        implies post.combiner[i].no_overlap_with(post.combiner[j]) by {
-            if (j == node_id && post.combiner[i].is_Appending()) {
-                let cur = post.combiner[j].get_Reading_0().get_Guard_cur();
-                assert(log_entry_is_alive(post.alive_bits, cur as int, post.buffer_size));
-            }
-        }
-    }
+    fn reader_guard_inductive(pre: Self, post: Self, node_id: NodeId) { admit(); }
 
     #[inductive(reader_unguard)]
-    fn reader_unguard_inductive(pre: Self, post: Self, node_id: NodeId) { }
+    fn reader_unguard_inductive(pre: Self, post: Self, node_id: NodeId) { admit(); }
 
     #[inductive(reader_finish)]
-    fn reader_finish_inductive(pre: Self, post: Self, node_id: NodeId) {
-    }
+    fn reader_finish_inductive(pre: Self, post: Self, node_id: NodeId) { }
 
     #[inductive(reader_abort)]
-    fn reader_abort_inductive(pre: Self, post: Self, node_id: NodeId) { }
+    fn reader_abort_inductive(pre: Self, post: Self, node_id: NodeId) { admit(); }
 }}
 
 pub open spec fn min(x: nat, y: nat) -> nat {
