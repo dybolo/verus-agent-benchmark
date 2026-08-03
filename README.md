@@ -25,6 +25,17 @@ Each agent has a single `Dockerfile` shared by all its entrypoints. When the ben
 - Use `-a <pattern>` or `--agent <pattern>` to filter agents by glob pattern (e.g. `opencode`, `open*`).
 - Use `-m <pattern>` or `--model <pattern>` to filter models by glob pattern (e.g. `gpt-5.4`, `*gpt*`).
 
+## Reviewing runs
+
+The Streamlit viewer provides a human-readable overview of run results, conversation logs, and generated solution files. Run it from the repository root:
+
+```bash
+python3 -m pip install -r requirements.txt
+python3 -m streamlit run run_viewer.py
+```
+
+Use the sidebar to select a run, agent/model, result status, and task. Conversation tool calls and outputs are collapsed by default, and the solution view shows a diff whenever the original task is still available.
+
 ## Important
 
 - The script uses the user's current environment variables for provider credentials.
