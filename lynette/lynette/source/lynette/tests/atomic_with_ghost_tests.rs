@@ -115,3 +115,103 @@ fn protected() {
 }
 "#));
 }
+
+const TRY_OPEN_ORIGINAL: &str = r#"
+fn protected() {
+    let _value = try_open_atomic_update!(au, mut token => {
+        let result = atom.compare_exchange(token, 0, 1);
+        proof {
+            assert(token == token);
+        }
+        Tracked(Commit(token))
+    });
+    unimplemented!()
+}
+"#;
+
+#[test]
+fn allows_try_open_atomic_update_proof_completion() {
+    assert!(check_pair(TRY_OPEN_ORIGINAL, r#"
+fn protected() {
+    let _value = try_open_atomic_update!(au, mut token => {
+        let result = atom.compare_exchange(token, 0, 1);
+        proof {
+            assert(token == token);
+            assert(result == result);
+        }
+        Tracked(Commit(token))
+    });
+    unimplemented!()
+}
+"#));
+}
+
+#[test]
+fn allows_try_open_atomic_update_match_proof_completion() {
+    assert!(check_pair(r#"
+fn protected() {
+    let outcome;
+    let result = try_open_atomic_update!(au, mut token => {
+        let res = atom.compare_exchange(token, 0, 1);
+        proof { }
+        Tracked(outcome)
+    });
+}
+"#, r#"
+fn protected() {
+    let outcome;
+    let result = try_open_atomic_update!(au, mut token => {
+        let res = atom.compare_exchange(token, 0, 1);
+        proof {
+            outcome = match res {
+                Ok(_) => Ok(token),
+                Err(_) => Err(token),
+            };
+        }
+        Tracked(outcome)
+    });
+}
+"#));
+}
+
+#[test]
+fn rejects_try_open_atomic_update_non_proof_changes() {
+    assert!(!check_pair(TRY_OPEN_ORIGINAL, r#"
+fn protected() {
+    let _value = try_open_atomic_update!(au, mut replacement => {
+        let result = atom.compare_exchange(replacement, 0, 1);
+        proof {
+            assert(replacement == replacement);
+        }
+        Tracked(Commit(replacement))
+    });
+    unimplemented!()
+}
+"#));
+
+    assert!(!check_pair(TRY_OPEN_ORIGINAL, r#"
+fn protected() {
+    let _value = try_open_atomic_update!(au, mut token => {
+        let result = atom.compare_exchange(token, 0, 2);
+        proof {
+            assert(token == token);
+        }
+        Tracked(Commit(token))
+    });
+    unimplemented!()
+}
+"#));
+
+    assert!(!check_pair(TRY_OPEN_ORIGINAL, r#"
+fn protected() {
+    let _value = try_open_atomic_update!(au, mut token => {
+        let result = atom.compare_exchange(token, 0, 1);
+        proof {
+            assert(token == token);
+        }
+        Tracked(Abort(token))
+    });
+    unimplemented!()
+}
+"#));
+}
