@@ -47,9 +47,60 @@ fn normalized_atomic_with_ghost_tokens(tokens: &TokenStream) -> Option<TokenStre
     Some(trees.into_iter().collect())
 }
 
+/// Remove only the body of `proof { ... }` blocks in a
+/// `try_open_atomic_update!` macro.
+///
+/// The macro contains both executable code (such as a physical CAS) and
+/// ghost code that establishes the logical-atomic commit.  We preserve every
+/// token except the contents of already-present proof blocks, so a proof
+/// completion cannot change the linearization-point operation, its token
+/// binding, or its commit expression.
+fn normalized_try_open_atomic_update_tokens(tokens: &TokenStream) -> Option<TokenStream> {
+    fn normalize_groups(tokens: TokenStream) -> (TokenStream, bool) {
+        let mut trees: Vec<TokenTree> = tokens.into_iter().collect();
+        let mut changed = false;
+        let mut index = 0;
+
+        while index < trees.len() {
+            if matches!(&trees[index], TokenTree::Ident(ident) if ident == "proof") {
+                if let Some(TokenTree::Group(group)) = trees.get(index + 1) {
+                    if group.delimiter() == Delimiter::Brace {
+                        let mut empty = Group::new(Delimiter::Brace, TokenStream::new());
+                        empty.set_span(group.span());
+                        trees[index + 1] = TokenTree::Group(empty);
+                        changed = true;
+                        index += 2;
+                        continue;
+                    }
+                }
+            }
+
+            if let TokenTree::Group(group) = &trees[index] {
+                let (stream, group_changed) = normalize_groups(group.stream());
+                if group_changed {
+                    let mut normalized = Group::new(group.delimiter(), stream);
+                    normalized.set_span(group.span());
+                    trees[index] = TokenTree::Group(normalized);
+                    changed = true;
+                }
+            }
+            index += 1;
+        }
+
+        (trees.into_iter().collect(), changed)
+    }
+
+    let (normalized, changed) = normalize_groups(tokens.clone());
+    changed.then_some(normalized)
+}
+
 fn normalize_atomic_with_ghost_macro(mac: &mut syn_verus::Macro) {
     if mac.path.is_ident("atomic_with_ghost") {
         if let Some(tokens) = normalized_atomic_with_ghost_tokens(&mac.tokens) {
+            mac.tokens = tokens;
+        }
+    } else if mac.path.is_ident("try_open_atomic_update") {
+        if let Some(tokens) = normalized_try_open_atomic_update_tokens(&mac.tokens) {
             mac.tokens = tokens;
         }
     }
@@ -69,8 +120,8 @@ fn normalize_atomic_with_ghost_expr(expr: &syn_verus::Expr) -> syn_verus::Expr {
     normalized
 }
 
-/// Normalize `atomic_with_ghost!` proof blocks without removing any other
-/// ghost code. This is used for non-target executable functions, which remain
+/// Normalize supported atomic proof blocks without removing any other ghost
+/// code. This is used for non-target executable functions, which remain
 /// otherwise byte-for-byte equivalent at the syntax-tree level.
 pub fn normalize_atomic_with_ghost_block(block: &syn_verus::Block) -> syn_verus::Block {
     let mut normalized = block.clone();
@@ -204,6 +255,19 @@ fn remove_ghost_expr(expr: &syn_verus::Expr, mode: &DeghostMode) -> Option<syn_v
                 })
             })
         }
+        syn_verus::Expr::Loop(l) => remove_ghost_block(&l.body, mode).map(|new_body| {
+            syn_verus::Expr::Loop(syn_verus::ExprLoop {
+                attrs: l.attrs.clone(),
+                label: l.label.clone(),
+                loop_token: l.loop_token.clone(),
+                body: new_body,
+                invariant_except_break: None,
+                invariant: None,
+                invariant_ensures: None,
+                ensures: None,
+                decreases: None,
+            })
+        }),
         syn_verus::Expr::ForLoop(f) => {
             /*
              * Fields to remove:
