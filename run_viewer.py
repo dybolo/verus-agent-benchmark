@@ -512,24 +512,37 @@ def render_timeline_item(item: TimelineItem, show_thinking: bool, show_full: boo
             render_payload("Details", item.details, show_full)
 
 
-def render_run_metrics(run: dict[str, Any]) -> None:
+def render_sidebar_run_summary(run: dict[str, Any]) -> None:
     rows = all_task_results(run)
-    metrics = st.columns(6)
-    metrics[0].metric("Tasks", len(rows))
-    metrics[1].metric(
-        "Verus passed", f"{sum(result.get('verus_passed') is True for _, _, result in rows)}/{len(rows)}"
+    total = len(rows)
+    passed = sum(result_status(result) == "Passed" for _, _, result in rows)
+    failed = sum(result_status(result) == "Failed" for _, _, result in rows)
+    verus_passed = sum(result.get("verus_passed") is True for _, _, result in rows)
+    cheat_passed = sum(result.get("cheat_checker_passed") is True for _, _, result in rows)
+    timed_out = sum(result.get("timed_out") is True for _, _, result in rows)
+
+    st.sidebar.subheader("Run summary")
+    first, second = st.sidebar.columns(2)
+    first.metric("Tasks", total)
+    second.metric("Passed", passed)
+    first.metric("Failed", failed)
+    second.metric("Timed out", timed_out)
+    first.metric("Verus", f"{verus_passed}/{total}")
+    second.metric("Cheat check", f"{cheat_passed}/{total}")
+    st.sidebar.caption(
+        f"Cost: ${numeric_total(rows, 'total_costs'):.2f} · "
+        f"Duration: {format_duration(numeric_total(rows, 'duration_seconds'))}"
     )
-    metrics[2].metric(
-        "Cheat check passed",
-        f"{sum(result.get('cheat_checker_passed') is True for _, _, result in rows)}/{len(rows)}",
-    )
-    metrics[3].metric("Timed out", sum(result.get("timed_out") is True for _, _, result in rows))
-    metrics[4].metric("Total cost", f"${numeric_total(rows, 'total_costs'):.2f}")
-    metrics[5].metric("Total duration", format_duration(numeric_total(rows, "duration_seconds")))
+
+
+def task_option_label(task_name: str, result: dict[str, Any]) -> str:
+    status = result_status(result)
+    icon = {"Passed": "✅", "Failed": "❌", "Timed out": "⏱️"}[status]
+    return f"{icon} {task_name}"
 
 
 def render_task_metrics(result: dict[str, Any]) -> None:
-    st.subheader("Selected task")
+    # st.subheader("Selected task")
     metrics = st.columns(6)
     metrics[0].metric("Verus", status_label(result.get("verus_passed")))
     metrics[1].metric("Cheat check", status_label(result.get("cheat_checker_passed")))
@@ -671,19 +684,34 @@ def main() -> None:
         st.info("No valid run JSON files were found in runs/.")
         st.stop()
 
-    with st.expander("All runs overview"):
-        st.dataframe([summarize_run(run) for run in runs], hide_index=True, width="stretch")
+    run_query = st.sidebar.text_input("Filter runs", placeholder="Timestamp or agent/model")
+    run_query_lower = run_query.strip().lower()
+    filtered_runs = [
+        run
+        for run in runs
+        if not run_query_lower
+        or run_query_lower in str(run.get("timestamp", "")).lower()
+        or run_query_lower in " ".join(run.get("agents", {}).keys()).lower()
+    ]
+    if not filtered_runs:
+        st.sidebar.warning("No runs match the current filter.")
+        st.stop()
 
     selected_run = st.sidebar.selectbox(
         "Run",
-        runs,
+        filtered_runs,
         format_func=lambda run: format_run_timestamp(str(run.get("timestamp", "Unknown"))),
     )
     agent_names = sorted(selected_run.get("agents", {}).keys())
+    if not agent_names:
+        st.sidebar.warning("The selected run does not contain any agents.")
+        st.stop()
     selected_agent = st.sidebar.selectbox("Agent / model", agent_names)
     agent_data = selected_run["agents"][selected_agent]
     tasks = agent_data.get("tasks", {}) if isinstance(agent_data, dict) else {}
+    render_sidebar_run_summary(selected_run)
 
+    st.sidebar.subheader("Task results")
     statuses = st.sidebar.multiselect(
         "Task status", ["Passed", "Failed", "Timed out"], default=["Passed", "Failed", "Timed out"]
     )
@@ -694,24 +722,34 @@ def main() -> None:
         if result_status(result) in statuses and task_query.lower() in task_name.lower()
     ]
     if not filtered_tasks:
-        st.warning("No tasks match the current sidebar filters.")
+        st.sidebar.warning("No tasks match the current filters.")
         st.stop()
-    selected_task = st.sidebar.selectbox("Task", filtered_tasks)
+
+    task_selector_key = f"selected_task:{selected_run.get('timestamp', '')}:{selected_agent}"
+    if st.session_state.get(task_selector_key) not in filtered_tasks:
+        st.session_state[task_selector_key] = filtered_tasks[0]
+    selected_task = st.sidebar.radio(
+        "Results",
+        filtered_tasks,
+        format_func=lambda task_name: task_option_label(task_name, tasks[task_name]),
+        key=task_selector_key,
+    )
     selected_result = tasks[selected_task]
 
-    st.header(format_run_timestamp(str(selected_run.get("timestamp", ""))))
-    st.caption(selected_agent)
-    render_run_metrics(selected_run)
+    st.header(selected_task)
+    st.caption(
+        f"{selected_agent} · Run {format_run_timestamp(str(selected_run.get('timestamp', '')))}"
+    )
     render_task_metrics(selected_result)
-    st.caption(selected_task)
 
-    results_tab, conversation_tab, solution_tab = st.tabs(["Results", "Conversation", "Solution"])
-    with results_tab:
-        st.dataframe(task_table(tasks, repo_root), hide_index=True, width="stretch")
+    conversation_tab, solution_tab = st.tabs(["Conversation", "Solution"])
     with conversation_tab:
         render_conversation(repo_root, selected_agent, selected_result)
     with solution_tab:
         render_solution(repo_root, selected_task, selected_result)
+
+    with st.expander("All runs overview"):
+        st.dataframe([summarize_run(run) for run in runs], hide_index=True, width="stretch")
 
 
 if __name__ == "__main__":
