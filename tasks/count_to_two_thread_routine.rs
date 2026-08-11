@@ -399,6 +399,11 @@ pub fn thread_routine(
         return_permission@@ is Complete,
 {
     let tracked mut oneshot_thread_half = oneshot_thread_half;
+    open_atomic_invariant!(shared_state.inv.borrow() => inner => {
+        shared_state.x.fetch_add_wrapping(Tracked(&mut inner.x_perm), 1);
+        proof {
+        }
+    });
     Tracked(oneshot_thread_half)
 }
 

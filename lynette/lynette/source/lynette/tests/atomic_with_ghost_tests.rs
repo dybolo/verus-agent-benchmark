@@ -215,3 +215,48 @@ fn protected() {
 }
 "#));
 }
+
+const OPEN_ATOMIC_INVARIANT_ORIGINAL: &str = r#"
+fn protected() {
+    open_atomic_invariant!(inv.borrow() => inner => {
+        proof { }
+        value = atom.load(Tracked(&inner.permission));
+    });
+}
+"#;
+
+#[test]
+fn allows_open_atomic_invariant_proof_completion() {
+    assert!(check_pair(OPEN_ATOMIC_INVARIANT_ORIGINAL, r#"
+fn protected() {
+    open_atomic_invariant!(inv.borrow() => inner => {
+        proof {
+            inner.lemma();
+            assert(inner.valid());
+        }
+        value = atom.load(Tracked(&inner.permission));
+    });
+}
+"#));
+}
+
+#[test]
+fn rejects_open_atomic_invariant_non_proof_changes() {
+    assert!(!check_pair(OPEN_ATOMIC_INVARIANT_ORIGINAL, r#"
+fn protected() {
+    open_atomic_invariant!(different_inv.borrow() => inner => {
+        proof { }
+        value = atom.load(Tracked(&inner.permission));
+    });
+}
+"#));
+
+    assert!(!check_pair(OPEN_ATOMIC_INVARIANT_ORIGINAL, r#"
+fn protected() {
+    open_atomic_invariant!(inv.borrow() => inner => {
+        proof { }
+        value = atom.load(Tracked(&inner.different_permission));
+    });
+}
+"#));
+}

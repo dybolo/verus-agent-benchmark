@@ -47,15 +47,13 @@ fn normalized_atomic_with_ghost_tokens(tokens: &TokenStream) -> Option<TokenStre
     Some(trees.into_iter().collect())
 }
 
-/// Remove only the body of `proof { ... }` blocks in a
-/// `try_open_atomic_update!` macro.
+/// Remove only the body of `proof { ... }` blocks in a supported macro.
 ///
-/// The macro contains both executable code (such as a physical CAS) and
-/// ghost code that establishes the logical-atomic commit.  We preserve every
-/// token except the contents of already-present proof blocks, so a proof
-/// completion cannot change the linearization-point operation, its token
-/// binding, or its commit expression.
-fn normalized_try_open_atomic_update_tokens(tokens: &TokenStream) -> Option<TokenStream> {
+/// These macros interleave executable operations with ghost proof blocks. We
+/// preserve every token except the contents of already-present proof blocks,
+/// so proof completion cannot change an operation, binding, or other macro
+/// structure.
+fn normalized_proof_block_tokens(tokens: &TokenStream) -> Option<TokenStream> {
     fn normalize_groups(tokens: TokenStream) -> (TokenStream, bool) {
         let mut trees: Vec<TokenTree> = tokens.into_iter().collect();
         let mut changed = false;
@@ -99,8 +97,10 @@ fn normalize_atomic_with_ghost_macro(mac: &mut syn_verus::Macro) {
         if let Some(tokens) = normalized_atomic_with_ghost_tokens(&mac.tokens) {
             mac.tokens = tokens;
         }
-    } else if mac.path.is_ident("try_open_atomic_update") {
-        if let Some(tokens) = normalized_try_open_atomic_update_tokens(&mac.tokens) {
+    } else if mac.path.is_ident("try_open_atomic_update")
+        || mac.path.is_ident("open_atomic_invariant")
+    {
+        if let Some(tokens) = normalized_proof_block_tokens(&mac.tokens) {
             mac.tokens = tokens;
         }
     }
