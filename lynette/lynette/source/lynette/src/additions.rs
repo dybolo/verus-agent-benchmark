@@ -758,7 +758,12 @@ pub fn check_allowed_additions_only(original_file: PathBuf, changed_file: PathBu
             // });
 
             for i in 0..original_verus_macros.len() {
-                if !check_items(&original_verus_macros[i].items[0..], &changed_verus_macros[i].items[0..]) {
+                // Nested `verus!` macros are collected and checked separately.
+                // Remove them from the enclosing parsed macro so their token
+                // bodies are not also treated as opaque executable changes.
+                let original_macro = remove_verus_macro(&original_verus_macros[i]);
+                let changed_macro = remove_verus_macro(&changed_verus_macros[i]);
+                if !check_items(&original_macro.items[0..], &changed_macro.items[0..]) {
                     println!("Disallowed changes made to Verus macros in the original files.");
                     return Ok(false);
                 }

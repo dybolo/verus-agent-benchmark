@@ -60,6 +60,77 @@ trait T {
 }
 
 #[test]
+fn allows_ghost_body_changes_inside_a_nested_verus_module() {
+    let original = r#"
+mod once {
+verus! {
+    struct OnceImpl;
+
+    impl OnceImpl {
+        fn get(&self) {
+            let _value = atomic_with_ghost! {
+                atom => load(); ghost g => {}
+            };
+        }
+    }
+}
+}
+"#;
+    let changed = r#"
+mod once {
+verus! {
+    struct OnceImpl;
+
+    impl OnceImpl {
+        fn get(&self) {
+            let _value = atomic_with_ghost! {
+                atom => load(); ghost g => {
+                    match g {
+                        Some(value) => { assert(value == value); }
+                        _ => {}
+                    }
+                }
+            };
+        }
+    }
+}
+}
+"#;
+
+    assert!(check_pair(original, changed));
+}
+
+#[test]
+fn allows_atomic_ghost_body_changes_inside_a_binary_expression() {
+    let original = r#"
+fn try_upread() {
+    let _masked = atomic_with_ghost!(
+        atom => fetch_or(2); update prev -> next; ghost g => {}
+    ) & 3;
+}
+"#;
+    let changed = r#"
+fn try_upread() {
+    let _masked = atomic_with_ghost!(
+        atom => fetch_or(2); update prev -> next; ghost g => {
+            assert(next == prev | 2);
+        }
+    ) & 3;
+}
+"#;
+    let operation_changed = r#"
+fn try_upread() {
+    let _masked = atomic_with_ghost!(
+        atom => fetch_and(2); update prev -> next; ghost g => {}
+    ) & 3;
+}
+"#;
+
+    assert!(check_pair(original, changed));
+    assert!(!check_pair(original, operation_changed));
+}
+
+#[test]
 fn allows_ghost_body_changes_in_non_target_exec_functions() {
     assert!(check_changed(r#"
 fn protected() {

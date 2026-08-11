@@ -157,27 +157,38 @@ pub fn extract_verus_macro_with_context(
     filepath: &Path,
     source_code: &str,
 ) -> Result<Vec<syn_verus::File>, Error> {
-    file.items
-        .iter()
-        .filter_map(|item| {
-            if let syn_verus::Item::Macro(m) = item {
-                if is_verus_macro(&m.mac) {
-                    Some(m.mac.tokens.clone())
-                } else {
-                    None
-                }
-            } else {
-                None
+    fn collect_from_items(
+        items: &[syn_verus::Item],
+        filepath: &Path,
+        source_code: &str,
+        files: &mut Vec<syn_verus::File>,
+    ) -> Result<(), Error> {
+        for item in items {
+            match item {
+                syn_verus::Item::Macro(m) if is_verus_macro(&m.mac) => {
+                    let parsed = syn_verus::parse2::<syn_verus::File>(m.mac.tokens.clone())
+                        .map_err(|error| Error::ParseFile {
+                            error,
+                            filepath: filepath.to_path_buf(),
+                            source_code: source_code.to_owned(),
+                        })?;
+                    files.push(parsed.clone());
+                    collect_from_items(&parsed.items, filepath, source_code, files)?;
+                },
+                syn_verus::Item::Mod(module) => {
+                    if let Some((_, items)) = &module.content {
+                        collect_from_items(items, filepath, source_code, files)?;
+                    }
+                },
+                _ => {},
             }
-        })
-        .map(|tokens| {
-            syn_verus::parse2::<syn_verus::File>(tokens).map_err(|e| Error::ParseFile {
-                error: e,
-                filepath: filepath.to_path_buf(),
-                source_code: source_code.to_owned(),
-            })
-        })
-        .collect()
+        }
+        Ok(())
+    }
+
+    let mut files = Vec::new();
+    collect_from_items(&file.items, filepath, source_code, &mut files)?;
+    Ok(files)
 }
 
 pub fn fextract_verus_macro(
