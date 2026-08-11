@@ -179,6 +179,12 @@ fn remove_ghost_local(local: &syn_verus::Local, mode: &DeghostMode) -> Option<sy
 
 fn remove_ghost_expr(expr: &syn_verus::Expr, mode: &DeghostMode) -> Option<syn_verus::Expr> {
     //println!("{}\n", expr.to_token_stream().to_string());
+    // Atomic proof macros may be nested below an arbitrary expression node,
+    // for example `atomic_with_ghost!(...) & MASK`. Normalize the complete
+    // subtree before expression-specific deghosting so fallback arms cannot
+    // clone a composite expression without visiting the nested macro.
+    let normalized_expr = normalize_atomic_with_ghost_expr(expr);
+    let expr = &normalized_expr;
     match expr {
         syn_verus::Expr::Block(b) => remove_ghost_block(&b.block, mode).map(|new_block| {
             syn_verus::Expr::Block(syn_verus::ExprBlock {
@@ -696,25 +702,25 @@ pub fn remove_ghost_from_file(file: &syn_verus::File, mode: &DeghostMode) -> syn
 }
 
 pub fn remove_verus_macro(file: &syn_verus::File) -> syn_verus::File {
-    let mut new_items: Vec<syn_verus::Item> = Vec::new();
-
-    for item in &file.items {
-        if let syn_verus::Item::Macro(m) = item {
-            if !is_verus_macro(&m.mac) {
-                new_items.push(item.clone());
-            }
-        } else {
-            new_items.push(item.clone());
-        }
+    fn remove_from_items(items: &[syn_verus::Item]) -> Vec<syn_verus::Item> {
+        items.iter().filter_map(|item| match item {
+            syn_verus::Item::Macro(m) if is_verus_macro(&m.mac) => None,
+            syn_verus::Item::Mod(module) => {
+                let mut module = module.clone();
+                if let Some((brace, items)) = &module.content {
+                    module.content = Some((brace.clone(), remove_from_items(items)));
+                }
+                Some(syn_verus::Item::Mod(module))
+            },
+            _ => Some(item.clone()),
+        }).collect()
     }
 
-    let new_file = syn_verus::File {
+    syn_verus::File {
         shebang: file.shebang.clone(),
         attrs: file.attrs.clone(),
-        items: new_items,
-    };
-
-    new_file
+        items: remove_from_items(&file.items),
+    }
 }
 
 pub fn deghost_merge_files(file: &syn_verus::File, verus_files: Vec<syn_verus::File>) -> syn_verus::File {
