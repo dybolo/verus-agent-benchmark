@@ -1,0 +1,4 @@
+#!/bin/sh
+export AWS_REGION=us-west-2
+export AWS_DEFAULT_REGION=us-west-2
+pi --model amazon-bedrock/qwen.qwen3-coder-480b-a35b-v1:0 --session-dir "$SESSION" -p "$TASK_PROMPT"
