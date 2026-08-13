@@ -1,0 +1,12 @@
+#!/bin/bash
+set -e
+
+export XDG_DATA_HOME=$SESSION
+# This model has no cross-region inference profile and is unavailable in
+# us-east-1; use an AWS region where its Bedrock runtime endpoint is offered.
+export AWS_REGION=us-west-2
+export AWS_DEFAULT_REGION=us-west-2
+
+opencode run --dangerously-skip-permissions --format json \
+    -m amazon-bedrock/qwen.qwen3-coder-480b-a35b-v1:0 "$TASK_PROMPT" \
+    > "$SESSION/session.jsonl"
