@@ -13,14 +13,12 @@ use std::sync::atomic::*;
 
 verus! {
 
-// A simple counter, albeit with nothing verified about it.
 exec static GLOBAL_COUNTER: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
 
 fn increment_counter() {
     GLOBAL_COUNTER.fetch_add(1, Ordering::Relaxed);
 }
 
-// Thread-safe lazy initialization
 pub tracked enum GhostState<T: 'static> {
     Uninitialized(PointsTo<Option<T>>),
     Initializing,
@@ -35,9 +33,6 @@ struct_with_invariants!{
 
     spec fn wf(&self) -> bool {
         invariant on state with (cell) is (v: u64, g: GhostState<T>) {
-            // State = 0: Uninitialized
-            // State = 1: currently initializing
-            // State = 2: is initialized
             match g {
                 GhostState::Uninitialized(points_to) => {
                     v == 0
@@ -90,13 +85,10 @@ impl<T: Initializable> Lazy<T> {
                 atomic_with_ghost!(&self.state => load(); ghost g => {
             });
             if cur_state == 2 {
-                // Already initialized.
                 return self.cell.borrow(
                     Tracked(readonly_points_to.tracked_borrow()),
                 ).as_ref().unwrap();
             } else {
-                // Initialization is required. Try to take the lock if initialization
-                // isn't already in progress.
                 let mut do_initialization = (cur_state == 0);
                 let tracked mut points_to: Option<PointsTo<Option<T>>> = None;
                 if do_initialization {
@@ -106,12 +98,10 @@ impl<T: Initializable> Lazy<T> {
                     {
                     });
                     if res.is_err() {
-                        // don't initialize after all
                         do_initialization = false;
                     }
                 }
                 if do_initialization {
-                    // Do initialization
                     let t = T::initialize();
                     let tracked mut points_to = points_to.tracked_unwrap();
                     self.cell.replace(Tracked(&mut points_to), Some(t));
@@ -120,15 +110,12 @@ impl<T: Initializable> Lazy<T> {
                     });
                     return self.cell.borrow(Tracked(static_points_to)).as_ref().unwrap();
                 } else {
-                    // Wait for initialization to complete by a different thread
-                    // (Try again in the next iteration of the loop.)
                 }
             }
         }
     }
 }
 
-// Example usage
 struct X {}
 
 impl Initializable for X {
@@ -151,4 +138,4 @@ fn get_lazy_x() -> &'static X {
 fn main() {
 }
 
-} // verus!
+} 

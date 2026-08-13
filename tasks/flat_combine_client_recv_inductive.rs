@@ -1,4 +1,3 @@
-// rust_verify/tests/example.rs expect-warnings
 #[allow(unused_imports)]
 use verus_builtin::*;
 use verus_builtin_macros::*;
@@ -10,10 +9,6 @@ use vstd::{pervasive::*, *};
 
 use verus_state_machines_macros::tokenized_state_machine;
 
-// Based off of the FlatCombine system from Seagull-NR.
-// A major difference is that one didn't make any use of storage, because storage was
-// rather complicated to use, and it wasn't necessary.
-// Now, I expect storage to be a lot easier to use, easier than the alternative.
 
 verus! {
 
@@ -39,7 +34,7 @@ pub enum Combiner {
     Responding { elems: Seq<Option<int>>, idx: nat },
 }
 
-} // verus!
+} 
 tokenized_state_machine! {
     FlatCombiner {
         fields {
@@ -87,18 +82,6 @@ tokenized_state_machine! {
             }
         }
 
-        /*
-        #[verifier::spec]
-        fn should_have_req_stored(self, i: nat) -> bool {
-            0 <= i
-            && i < self.slots
-            && self.slots.index(i)
-            && match self.combiner {
-                Combiner::Collecting{elems} => elems.len() < i || elems.index(i).is_None()
-                Combiner::Responding{elems, idx} => idx >= i || elems.index(i).is_None()
-            }
-        }
-        */
 
         pub open spec fn client_waiting(self, i: nat) -> bool {
             self.valid_idx(i)
@@ -184,21 +167,17 @@ tokenized_state_machine! {
         #[inductive(initialize)]
         fn init_inductive(post: Self, num_clients: nat) { }
 
-        ///// Client transitions
 
         transition!{
             client_send(j: nat, request: Request, cur_slot: bool) {
                 require(0 <= j && j < pre.num_clients);
 
-                // Move client to 'waiting' state
                 remove clients -= [j => Client::Idle];
                 add    clients += [j => Client::Waiting{rid: request.rid}];
 
-                // Set the slot
                 remove slots -= [j => cur_slot];
                 add    slots += [j => true];
 
-                // deposit the request
                 deposit requests += [j => request] by {
                     assert(!pre.request_stored(j));
                 };
@@ -216,22 +195,15 @@ tokenized_state_machine! {
             client_recv(j: nat) {
                 require(0 <= j && j < pre.num_clients);
 
-                // Move client to 'idle' state
                 remove clients -= [j => let Client::Waiting{rid}];
                 add    clients += [j => Client::Idle];
 
-                // Check that the slot has been set back to 'false'
                 have slots >= [j => false];
 
-                // withdraw the response
                 withdraw responses -= [j => let response] by {
                     assert(pre.client_waiting(j));
-                    //assert(!pre.request_stored(j));
-                    //assert(!pre.combiner_has(j));
-                    //assert(pre.response_stored(j));
                 };
 
-                // make sure we get back the response for the correct request id:
                 assert(response.rid == rid) by {
                     assert(pre.client_waiting(j));
                 };
@@ -242,7 +214,6 @@ tokenized_state_machine! {
         fn client_recv_inductive(pre: Self, post: Self, j: nat) {
         }
 
-        ///// Combiner transitions
 
         transition!{
             combiner_recv() {
@@ -250,17 +221,14 @@ tokenized_state_machine! {
                 let j = pre.combiner.get_Collecting_elems().len();
                 require(0 <= j && j < pre.num_clients);
 
-                // Observe that the slot has been set to 'true'
                 have slots >= [j => true];
 
-                // Withdraw a request
                 withdraw requests -= [j => let request] by {
                     assert(pre.valid_idx(j));
                     assert(pre.client_waiting(j));
                     assert(pre.request_stored(j));
                 };
 
-                // Update combiner's local state to remember we withdrew a request with this ID
                 update combiner = Combiner::Collecting{
                     elems: pre.combiner.get_Collecting_elems().push(Option::Some(request.rid)),
                 };
@@ -278,12 +246,7 @@ tokenized_state_machine! {
                 let j = pre.combiner.get_Collecting_elems().len();
                 require(0 <= j && j < pre.num_clients);
 
-                // In practice, this happens when slot j is set to false, so we could add this:
-                //    have slots >= [j => false];
-                // but it's not necessary
 
-                // Update combiner's local state to remember that we didn't withdraw
-                // anything here.
                 update combiner = Combiner::Collecting{
                     elems: pre.combiner.get_Collecting_elems().push(Option::None),
                 };
@@ -313,14 +276,11 @@ tokenized_state_machine! {
                 require(0 <= j && j < pre.num_clients);
                 let response_opt = pre.combiner.get_Responding_elems().index(j as int);
 
-                // The response we return has to have the right request ID
                 require(response_opt == Option::Some(response.rid));
 
-                // Set the slot back to false
                 remove slots -= [j => cur_slot];
                 add    slots += [j => false];
 
-                // Update the combiner's local state
                 update combiner = Combiner::Responding{
                     elems: pre.combiner.get_Responding_elems(),
                     idx: j + 1,
@@ -346,10 +306,8 @@ tokenized_state_machine! {
                 require(0 <= j && j < pre.num_clients);
                 let response_opt = pre.combiner.get_Responding_elems().index(j as int);
 
-                // The response we return has to have the right request ID
                 require(equal(response_opt, Option::None));
 
-                // Update the combiner's local state
                 update combiner = Combiner::Responding{
                     elems: pre.combiner.get_Responding_elems(),
                     idx: j + 1,

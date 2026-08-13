@@ -71,7 +71,6 @@ RwLockToks<K, V, Pred: InvariantPredicate<K, V>> {
         broadcast use group_multiset_axioms;
     }
 
-    /// Increment the 'rc' counter, obtain a pending_reader
     transition!{
         acquire_read_start() {
             update flag_rc = pre.flag_rc + 1;
@@ -79,8 +78,6 @@ RwLockToks<K, V, Pred: InvariantPredicate<K, V>> {
         }
     }
 
-    /// Exchange the pending_reader for a reader by checking
-    /// that the 'exc' bit is 0
     transition!{
         acquire_read_end() {
             require(pre.flag_exc == false);
@@ -94,8 +91,6 @@ RwLockToks<K, V, Pred: InvariantPredicate<K, V>> {
         }
     }
 
-    /// Decrement the 'rc' counter, abandon the attempt to gain
-    /// the 'read' lock.
     transition!{
         acquire_read_abandon() {
             remove pending_reader -= {()};
@@ -104,8 +99,6 @@ RwLockToks<K, V, Pred: InvariantPredicate<K, V>> {
         }
     }
 
-    /// Atomically set 'exc' bit from 'false' to 'true'
-    /// Obtain a pending_writer
     transition!{
         acquire_exc_start() {
             require(pre.flag_exc == false);
@@ -114,9 +107,6 @@ RwLockToks<K, V, Pred: InvariantPredicate<K, V>> {
         }
     }
 
-    /// Finish obtaining the write lock by checking that 'rc' is 0.
-    /// Exchange the pending_writer for a writer and withdraw the
-    /// stored object.
     transition!{
         acquire_exc_end() {
             require(pre.flag_rc == 0);
@@ -132,8 +122,6 @@ RwLockToks<K, V, Pred: InvariantPredicate<K, V>> {
         }
     }
 
-    /// Release the write-lock. Update the 'exc' bit back to 'false'.
-    /// Return the 'writer' and also deposit an object back into storage.
     transition!{
         release_exc(x: V) {
             require Pred::inv(pre.k, x);
@@ -145,7 +133,6 @@ RwLockToks<K, V, Pred: InvariantPredicate<K, V>> {
         }
     }
 
-    /// Check that the 'reader' is actually a guard for the given object.
     property!{
         read_guard(x: V) {
             have reader >= {x};
@@ -161,16 +148,13 @@ RwLockToks<K, V, Pred: InvariantPredicate<K, V>> {
         }
     }
 
-    /// Release the reader-lock. Decrement 'rc' and return the 'reader' object.
     #[transition]
     transition!{
         release_shared(x: V) {
             remove reader -= {x};
 
             assert(pre.flag_rc >= 1) by {
-                //assert(pre.reader.count(x) >= 1);
                 assert(equal(pre.storage, Option::Some(x)));
-                //assert(equal(x, pre.storage->0));
             };
             update flag_rc = (pre.flag_rc - 1) as nat;
         }
@@ -264,79 +248,6 @@ impl<V, Pred: RwLockPredicate<V>> InvariantPredicate<Pred, V> for InternalPred<V
 }
 
 struct_with_invariants!{
-    /** A verified implementation of a reader-writer lock,
-    implemented using atomics and a reference count.
-
-    When constructed, you can provide an invariant via the `Pred` parameter,
-    specifying the allowed values that can go in the lock.
-
-    Note that this specification does *not* verify the absence of dead-locks.
-
-    ### Examples
-
-    On construction of a lock, we can specify an invariant for the object that goes inside.
-    One way to do this is by providing a `spec_fn`, which implements the [`RwLockPredicate`]
-    trait.
-
-    ```rust,ignore
-    fn example1() {
-        // We can create a lock with an invariant: `v == 5 || v == 13`.
-        // Thus only 5 or 13 can be stored in the lock.
-        let lock = RwLock::<u64, spec_fn(u64) -> bool>::new(5, Ghost(|v| v == 5 || v == 13));
-
-        let (val, write_handle) = lock.acquire_write();
-        assert(val == 5 || val == 13);
-        write_handle.release_write(13);
-
-        let read_handle1 = lock.acquire_read();
-        let read_handle2 = lock.acquire_read();
-
-        // We can take multiple read handles at the same time:
-
-        let val1 = read_handle1.borrow();
-        let val2 = read_handle2.borrow();
-
-        // RwLock has a lemma that both read handles have the same value:
-
-        proof { ReadHandle::lemma_readers_match(&read_handle1, &read_handle2); }
-        assert(*val1 == *val2);
-
-        read_handle1.release_read();
-        read_handle2.release_read();
-    }
-    ```
-
-    It's often easier to implement the [`RwLockPredicate`] trait yourself. This way you can
-    have a configurable predicate without needing to work with higher-order functions.
-
-    ```rust,ignore
-    struct FixedParity {
-        pub parity: int,
-    }
-
-    impl RwLockPredicate<u64> for FixedParity {
-        open spec fn inv(self, v: u64) -> bool {
-            v % 2 == self.parity
-        }
-    }
-
-    fn example2() {
-        // Create a lock that can only store even integers
-        let lock_even = RwLock::<u64, FixedParity>::new(20, Ghost(FixedParity { parity: 0 }));
-
-        // Create a lock that can only store odd integers
-        let lock_odd = RwLock::<u64, FixedParity>::new(23, Ghost(FixedParity { parity: 1 }));
-
-        let read_handle_even = lock_even.acquire_read();
-        let val_even = *read_handle_even.borrow();
-        assert(val_even % 2 == 0);
-
-        let read_handle_odd = lock_odd.acquire_read();
-        let val_odd = *read_handle_odd.borrow();
-        assert(val_odd % 2 == 1);
-    }
-    ```
-    */
 
     pub struct RwLock<V, Pred: RwLockPredicate<V>> {
         exc: AtomicBool<_, RwLockToks::flag_exc<Pred, V, InternalPred<V, Pred>>, _>,
@@ -364,25 +275,11 @@ struct_with_invariants!{
     }
 }
 
-/// Handle obtained for an exclusive write-lock from an [`RwLock`].
-///
-/// Note that this handle does not contain a reference to the lock-protected object;
-/// ownership of the object is obtained separately from [`RwLock::acquire_write`].
-/// This may be changed in the future.
-///
-/// **Warning:** The lock is _NOT_ released automatically when the handle
-/// is dropped. You must call [`release_write`](WriteHandle::release_write).
-/// Verus does not check that lock is released.
 pub struct WriteHandle<'a, V, Pred: RwLockPredicate<V>> {
     tracked handle: Tracked<RwLockToks::writer<Pred, V, InternalPred<V, Pred>>>,
     rwlock: &'a RwLock<V, Pred>,
 }
 
-/// Handle obtained for a shared read-lock from an [`RwLock`].
-///
-/// **Warning:** The lock is _NOT_ released automatically when the handle
-/// is dropped. You must call [`release_read`](ReadHandle::release_read).
-/// Verus does not check that lock is released.
 pub struct ReadHandle<'a, V, Pred: RwLockPredicate<V>> {
     tracked handle: Tracked<RwLockToks::reader<Pred, V, InternalPred<V, Pred>>>,
     rwlock: &'a RwLock<V, Pred>,
@@ -434,7 +331,6 @@ impl<'a, V, Pred: RwLockPredicate<V>> ReadHandle<'a, V, Pred> {
         *self.rwlock
     }
 
-    /// Obtain a shared reference to the object contained in the lock.
     pub proof fn borrow<'b>(tracked &'b self) -> (tracked val: &'b V)
         ensures
             val == self.view(),
@@ -481,13 +377,10 @@ impl<'a, V, Pred: RwLockPredicate<V>> ReadHandle<'a, V, Pred> {
 }
 
 impl<V, Pred: RwLockPredicate<V>> RwLock<V, Pred> {
-    /// Predicate configured for this lock instance.
     pub closed spec fn pred(&self) -> Pred {
         self.pred@
     }
 
-    /// Indicates if the value `v` can be stored in the lock. Per the definition,
-    /// it depends on `[self.pred()]`, which is configured upon lock construction ([`RwLock::new`]).
     pub open spec fn inv(&self, val: V) -> bool {
         self.pred().inv(val)
     }
@@ -508,11 +401,6 @@ impl<V, Pred: RwLockPredicate<V>> RwLock<V, Pred> {
         RwLock { exc, rc, inst, pred: Ghost(pred) }
     }
 
-    /// Acquires an exclusive write-lock. To release it, use [`WriteHandle::release_write`].
-    ///
-    /// **Warning:** The lock is _NOT_ released automatically when the handle
-    /// is dropped. You must call [`WriteHandle::release_write`].
-    /// Verus does not check that lock is released.
     #[verifier::exec_allows_no_decreases_clause]
     pub fn acquire_write(&self) -> (ret: (Tracked<V>, WriteHandle<'_, V, Pred>))
         ensures
@@ -596,11 +484,6 @@ impl<V, Pred: RwLockPredicate<V>> RwLock<V, Pred> {
         }
     }
 
-    /// Acquires a shared read-lock. To release it, use [`ReadHandle::release_read`].
-    ///
-    /// **Warning:** The lock is _NOT_ released automatically when the handle
-    /// is dropped. You must call [`ReadHandle::release_read`].
-    /// Verus does not check that lock is released.
     #[verifier::exec_allows_no_decreases_clause]
     pub fn acquire_read(&self) -> (read_handle: ReadHandle<'_, V, Pred>)
         ensures
@@ -676,8 +559,6 @@ impl<V, Pred: RwLockPredicate<V>> RwLock<V, Pred> {
         }
     }
 
-    /// Destroys the lock and returns the inner object.
-    /// Note that this may deadlock if not all locks have been released.
     #[verifier::exec_allows_no_decreases_clause]
     pub fn into_inner(self) -> (v: Tracked<V>)
         ensures
@@ -1012,16 +893,10 @@ closed spec fn places_ok(v: Seq<PlaceToFree>, i: int) -> bool {
         && (v[i+1].row == hash1(v[i].key) || v[i+1].row == hash2(v[i].key))
 }
 
-///// Impl
 
 pub const LOCKS_LEN: usize = 1048576;
 type LockIdx = nat;
 
-// Doing more than one row per lock would make deadlock more complicated.
-// It's mildly annoying, not awful, you have to juggle around tracked handles a bit
-// while casing on whether the two rows go to the same lock.
-// I'm doing one-row-per-lock to avoid the trouble, I don't know what the optimal thing
-// for performance is.
 spec fn lock_for_row(row: Row) -> LockIdx {
     row
 }
@@ -1081,7 +956,7 @@ pub struct MyHashMap {
     instance: Tracked<Cuckoo::Instance>,
     locks: Vec<RwLock<LockStore, LockPred>>,
     matrix: Vec<pc::PCell<[Option<(Key, Value)>; WIDTH]>>,
-    main_write_lock: RwLock<(), TruePred>, // doesn't need to be RwLock
+    main_write_lock: RwLock<(), TruePred>,
 }
 
 impl MyHashMap {
@@ -1183,37 +1058,6 @@ impl MyHashMap {
 
             i += 1;
 
-            /*assert forall |k: nat| 0 <= k < i implies
-                    lock_stores[#[trigger] lock_for_row(k)].rows.dom().contains(k)
-                    && lock_stores[lock_for_row(k)].rows[k].pt.id() == cell_ids[k as int]
-                    && lock_stores[lock_for_row(k)].rows[k].pt.value()@ ===
-                       lock_stores[lock_for_row(k)].rows[k].token.value()
-                    && lock_stores[lock_for_row(k)].rows[k].token.instance_id() == instance.id()
-                    && lock_stores[lock_for_row(k)].rows[k].token.key() == k
-                    && lock_stores[lock_for_row(k)].rows[k].token.value()
-                        === Seq::new(WIDTH as nat, |w| None)
-            by {
-                if k + 1 == i {
-                assert(lock_stores.dom().contains(lock_for_row(k)));
-                assert(lock_stores[lock_for_row(k)].rows.dom().contains(k));
-                assert(lock_stores[lock_for_row(k)].rows[k].pt.id() == cell_ids[k as int]);
-                assert(lock_stores[lock_for_row(k)].rows[k].pt.value()@ ===
-                       lock_stores[lock_for_row(k)].rows[k].token.value());
-                assert(lock_stores[lock_for_row(k)].rows[k].token.instance_id() == instance.id());
-                assert(lock_stores[lock_for_row(k)].rows[k].token.key() == k);
-                assert(lock_stores[lock_for_row(k)].rows[k].token.value()
-                        === Seq::new(WIDTH as nat, |w| None));
-                } else {
-                assert(lock_stores[lock_for_row(k)].rows.dom().contains(k));
-                assert(lock_stores[lock_for_row(k)].rows[k].pt.id() == cell_ids[k as int]);
-                assert(lock_stores[lock_for_row(k)].rows[k].pt.value()@ ===
-                       lock_stores[lock_for_row(k)].rows[k].token.value());
-                assert(lock_stores[lock_for_row(k)].rows[k].token.instance_id() == instance.id());
-                assert(lock_stores[lock_for_row(k)].rows[k].token.key() == k);
-                assert(lock_stores[lock_for_row(k)].rows[k].token.value()
-                        === Seq::new(WIDTH as nat, |w| None));
-                }
-            }*/
         }
 
         let ghost consts = Consts {
@@ -1242,16 +1086,6 @@ impl MyHashMap {
         {
             let tracked mut store = lock_stores.tracked_remove(i as nat);
             let ghost pred = LockPred { consts, lock: i as nat };
-            /*proof {
-                assert(0 <= pred.lock < LOCKS_LEN);
-                assert forall |row| 0 <= row < HEIGHT &&
-                    pred.lock == lock_for_row(row) &&
-                        store.rows.dom().contains(row) implies
-                            row_store_wf(pred.consts, store.rows[row], row)
-                by {
-                    assert(row_store_wf(pred.consts, store.rows[row], row));
-                }
-            }*/
             locks.push(RwLock::new(Tracked(store), Ghost(pred)));
             i = i + 1;
         }
@@ -1288,8 +1122,6 @@ impl MyHashMap {
         let l1 = compute_lock_for_row(h1);
         let l2 = compute_lock_for_row(h2);
 
-        // Always take locks in order to avoid deadlock.
-        // (Note that Verus doesn't prove deadlock-freedom.)
         let l1x = if l1 < l2 { l1 } else { l2 };
         let l2x = if l1 < l2 { l2 } else { l1 };
         let h1x = if l1 < l2 { h1 } else { h2 };
@@ -1305,7 +1137,6 @@ impl MyHashMap {
                     (#[trigger] handle1x@.rows[h1x as nat].token.value()[j] matches Some((k, _)) ==> k != key),
             decreases WIDTH - i,
         {
-            //assert(row_store_wf(self.consts@, handle1x@.rows[h1x as nat], h1x as nat));
 
             let entry = self.matrix[h1x].borrow(
                 Tracked(&handle1x.borrow().rows.tracked_borrow(h1x as nat).pt))[i];
@@ -1492,8 +1323,6 @@ impl MyHashMap {
         handle2x.release_write(Tracked(lock2x));
     }
 
-    /// Insert (or update) the given key to the new value
-    /// Bool return value indicates success
     pub fn insert(&self, key: Key, new_val: Value) -> (success: bool)
         atomically (au) {
             type InsertPred,
@@ -1525,7 +1354,6 @@ impl MyHashMap {
         let (Tracked(_unused), main_handle) = self.main_write_lock.acquire_write();
         let (Tracked(lock1x), handle1x) = self.locks[l1x].acquire_write();
 
-        // Update the key, value pair if it already exists
 
         let mut i: usize = 0;
         while i < WIDTH
@@ -1610,7 +1438,6 @@ impl MyHashMap {
             i += 1;
         }
 
-        // If there's an available spot, insert
 
         let mut i: usize = 0;
         while i < WIDTH
@@ -1698,7 +1525,6 @@ impl MyHashMap {
             i += 1;
         }
 
-        /////// Cuckoo procedure
 
         let r = rand_u8();
         let first_row = if r % 2 == 0 { h1 } else { h2 };
@@ -1712,9 +1538,6 @@ impl MyHashMap {
               if first_row == h1x { &lock1x.rows.tracked_borrow(h1x as nat).token } else { &lock2x.rows.tracked_borrow(h2x as nat).token });
         }
 
-        // We have to release to avoid deadlock.
-        // Hash table could be improved by using atomics
-        // to avoid having to take so many locks.
         handle1x.release_write(Tracked(lock1x));
         handle2x.release_write(Tracked(lock2x));
 
@@ -1726,7 +1549,6 @@ impl MyHashMap {
 
         let mut i = HEIGHT;
 
-        // Find the cuckoo path
         #[verifier::allow_complex_invariants]
         loop
             invariant path.len() > 0,
@@ -1749,17 +1571,6 @@ impl MyHashMap {
                     free_r = h_other;
                     free_c = c;
 
-                    /*
-                    assert(path[path.len() - 1].row != free_r);
-                    assert(0 <= path[path.len() - 1].row < HEIGHT);
-                    assert(0 <= path[path.len() - 1].col < WIDTH);
-                    assert(0 <= free_r < HEIGHT);
-                    assert(0 <= free_c < WIDTH);
-                    assert(path[path.len() - 1].row == hash1(path[path.len() - 1].key)
-                      || path[path.len() - 1].row == hash2(path[path.len() - 1].key));
-                    assert(free_r == hash1(path[path.len() - 1].key)
-                      || free_r == hash2(path[path.len() - 1].key));
-                    */
                     break;
                 }
                 Attempt::Unfree(c, next_key) => {
@@ -1780,8 +1591,6 @@ impl MyHashMap {
             }
         }
 
-        // Execute the cuckoo path
-        // Genuinely just the most abysmal locking strategy
         while path.len() > 0
             invariant
                 forall |i: int| 0 <= i && i+1 < path.len() ==> places_ok(path@, i),
@@ -1812,15 +1621,9 @@ impl MyHashMap {
             }
         }
 
-        // Finally, add our new pair
-        // Ideally we would just go ahead and insert in (free_r, free_c),
-        // but it would take a bunch more work
-        // to prove that correct, instead I'm just going to repeat the code from the beginning
-        // of the function.
 
         let (Tracked(lock1x), handle1x) = self.locks[l1x].acquire_write();
 
-        // Update the key, value pair if it already exists
 
         let mut i: usize = 0;
         while i < WIDTH
@@ -1905,7 +1708,6 @@ impl MyHashMap {
             i += 1;
         }
 
-        // If there's an available spot, insert
 
         let mut i: usize = 0;
         while i < WIDTH
@@ -1992,7 +1794,6 @@ impl MyHashMap {
             i += 1;
         }
 
-        // Again, this shouldn't happen
         try_open_atomic_update!(au, mpt => { Tracked(Commit(mpt)) });
         false
     }
@@ -2047,7 +1848,6 @@ impl MyHashMap {
             old_row == hash1(key) || old_row == hash2(key),
             new_row == hash1(key) || new_row == hash2(key),
     {
-        // Note: we should be able to prove this doesn't fail (using the write lock)
 
         let l1 = compute_lock_for_row(old_row);
         let l2 = compute_lock_for_row(new_row);
@@ -2077,7 +1877,6 @@ impl MyHashMap {
         let mut entry1 = *self.matrix[old_row].borrow(Tracked(&r1.pt));
         let mut entry2 = *self.matrix[new_row].borrow(Tracked(&r2.pt));
 
-        // The key might have been deleted since we last took the lock on this entry.
         if entry1[old_col].is_some() && entry1[old_col].unwrap().0 == key && entry2[new_col].is_none() {
             entry2[new_col] = entry1[old_col];
             entry1[old_col] = None;
