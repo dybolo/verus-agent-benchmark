@@ -43,7 +43,7 @@ pub trait SpinGuardian {
     fn read_guard() -> Self::ReadGuard;
 }
 
-} 
+}
 
 #[verifier::external]
 pub enum PreemptDisabled {}
@@ -77,7 +77,7 @@ verus! {
         }
     }
 
-} 
+}
 
 
 verus! {
@@ -95,7 +95,7 @@ impl<T: Inv> Inv for Option<T> {
     }
 }
 
-} 
+}
 
 
 verus! {
@@ -2549,7 +2549,7 @@ impl<T, const TOTAL: u64> CountResource<T, TOTAL> {
     }
 }
 
-} 
+}
 
 verus! {
 
@@ -2818,112 +2818,6 @@ impl<T, G> RwLock<T, G> {
 
 #[verus_verify]
 impl<T               , G: SpinGuardian> RwLock<T, G> {
-    #[verifier::exec_allows_no_decreases_clause]
-    pub fn read(&self) -> RwLockReadGuard<'_, T, G> {
-        loop {
-            if let Some(readguard) = self.try_read() {
-                return readguard;
-            } else {
-                core::hint::spin_loop();
-            }
-        }
-    }
-
-    #[verifier::exec_allows_no_decreases_clause]
-    pub fn write(&self) -> RwLockWriteGuard<'_, T, G> {
-        loop {
-            if let Some(writeguard) = self.try_write() {
-                return writeguard;
-            } else {
-                core::hint::spin_loop();
-            }
-        }
-    }
-
-    #[verifier::exec_allows_no_decreases_clause]
-    pub fn upread(&self) -> RwLockUpgradeableGuard<'_, T, G> {
-        loop {
-            if let Some(guard) = self.try_upread() {
-                return guard;
-            } else {
-                core::hint::spin_loop();
-            }
-        }
-    }
-
-    #[verus_spec]
-    pub fn try_read(&self) -> Option<RwLockReadGuard<'_, T, G>> {
-        proof_decl!{
-            let tracked mut read_token: Option<Count<ReadPerm<T>,MAX_READER_U64>> = None;
-            let tracked mut retract_read_token: Option<Token<V_MAX_READ_RETRACT_FRACS>> = None;
-        }
-        proof!{
-            use_type_invariant(self);
-            lemma_consts_properties();
-        }
-        let guard = G::read_guard();
-
-        let lock =
-            atomic_with_ghost!(
-            self.lock => fetch_add(READER);
-            update prev -> next;
-            ghost g => {
-                admit();
-            }
-        );
-        if lock & (WRITER | MAX_READER | BEING_UPGRADED) == 0 {
-            Some(
-                RwLockReadGuard {
-                    inner: self,
-                    guard,
-                    tracked_token: Tracked(read_token.tracked_unwrap()),
-                },
-            )
-        } else {
-            atomic_with_ghost!(
-                self.lock => fetch_sub(READER);
-                update prev -> next;
-                ghost g => {
-                    admit();
-                }
-            );
-            None
-        }
-    }
-
-    #[verus_spec]
-    pub fn try_write(&self) -> Option<RwLockWriteGuard<'_, T, G>> {
-        proof_decl!{
-            let tracked mut guard_perm: Option<PointsTo<T>> = None;
-            let tracked mut guard_token: Option<OneRightKnowledge<HalfPerm<T>, NoPerm<T>, 3>> = None;
-        }
-        proof!{
-            use_type_invariant(self);
-            lemma_consts_properties();
-        }
-
-        let guard = G::guard();
-        if atomic_with_ghost!(
-            self.lock => compare_exchange(0, WRITER);
-            update prev -> next;
-            returning res;
-            ghost g => {
-                admit();
-            }
-        ).is_ok() {
-            Some(
-                RwLockWriteGuard {
-                    inner: self,
-                    guard,
-                    tracked_perm: Tracked(guard_perm.tracked_unwrap()),
-                    tracked_token: Tracked(guard_token.tracked_unwrap()),
-                },
-            )
-        } else {
-            None
-        }
-    }
-
     pub fn try_upread(&self) -> Option<RwLockUpgradeableGuard<'_, T, G>> {
         proof_decl!{
             let tracked mut upgrade_guard_token: Option<OneLeftOwner<HalfPerm<T>, NoPerm<T>, 3>> = None;
@@ -3060,24 +2954,6 @@ impl<T               , G: SpinGuardian> Deref for RwLockReadGuard<'_, T, G> {
 
 #[verus_verify]
 impl<T               , G: SpinGuardian> RwLockReadGuard<'_, T, G> {
-    #[verus_spec]
-    fn drop(self) {
-        proof! {
-            use_type_invariant(&self);
-            use_type_invariant(self.inner);
-            lemma_consts_properties();
-        }
-        proof_decl! {
-            let tracked token = self.tracked_token.get();
-        }
-        atomic_with_ghost!(
-            self.inner.lock => fetch_sub(READER);
-            update prev -> next;
-            ghost g => {
-                admit();
-            }
-        );
-    }
 }
 
 
@@ -3144,24 +3020,6 @@ impl<T               , G: SpinGuardian> DerefMut for RwLockWriteGuard<'_, T, G> 
 
 
 impl<T               , G: SpinGuardian> RwLockWriteGuard<'_, T, G> {
-    pub fn drop(self) {
-        proof!{
-            use_type_invariant(&self);
-            use_type_invariant(self.inner);
-            lemma_consts_properties();
-        }
-        proof_decl! {
-            let tracked mut perm = self.tracked_perm.get();
-            let tracked token = self.tracked_token.get();
-        }
-        atomic_with_ghost!{
-            self.inner.lock => fetch_and(!WRITER);
-            update prev -> next;
-            ghost g => {
-                admit();
-            }
-        };
-    }
 }
 
 
@@ -3195,82 +3053,6 @@ impl<'a, T, G: SpinGuardian> RwLockUpgradeableGuard<'a, T, G> {
 }
 
 impl<'a, T               , G: SpinGuardian> RwLockUpgradeableGuard<'a, T, G> {
-    #[verifier::exec_allows_no_decreases_clause]
-    pub fn upgrade(            self) -> RwLockWriteGuard<'a, T, G> {
-        let mut this = self;
-        proof! {
-            use_type_invariant(&this);
-            use_type_invariant(&this.inner);
-            lemma_consts_properties();
-        }
-        atomic_with_ghost!(
-            this.inner.lock => fetch_or(BEING_UPGRADED);
-            update prev -> next;
-            ghost g => {
-                admit();
-            }
-        );
-        loop {
-            this =
-            match this.try_upgrade() {
-                Ok(guard) => return guard,
-                Err(e) => e,
-            };
-        }
-    }
-
-    fn try_upgrade(            self) -> Result<RwLockWriteGuard<'a, T, G>, Self> {
-        proof! {
-            use_type_invariant(&self);
-            use_type_invariant(self.inner);
-            lemma_consts_properties();
-        }
-        let mut this = self;
-        proof_decl! {
-            let tracked mut upread_guard_token = this.tracked_token.get();
-            let tracked mut write_perm: Option<PointsTo<T>> = None;
-            let tracked mut err_upread_guard_token: Option<OneLeftOwner<HalfPerm<T>, NoPerm<T>, 3>> = None;
-            let tracked mut retract_upgrade_token: Option<UniqueToken> = None;
-            let tracked mut write_guard_token = None;
-        }
-
-        let res =
-            atomic_with_ghost!(
-            this.inner.lock => compare_exchange(UPGRADEABLE_READER | BEING_UPGRADED, WRITER | UPGRADEABLE_READER);
-            update prev -> next;
-            returning res;
-            ghost g => {
-                admit();
-            }
-        );
-        if res.is_ok() {
-            let inner = this.inner;
-            let guard = this.guard.transfer_to();
-            atomic_with_ghost!(
-                inner.lock => fetch_sub(UPGRADEABLE_READER);
-                update prev -> next;
-                ghost g => {
-                    admit();
-                }
-            );
-            Ok(
-                RwLockWriteGuard {
-                    inner,
-                    guard,
-                    tracked_perm: Tracked(write_perm.tracked_unwrap()),
-                    tracked_token: Tracked(write_guard_token.tracked_unwrap()),
-                },
-            )
-        } else {
-            Err(
-                RwLockUpgradeableGuard {
-                    inner: this.inner,
-                    guard: this.guard,
-                    tracked_token: Tracked(err_upread_guard_token.tracked_unwrap()),
-                },
-            )
-        }
-    }
 }
 
 impl<T               , G: SpinGuardian> Deref for RwLockUpgradeableGuard<'_, T, G> {
@@ -3287,23 +3069,6 @@ impl<T               , G: SpinGuardian> Deref for RwLockUpgradeableGuard<'_, T, 
 
 
 impl<T               , G: SpinGuardian> RwLockUpgradeableGuard<'_, T, G> {
-    pub fn drop(self) {
-        proof! {
-            use_type_invariant(&self);
-            use_type_invariant(self.inner);
-            lemma_consts_properties();
-        }
-        proof_decl!{
-            let tracked guard_token = self.tracked_token.get();
-        }
-        atomic_with_ghost!(
-            self.inner.lock => fetch_sub(UPGRADEABLE_READER);
-            update prev -> next;
-            ghost g => {
-                admit();
-            }
-        );
-    }
 }
 
 
@@ -3450,4 +3215,4 @@ proof fn lemma_consts_properties_prev_next(prev: usize, next: usize)
 {
 }
 
-} 
+}
