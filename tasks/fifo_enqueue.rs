@@ -18,13 +18,13 @@ use verus_state_machines_macros::tokenized_state_machine;
 
 #[is_variant]
 pub enum ProducerState {
-    Idle(nat),  
+    Idle(nat),
     Producing(nat),
 }
 
 #[is_variant]
 pub enum ConsumerState {
-    Idle(nat),  
+    Idle(nat),
     Consuming(nat),
 }
 
@@ -511,59 +511,7 @@ impl<T> Producer<T> {
     }
 }
 
-impl<T> Consumer<T> {
-    fn dequeue(&mut self) -> (t: T)
-        requires
-            old(self).wf(),
-        ensures
-            final(self).wf(),
-    {
-        loop
-            invariant
-                self.wf(),
-        {
-            let queue = &*self.queue;
-            let len = queue.buffer.len();
-            assert(0 <= self.head && self.head < len);
-            let next_head = if self.head + 1 == len {
-                0
-            } else {
-                self.head + 1
-            };
-            let tracked cell_perm: Option<cell::PointsTo<T>>;
-            let tail =
-                atomic_with_ghost!(&queue.tail => load();
-                returning tail;
-                ghost tail_token => {
-                    cell_perm = if self.head as u64 != tail {
-                        let tracked (_, Tracked(cp)) = queue.instance.borrow().consume_start(&tail_token, self.consumer.borrow_mut());
-                        Option::Some(cp)
-                    } else {
-                        Option::None
-                    };
-                }
-            );
-            if self.head as u64 != tail {
-                let tracked mut cell_perm = match cell_perm {
-                    Option::Some(cp) => cp,
-                    Option::None => {
-                        assert(false);
-                        proof_from_false()
-                    },
-                };
-                let t = queue.buffer[self.head].take(Tracked(&mut cell_perm));
-                atomic_with_ghost!(&queue.head => store(next_head as u64); ghost head_token => {
-                    queue.instance.borrow().consume_end(cell_perm,
-                        cell_perm, &mut head_token, self.consumer.borrow_mut());
-                });
-                self.head = next_head;
-                return t;
-            }
-        }
-    }
-}
-
 fn main() {
 }
 
-} 
+}

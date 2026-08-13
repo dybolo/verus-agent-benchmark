@@ -18,13 +18,13 @@ use verus_state_machines_macros::tokenized_state_machine;
 
 #[is_variant]
 pub enum ProducerState {
-    Idle(nat),  
+    Idle(nat),
     Producing(nat),
 }
 
 #[is_variant]
 pub enum ConsumerState {
-    Idle(nat),  
+    Idle(nat),
     Consuming(nat),
 }
 
@@ -467,58 +467,6 @@ pub fn new_queue<T>(len: usize) -> (pc: (Producer<T>, Consumer<T>))
     (prod, cons)
 }
 
-impl<T> Producer<T> {
-    fn enqueue(&mut self, t: T)
-        requires
-            old(self).wf(),
-        ensures
-            final(self).wf(),
-    {
-        loop
-            invariant
-                self.wf(),
-        {
-            let queue = &*self.queue;
-            let len = queue.buffer.len();
-            assert(0 <= self.tail && self.tail < len);
-            let next_tail = if self.tail + 1 == len {
-                0
-            } else {
-                self.tail + 1
-            };
-            let tracked cell_perm: Option<cell::PointsTo<T>>;
-            let head =
-                atomic_with_ghost!(&queue.head => load();
-                returning head;
-                ghost head_token => {
-                    cell_perm = if head != next_tail as u64 {
-                        let tracked cp = queue.instance.borrow().produce_start(&head_token, self.producer.borrow_mut());
-                        Option::Some(cp)
-                    } else {
-                        Option::None
-                    };
-                }
-            );
-            if head != next_tail as u64 {
-                let tracked mut cell_perm = match cell_perm {
-                    Option::Some(cp) => cp,
-                    Option::None => {
-                        assert(false);
-                        proof_from_false()
-                    },
-                };
-                queue.buffer[self.tail].put(Tracked(&mut cell_perm), t);
-                atomic_with_ghost!(&queue.tail => store(next_tail as u64); ghost tail_token => {
-                    queue.instance.borrow().produce_end(cell_perm,
-                        cell_perm, &mut tail_token, self.producer.borrow_mut());
-                });
-                self.tail = next_tail;
-                return ;
-            }
-        }
-    }
-}
-
 impl<T> Consumer<T> {
     fn dequeue(&mut self) -> (t: T)
         requires
@@ -566,4 +514,4 @@ impl<T> Consumer<T> {
 fn main() {
 }
 
-} 
+}
