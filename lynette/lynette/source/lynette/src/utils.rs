@@ -27,6 +27,7 @@ pub fn is_proof_or_exec(sig: &syn_verus::Signature) -> bool {
 pub enum Error {
     //IncorrectUsage,
     ReadFile(io::Error),
+    ParseTokens { error: String, filepath: PathBuf },
     ParseFile { error: syn_verus::Error, filepath: PathBuf, source_code: String },
     NotFound(String),
     Conflict(String),
@@ -40,6 +41,9 @@ impl Display for Error {
         match self {
             //IncorrectUsage => write!(f, "Usage: dump-syntax path/to/filename.rs"),
             ReadFile(error) => write!(f, "Unable to read file: {}", error),
+            ParseTokens { error, filepath } => {
+                write!(f, "Unable to tokenize {}: {}", filepath.display(), error)
+            }
             ParseFile { error, filepath, source_code } => {
                 render_location(f, error, filepath, source_code)
             }
@@ -115,7 +119,10 @@ fn render_fallback(formatter: &mut fmt::Formatter, err: &syn_verus::Error) -> fm
 
 pub fn fload_file(filepath: &PathBuf) -> Result<syn_verus::File, Error> {
     let code = fs::read_to_string(&filepath).map_err(Error::ReadFile)?;
-    let ts = proc_macro2::TokenStream::from_str(&code).unwrap();
+    let ts = proc_macro2::TokenStream::from_str(&code).map_err(|e| Error::ParseTokens {
+        error: e.to_string(),
+        filepath: filepath.clone(),
+    })?;
 
     syn_verus::parse2::<syn_verus::File>(ts).map_err(|e| Error::ParseFile {
         error: e,
@@ -142,36 +149,55 @@ pub fn is_verus_macro(m: &syn_verus::Macro) -> bool {
 // }
 
 pub fn extract_verus_macro(file: &syn_verus::File) -> Result<Vec<syn_verus::File>, Error> {
-    file.items
-        .iter()
-        .filter_map(|item| {
-            if let syn_verus::Item::Macro(m) = item {
-                if is_verus_macro(&m.mac) {
-                    Some(m.mac.tokens.clone())
-                } else {
-                    None
-                }
-            } else {
-                None
+    extract_verus_macro_with_context(file, Path::new("<verus! macro>"), "")
+}
+
+pub fn extract_verus_macro_with_context(
+    file: &syn_verus::File,
+    filepath: &Path,
+    source_code: &str,
+) -> Result<Vec<syn_verus::File>, Error> {
+    fn collect_from_items(
+        items: &[syn_verus::Item],
+        filepath: &Path,
+        source_code: &str,
+        files: &mut Vec<syn_verus::File>,
+    ) -> Result<(), Error> {
+        for item in items {
+            match item {
+                syn_verus::Item::Macro(m) if is_verus_macro(&m.mac) => {
+                    let parsed = syn_verus::parse2::<syn_verus::File>(m.mac.tokens.clone())
+                        .map_err(|error| Error::ParseFile {
+                            error,
+                            filepath: filepath.to_path_buf(),
+                            source_code: source_code.to_owned(),
+                        })?;
+                    files.push(parsed.clone());
+                    collect_from_items(&parsed.items, filepath, source_code, files)?;
+                },
+                syn_verus::Item::Mod(module) => {
+                    if let Some((_, items)) = &module.content {
+                        collect_from_items(items, filepath, source_code, files)?;
+                    }
+                },
+                _ => {},
             }
-        })
-        .map(|tokens| {
-            syn_verus::parse2::<syn_verus::File>(tokens).map_err(|e| Error::ParseFile {
-                error: e,
-                filepath: PathBuf::from(""),
-                source_code: String::from(""),
-            })
-        })
-        .collect()
+        }
+        Ok(())
+    }
+
+    let mut files = Vec::new();
+    collect_from_items(&file.items, filepath, source_code, &mut files)?;
+    Ok(files)
 }
 
 pub fn fextract_verus_macro(
     filepath: &PathBuf,
 ) -> Result<(Vec<syn_verus::File>, syn_verus::File), Error> {
-    fload_file(&filepath).and_then(|orig_file| {
-        extract_verus_macro(&orig_file).and_then(|verus_files| Ok((verus_files, orig_file)))
-        //(extract_verus_macro(&orig_file), orig_file)
-    })
+    let source_code = fs::read_to_string(filepath).map_err(Error::ReadFile)?;
+    let orig_file = fload_file(filepath)?;
+    let verus_files = extract_verus_macro_with_context(&orig_file, filepath, &source_code)?;
+    Ok((verus_files, orig_file))
 }
 
 pub enum Formatter {

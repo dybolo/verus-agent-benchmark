@@ -11,9 +11,13 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+class LynetteCheckerError(RuntimeError):
+    """The checker could not complete its analysis (for example, a parse error)."""
+
+
 class Lynette:
     lynette_path = Path(__file__).resolve().parent/ "lynette" / "source"
-    meta_command = ["cargo", "run", "--manifest-path", lynette_path / "Cargo.toml", "--"]
+    meta_command = ["cargo", "run", "--quiet", "--manifest-path", lynette_path / "Cargo.toml", "--"]
     env = os.environ.copy()
     env["RUSTFLAGS"] = "-Awarnings"
 
@@ -198,15 +202,17 @@ class Lynette:
                     logger.error("Disallowed changes detected by lynette")
                     return False
                 else:
-                    logger.error("Unknown errors during lynette safety check")
-                    return False
+                    details = "\n".join(part for part in (m.stdout.strip(), m.stderr.strip()) if part)
+                    if details.startswith("Checker error:"):
+                        details = details[len("Checker error:"):].strip()
+                    raise LynetteCheckerError(details or "Lynette rejected the check without a result")
             else:
-                err_m = m.stderr.strip()
-                logger.error("Unknown errors during lynette safety check")
-                logger.error(f"{err_m}")
-                if "unwrap()" in err_m:
-                    return False
-        return False
+                details = "\n".join(part for part in (m.stdout.strip(), m.stderr.strip()) if part)
+                if details.startswith("Checker error:"):
+                    details = details[len("Checker error:"):].strip()
+                raise LynetteCheckerError(
+                    details or f"Lynette exited with status {m.returncode}"
+                )
 
 
 def main():
@@ -226,10 +232,14 @@ def main():
 
     lynette = Lynette()
 
-    is_safe = lynette.proof_completion_code_change_is_safe(
-        origin=origin_content,
-        changed=changed_content
-    )
+    try:
+        is_safe = lynette.proof_completion_code_change_is_safe(
+            origin=origin_content,
+            changed=changed_content
+        )
+    except LynetteCheckerError as e:
+        print(f"Checker error: {e}", file=sys.stderr)
+        sys.exit(2)
 
     if is_safe:
         print("Changes are safe.")

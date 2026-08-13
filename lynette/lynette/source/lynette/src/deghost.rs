@@ -1,10 +1,133 @@
 use crate::{utils::*, DeghostMode};
-use proc_macro2::TokenStream;
+use proc_macro2::{Delimiter, Group, TokenStream, TokenTree};
 use quote::ToTokens;
 use std::path::PathBuf;
 use syn_verus::Token;
 use syn_verus::TraitItemFn;
 use syn_verus::parse_quote;
+use syn_verus::visit_mut::VisitMut;
+
+/// Remove only the proof block from a well-formed `atomic_with_ghost!` macro.
+///
+/// The macro's target, operation, optional `update`/`returning` clauses, and
+/// ghost binding are retained.  Returning `None` for an unfamiliar shape is
+/// intentional: callers must then compare the macro unchanged.
+fn normalized_atomic_with_ghost_tokens(tokens: &TokenStream) -> Option<TokenStream> {
+    let mut trees: Vec<TokenTree> = tokens.clone().into_iter().collect();
+    let ghost_positions: Vec<usize> = trees
+        .iter()
+        .enumerate()
+        .filter_map(|(index, tree)| match tree {
+            TokenTree::Ident(ident) if ident == "ghost" => Some(index),
+            _ => None,
+        })
+        .collect();
+
+    if ghost_positions.len() != 1 {
+        return None;
+    }
+
+    let ghost = ghost_positions[0];
+    // The supported Verus grammar ends in: `ghost <identifier> => { ... }`.
+    if ghost + 5 != trees.len()
+        || !matches!(&trees[ghost + 1], TokenTree::Ident(_))
+        || !matches!(&trees[ghost + 2], TokenTree::Punct(p) if p.as_char() == '=')
+        || !matches!(&trees[ghost + 3], TokenTree::Punct(p) if p.as_char() == '>')
+    {
+        return None;
+    }
+
+    let body = match &trees[ghost + 4] {
+        TokenTree::Group(group) if group.delimiter() == Delimiter::Brace => group,
+        _ => return None,
+    };
+    let mut empty_body = Group::new(Delimiter::Brace, TokenStream::new());
+    empty_body.set_span(body.span());
+    trees[ghost + 4] = TokenTree::Group(empty_body);
+    Some(trees.into_iter().collect())
+}
+
+/// Remove only the body of `proof { ... }` blocks in a supported macro.
+///
+/// These macros interleave executable operations with ghost proof blocks. We
+/// preserve every token except the contents of already-present proof blocks,
+/// so proof completion cannot change an operation, binding, or other macro
+/// structure.
+fn normalized_proof_block_tokens(tokens: &TokenStream) -> Option<TokenStream> {
+    fn normalize_groups(tokens: TokenStream) -> (TokenStream, bool) {
+        let mut trees: Vec<TokenTree> = tokens.into_iter().collect();
+        let mut changed = false;
+        let mut index = 0;
+
+        while index < trees.len() {
+            if matches!(&trees[index], TokenTree::Ident(ident) if ident == "proof") {
+                if let Some(TokenTree::Group(group)) = trees.get(index + 1) {
+                    if group.delimiter() == Delimiter::Brace {
+                        let mut empty = Group::new(Delimiter::Brace, TokenStream::new());
+                        empty.set_span(group.span());
+                        trees[index + 1] = TokenTree::Group(empty);
+                        changed = true;
+                        index += 2;
+                        continue;
+                    }
+                }
+            }
+
+            if let TokenTree::Group(group) = &trees[index] {
+                let (stream, group_changed) = normalize_groups(group.stream());
+                if group_changed {
+                    let mut normalized = Group::new(group.delimiter(), stream);
+                    normalized.set_span(group.span());
+                    trees[index] = TokenTree::Group(normalized);
+                    changed = true;
+                }
+            }
+            index += 1;
+        }
+
+        (trees.into_iter().collect(), changed)
+    }
+
+    let (normalized, changed) = normalize_groups(tokens.clone());
+    changed.then_some(normalized)
+}
+
+fn normalize_atomic_with_ghost_macro(mac: &mut syn_verus::Macro) {
+    if mac.path.is_ident("atomic_with_ghost") {
+        if let Some(tokens) = normalized_atomic_with_ghost_tokens(&mac.tokens) {
+            mac.tokens = tokens;
+        }
+    } else if mac.path.is_ident("try_open_atomic_update")
+        || mac.path.is_ident("open_atomic_invariant")
+    {
+        if let Some(tokens) = normalized_proof_block_tokens(&mac.tokens) {
+            mac.tokens = tokens;
+        }
+    }
+}
+
+struct AtomicWithGhostNormalizer;
+
+impl VisitMut for AtomicWithGhostNormalizer {
+    fn visit_macro_mut(&mut self, mac: &mut syn_verus::Macro) {
+        normalize_atomic_with_ghost_macro(mac);
+    }
+}
+
+fn normalize_atomic_with_ghost_expr(expr: &syn_verus::Expr) -> syn_verus::Expr {
+    let mut normalized = expr.clone();
+    AtomicWithGhostNormalizer.visit_expr_mut(&mut normalized);
+    normalized
+}
+
+/// Normalize supported atomic proof blocks without removing any other ghost
+/// code. This is used for non-target executable functions, which remain
+/// otherwise byte-for-byte equivalent at the syntax-tree level.
+pub fn normalize_atomic_with_ghost_block(block: &syn_verus::Block) -> syn_verus::Block {
+    let mut normalized = block.clone();
+    AtomicWithGhostNormalizer.visit_block_mut(&mut normalized);
+    normalized
+}
 
 fn remove_ghost_local(local: &syn_verus::Local, mode: &DeghostMode) -> Option<syn_verus::Local> {
     match local.ghost {
@@ -56,6 +179,12 @@ fn remove_ghost_local(local: &syn_verus::Local, mode: &DeghostMode) -> Option<sy
 
 fn remove_ghost_expr(expr: &syn_verus::Expr, mode: &DeghostMode) -> Option<syn_verus::Expr> {
     //println!("{}\n", expr.to_token_stream().to_string());
+    // Atomic proof macros may be nested below an arbitrary expression node,
+    // for example `atomic_with_ghost!(...) & MASK`. Normalize the complete
+    // subtree before expression-specific deghosting so fallback arms cannot
+    // clone a composite expression without visiting the nested macro.
+    let normalized_expr = normalize_atomic_with_ghost_expr(expr);
+    let expr = &normalized_expr;
     match expr {
         syn_verus::Expr::Block(b) => remove_ghost_block(&b.block, mode).map(|new_block| {
             syn_verus::Expr::Block(syn_verus::ExprBlock {
@@ -85,6 +214,7 @@ fn remove_ghost_expr(expr: &syn_verus::Expr, mode: &DeghostMode) -> Option<syn_v
                 func: c.func.clone(),
                 paren_token: c.paren_token.clone(),
                 args: new_args,
+                atomically: c.atomically.clone(),
             }))
         }
         syn_verus::Expr::Closure(c) => remove_ghost_expr(&*c.body, mode).map(|new_body| {
@@ -121,7 +251,7 @@ fn remove_ghost_expr(expr: &syn_verus::Expr, mode: &DeghostMode) -> Option<syn_v
                     attrs: w.attrs.clone(),
                     label: w.label.clone(),
                     while_token: w.while_token.clone(),
-                    cond: w.cond.clone(),
+                    cond: Box::new(normalize_atomic_with_ghost_expr(&w.cond)),
                     body: new_body,
                     invariant_except_break: None, // Removed
                     invariant: None,              // Removed
@@ -131,6 +261,19 @@ fn remove_ghost_expr(expr: &syn_verus::Expr, mode: &DeghostMode) -> Option<syn_v
                 })
             })
         }
+        syn_verus::Expr::Loop(l) => remove_ghost_block(&l.body, mode).map(|new_body| {
+            syn_verus::Expr::Loop(syn_verus::ExprLoop {
+                attrs: l.attrs.clone(),
+                label: l.label.clone(),
+                loop_token: l.loop_token.clone(),
+                body: new_body,
+                invariant_except_break: None,
+                invariant: None,
+                invariant_ensures: None,
+                ensures: None,
+                decreases: None,
+            })
+        }),
         syn_verus::Expr::ForLoop(f) => {
             /*
              * Fields to remove:
@@ -144,10 +287,12 @@ fn remove_ghost_expr(expr: &syn_verus::Expr, mode: &DeghostMode) -> Option<syn_v
                     for_token: f.for_token.clone(),
                     pat: f.pat.clone(),
                     in_token: f.in_token.clone(),
-                    expr: f.expr.clone(),
+                    expr: Box::new(normalize_atomic_with_ghost_expr(&f.expr)),
                     body: new_body,
                     expr_name: f.expr_name.clone(),
+                    invariant_except_break: None, // Removed
                     invariant: None, // Removed
+                    ensures: None, // Removed
                     decreases: None, // Removed
                 })
             })
@@ -175,7 +320,7 @@ fn remove_ghost_expr(expr: &syn_verus::Expr, mode: &DeghostMode) -> Option<syn_v
                         syn_verus::Expr::If(syn_verus::ExprIf {
                             attrs: i.attrs.clone(),
                             if_token: i.if_token.clone(),
-                            cond: i.cond.clone(),
+                            cond: Box::new(normalize_atomic_with_ghost_expr(&i.cond)),
                             then_branch: new_then_branch,
                             else_branch: Some((else_token.clone(), Box::new(new_else_branch))),
                         })
@@ -184,7 +329,7 @@ fn remove_ghost_expr(expr: &syn_verus::Expr, mode: &DeghostMode) -> Option<syn_v
                     Some(syn_verus::Expr::If(syn_verus::ExprIf {
                         attrs: i.attrs.clone(),
                         if_token: i.if_token.clone(),
-                        cond: i.cond.clone(),
+                        cond: Box::new(normalize_atomic_with_ghost_expr(&i.cond)),
                         then_branch: new_then_branch,
                         else_branch: None,
                     }))
@@ -239,6 +384,11 @@ fn remove_ghost_expr(expr: &syn_verus::Expr, mode: &DeghostMode) -> Option<syn_v
                 None
             }
         }
+        syn_verus::Expr::Macro(m) => {
+            let mut normalized = m.clone();
+            normalize_atomic_with_ghost_macro(&mut normalized.mac);
+            Some(syn_verus::Expr::Macro(normalized))
+        }
         syn_verus::Expr::Assume(..)
         | syn_verus::Expr::AssertForall(..)
         | syn_verus::Expr::RevealHide(..)
@@ -269,7 +419,9 @@ fn remove_ghost_stmt(stmt: &syn_verus::Stmt, mode: &DeghostMode) -> Option<syn_v
         }
         syn_verus::Stmt::Expr(e, s) => remove_ghost_expr(e, mode).map(|e1| syn_verus::Stmt::Expr(e1, s.clone())),
         syn_verus::Stmt::Macro(e) => {
-            Some(syn_verus::Stmt::Macro(e.clone()))
+            let mut normalized = e.clone();
+            normalize_atomic_with_ghost_macro(&mut normalized.mac);
+            Some(syn_verus::Stmt::Macro(normalized))
         },
     }
 }
@@ -330,6 +482,7 @@ pub fn remove_ghost_sig(
         },
         spec: syn_verus::SignatureSpec {
             prover: sig.spec.prover.clone(), // Removed
+            atomic_spec: None,
             // TODO: This fix needs to be propagated to other places using `Specification`
             requires: sig
                 .spec
@@ -431,6 +584,7 @@ fn remove_ghost_impl(i: &syn_verus::ItemImpl, mode: &DeghostMode) -> syn_verus::
         attrs: i.attrs.clone(),
         defaultness: i.defaultness.clone(),
         unsafety: i.unsafety.clone(),
+        constness: i.constness.clone(),
         impl_token: i.impl_token.clone(),
         generics: i.generics.clone(),
         trait_: i.trait_.clone(),
@@ -481,6 +635,7 @@ fn remove_ghost_item(item: &syn_verus::Item, mode: &DeghostMode) -> Option<syn_v
         syn_verus::Item::Trait(t) => Some(syn_verus::Item::Trait(syn_verus::ItemTrait {
             attrs: t.attrs.clone(),
             vis: t.vis.clone(),
+            constness: t.constness.clone(),
             unsafety: t.unsafety.clone(),
             auto_token: t.auto_token.clone(),
             trait_token: t.trait_token.clone(),
@@ -547,25 +702,25 @@ pub fn remove_ghost_from_file(file: &syn_verus::File, mode: &DeghostMode) -> syn
 }
 
 pub fn remove_verus_macro(file: &syn_verus::File) -> syn_verus::File {
-    let mut new_items: Vec<syn_verus::Item> = Vec::new();
-
-    for item in &file.items {
-        if let syn_verus::Item::Macro(m) = item {
-            if !is_verus_macro(&m.mac) {
-                new_items.push(item.clone());
-            }
-        } else {
-            new_items.push(item.clone());
-        }
+    fn remove_from_items(items: &[syn_verus::Item]) -> Vec<syn_verus::Item> {
+        items.iter().filter_map(|item| match item {
+            syn_verus::Item::Macro(m) if is_verus_macro(&m.mac) => None,
+            syn_verus::Item::Mod(module) => {
+                let mut module = module.clone();
+                if let Some((brace, items)) = &module.content {
+                    module.content = Some((brace.clone(), remove_from_items(items)));
+                }
+                Some(syn_verus::Item::Mod(module))
+            },
+            _ => Some(item.clone()),
+        }).collect()
     }
 
-    let new_file = syn_verus::File {
+    syn_verus::File {
         shebang: file.shebang.clone(),
         attrs: file.attrs.clone(),
-        items: new_items,
-    };
-
-    new_file
+        items: remove_from_items(&file.items),
+    }
 }
 
 pub fn deghost_merge_files(file: &syn_verus::File, verus_files: Vec<syn_verus::File>) -> syn_verus::File {

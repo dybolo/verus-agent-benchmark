@@ -1,7 +1,9 @@
 use std::path::PathBuf;
+use std::fs;
+use proc_macro2::{Delimiter, TokenStream, TokenTree};
 use quote::ToTokens;
 use crate::{utils::*, DeghostMode};
-use crate::deghost::{remove_ghost_block, remove_verus_macro, remove_ghost_sig};
+use crate::deghost::{normalize_atomic_with_ghost_block, remove_ghost_block, remove_verus_macro, remove_ghost_sig};
 use syn_verus::FnMode::*;
 
 /*
@@ -19,6 +21,107 @@ fn is_proof_attr(attr: &syn_verus::Attribute) -> bool {
 
 pub fn remove_proof_attr(attr: &Vec<syn_verus::Attribute>) -> Vec<syn_verus::Attribute> {
     attr.iter().filter(|a| !is_proof_attr(a)).map(|a| a.clone()).collect()
+}
+
+/// State-machine transition inductive functions are proof functions in Verus,
+/// even though their source syntax omits the `proof` keyword.
+fn is_inductive_fn(attrs: &[syn_verus::Attribute]) -> bool {
+    attrs.iter().any(|attr| attr.path().is_ident("inductive"))
+}
+
+fn is_inductive_attribute(tokens: &[TokenTree], index: usize) -> bool {
+    matches!(tokens.get(index), Some(TokenTree::Punct(p)) if p.as_char() == '#')
+        && matches!(tokens.get(index + 1), Some(TokenTree::Group(group))
+            if group.delimiter() == Delimiter::Bracket
+                && matches!(group.stream().into_iter().next(), Some(TokenTree::Ident(ident)) if ident == "inductive"))
+}
+
+fn inductive_body_index(tokens: &[TokenTree], attribute: usize) -> Option<usize> {
+    if !is_inductive_attribute(tokens, attribute)
+        || !matches!(tokens.get(attribute + 2), Some(TokenTree::Ident(ident)) if ident == "fn")
+    {
+        return None;
+    }
+
+    ((attribute + 3)..tokens.len()).find(|index| {
+        matches!(tokens.get(*index), Some(TokenTree::Group(group)) if group.delimiter() == Delimiter::Brace)
+    })
+}
+
+fn token_slices_are_equal(original: &[TokenTree], changed: &[TokenTree]) -> bool {
+    original.len() == changed.len()
+        && original.iter().zip(changed.iter()).all(|(original, changed)| {
+            original.to_string() == changed.to_string()
+        })
+}
+
+/// Compare state-machine macro tokens while allowing completion of only an
+/// originally empty `#[inductive(...)] fn` body. All declaration tokens and
+/// every non-target transition remain exact matches.
+fn state_machine_tokens_are_safe(original: TokenStream, changed: TokenStream) -> bool {
+    let original: Vec<TokenTree> = original.into_iter().collect();
+    let changed: Vec<TokenTree> = changed.into_iter().collect();
+    let mut original_index = 0;
+    let mut changed_index = 0;
+
+    while original_index < original.len() && changed_index < changed.len() {
+        if is_inductive_attribute(&original, original_index)
+            && is_inductive_attribute(&changed, changed_index)
+        {
+            if let (Some(original_body), Some(changed_body)) = (
+                inductive_body_index(&original, original_index),
+                inductive_body_index(&changed, changed_index),
+            ) {
+                if !token_slices_are_equal(
+                    &original[original_index..original_body],
+                    &changed[changed_index..changed_body],
+                ) {
+                    return false;
+                }
+                match (&original[original_body], &changed[changed_body]) {
+                    (TokenTree::Group(original_group), TokenTree::Group(changed_group))
+                        if original_group.delimiter() == Delimiter::Brace
+                            && changed_group.delimiter() == Delimiter::Brace
+                            && original_group.stream().is_empty() =>
+                    {
+                        original_index = original_body + 1;
+                        changed_index = changed_body + 1;
+                        continue;
+                    }
+                    _ => {}
+                }
+            }
+        }
+
+        match (&original[original_index], &changed[changed_index]) {
+            (TokenTree::Group(original_group), TokenTree::Group(changed_group))
+                if original_group.delimiter() == changed_group.delimiter() =>
+            {
+                if !state_machine_tokens_are_safe(original_group.stream(), changed_group.stream()) {
+                    return false;
+                }
+            }
+            (original_tree, changed_tree) if original_tree.to_string() == changed_tree.to_string() => {}
+            _ => return false,
+        }
+        original_index += 1;
+        changed_index += 1;
+    }
+
+    original_index == original.len() && changed_index == changed.len()
+}
+
+fn tokenized_state_machine_change_is_safe(
+    original: &syn_verus::ItemMacro,
+    changed: &syn_verus::ItemMacro,
+) -> bool {
+    original.attrs == changed.attrs
+        && original.ident == changed.ident
+        && original.semi_token == changed.semi_token
+        && original.mac.path.is_ident("tokenized_state_machine")
+        && changed.mac.path.is_ident("tokenized_state_machine")
+        && original.mac.delimiter == changed.mac.delimiter
+        && state_machine_tokens_are_safe(original.mac.tokens.clone(), changed.mac.tokens.clone())
 }
 
 /*
@@ -152,7 +255,17 @@ fn check_impl_items(original_items: &[syn_verus::ImplItem], changed_items: &[syn
 
                 if is_proof_or_exec(&f_orig.sig) && fn_body_is_target(&f_orig.block) && f_orig.sig.ident == f_changed.sig.ident {
                     // target function: deghost from exec, check signature for proof
-                    match f_changed.sig.mode {
+                    if is_inductive_fn(&f_orig.attrs) {
+                        if f_orig.vis != f_changed.vis
+                            || remove_proof_attr(&f_orig.attrs) != remove_proof_attr(&f_changed.attrs)
+                            || !check_fn_signature(&f_orig.sig, &f_changed.sig)
+                        {
+                            println!("Disallowed changes in inductive proof function: {}", myfun);
+                            return false;
+                        }
+                        idx_orig = idx_orig + 1;
+                        idx_changed = idx_changed + 1;
+                    } else { match f_changed.sig.mode {
                         Proof(_) => {
                             if f_orig.vis != f_changed.vis {
                                 println!("Disallowed changes in the visibility of proof function: {}", myfun);
@@ -198,10 +311,24 @@ fn check_impl_items(original_items: &[syn_verus::ImplItem], changed_items: &[syn
                         _ => {
                             return false;
                         }
-                    }
+                    }}
                 } else {
                     // non target function: exact match
                     if f_orig != f_changed {
+                        if matches!(f_orig.sig.mode, Exec(_) | Default)
+                            && matches!(f_changed.sig.mode, Exec(_) | Default)
+                            && f_orig.sig.ident == f_changed.sig.ident
+                        {
+                            let mut normalized_orig = f_orig.clone();
+                            normalized_orig.block = normalize_atomic_with_ghost_block(&f_orig.block);
+                            let mut normalized_changed = f_changed.clone();
+                            normalized_changed.block = normalize_atomic_with_ghost_block(&f_changed.block);
+                            if normalized_orig == normalized_changed {
+                                idx_orig = idx_orig + 1;
+                                idx_changed = idx_changed + 1;
+                                continue;
+                            }
+                        }
                         // if the changed item is a proof fn (but not axiom) or spec fn, skip this item, we will allow it to be added
                         match f_changed.sig.mode {
                             Spec(_) | SpecChecked(_) | Proof(_) => {
@@ -262,7 +389,16 @@ fn check_trait_items(original_items: &[syn_verus::TraitItem], changed_items: &[s
                 if is_proof_or_exec(&f_orig.sig) && f_orig.default.is_some() && fn_body_is_target(&f_orig.default.clone().unwrap())
                     && f_orig.sig.ident == f_changed.sig.ident {
                     // target function: deghost from exec, check signature for proof
-                    match f_changed.sig.mode {
+                    if is_inductive_fn(&f_orig.attrs) {
+                        if remove_proof_attr(&f_orig.attrs) != remove_proof_attr(&f_changed.attrs)
+                            || !check_fn_signature(&f_orig.sig, &f_changed.sig)
+                        {
+                            println!("Disallowed changes in inductive trait proof function: {}", myfun);
+                            return false;
+                        }
+                        idx_orig = idx_orig + 1;
+                        idx_changed = idx_changed + 1;
+                    } else { match f_changed.sig.mode {
                         Proof(_) => {
                             if !(remove_proof_attr(&f_orig.attrs) == remove_proof_attr(&f_changed.attrs) && check_fn_signature(&f_orig.sig, &f_changed.sig)) {
                                 println!("Disallowed changes detected for a trait-proof function: {}", myfun);
@@ -288,10 +424,26 @@ fn check_trait_items(original_items: &[syn_verus::TraitItem], changed_items: &[s
                         _ => {
                             return false;
                         }
-                    }
+                    }}
                 } else {
                     // non target function: exact match
                     if f_orig != f_changed {
+                        if matches!(f_orig.sig.mode, Exec(_) | Default)
+                            && matches!(f_changed.sig.mode, Exec(_) | Default)
+                            && f_orig.sig.ident == f_changed.sig.ident
+                        {
+                            if let (Some(orig_block), Some(changed_block)) = (&f_orig.default, &f_changed.default) {
+                                let mut normalized_orig = f_orig.clone();
+                                normalized_orig.default = Some(normalize_atomic_with_ghost_block(orig_block));
+                                let mut normalized_changed = f_changed.clone();
+                                normalized_changed.default = Some(normalize_atomic_with_ghost_block(changed_block));
+                                if normalized_orig == normalized_changed {
+                                    idx_orig = idx_orig + 1;
+                                    idx_changed = idx_changed + 1;
+                                    continue;
+                                }
+                            }
+                        }
                         // if the changed item is a proof fn (but not axiom) or spec fn, skip this item, we will allow it to be added
                         match f_changed.sig.mode {
                             Spec(_) | SpecChecked(_) | Proof(_) => {
@@ -366,7 +518,17 @@ fn check_items(original_items: &[syn_verus::Item], changed_items: &[syn_verus::I
 
                 if is_proof_or_exec(&f_orig.sig) && fn_body_is_target(&*f_orig.block) && f_orig.sig.ident == f_changed.sig.ident {
                     // target function: deghost from exec, check signature for proof
-                    match f_changed.sig.mode {
+                    if is_inductive_fn(&f_orig.attrs) {
+                        if f_orig.vis != f_changed.vis
+                            || remove_proof_attr(&f_orig.attrs) != remove_proof_attr(&f_changed.attrs)
+                            || !check_fn_signature(&f_orig.sig, &f_changed.sig)
+                        {
+                            println!("Disallowed changes in inductive proof function: {}", myfun);
+                            return false;
+                        }
+                        idx_orig = idx_orig + 1;
+                        idx_changed = idx_changed + 1;
+                    } else { match f_changed.sig.mode {
                         Proof(_) => {
                             if f_orig.vis != f_changed.vis {
                                 println!("Disallowed changes in the visibility of proof function: {}", myfun);
@@ -396,7 +558,6 @@ fn check_items(original_items: &[syn_verus::Item], changed_items: &[syn_verus::I
                             // after deghost, check exact match.
                             // deghost removes spec from signature. also need to check that requires/ensures/recommends do not change
                             if deghosted_orig != deghosted_changed {
-
                                 // Print out error information
                                 println!("Disallowed changes found in the body of function: {}", myfun);
 
@@ -416,10 +577,24 @@ fn check_items(original_items: &[syn_verus::Item], changed_items: &[syn_verus::I
                         _ => {
                             return false;
                         }
-                    }
+                    }}
                 } else {
                     // non target function: exact match
                     if f_orig != f_changed {
+                        if matches!(f_orig.sig.mode, Exec(_) | Default)
+                            && matches!(f_changed.sig.mode, Exec(_) | Default)
+                            && f_orig.sig.ident == f_changed.sig.ident
+                        {
+                            let mut normalized_orig = f_orig.clone();
+                            normalized_orig.block = Box::new(normalize_atomic_with_ghost_block(&f_orig.block));
+                            let mut normalized_changed = f_changed.clone();
+                            normalized_changed.block = Box::new(normalize_atomic_with_ghost_block(&f_changed.block));
+                            if normalized_orig == normalized_changed {
+                                idx_orig = idx_orig + 1;
+                                idx_changed = idx_changed + 1;
+                                continue;
+                            }
+                        }
                         // if the changed item is a proof fn (but not axiom) or spec fn, skip this item, we will allow it to be added
                         match f_changed.sig.mode {
                             Spec(_) | SpecChecked(_) | Proof(_) => {
@@ -479,6 +654,13 @@ fn check_items(original_items: &[syn_verus::Item], changed_items: &[syn_verus::I
             (_, syn_verus::Item::Use(_)) | (_, syn_verus::Item::Macro(_)) | (_, syn_verus::Item::BroadcastUse(_)) => {
                 // check exact match
                 if original != changed {
+                    if let (syn_verus::Item::Macro(original_macro), syn_verus::Item::Macro(changed_macro)) = (original, changed) {
+                        if tokenized_state_machine_change_is_safe(original_macro, changed_macro) {
+                            idx_orig = idx_orig + 1;
+                            idx_changed = idx_changed + 1;
+                            continue;
+                        }
+                    }
                     // these items are allowed to be added. skip this item in changed file
                     idx_changed = idx_changed + 1;
                 } else {
@@ -538,12 +720,19 @@ Safety check rules:
 - we cannot change existing spec, proof, or exec fns -- EXCEPT the target function
 - we cannot change the signature of the target function, except to add decreases, opens invariants, or prover clause
 - we cannot change exec code in the body of the target function
+- functions annotated with `#[inductive(...)]` are transition proof functions;
+  their target body may be completed as proof code while their declaration is preserved
+- in any existing exec function, we may change only the proof body of a
+  well-formed `atomic_with_ghost!(... ghost binding => { ... })` invocation;
+  its target, operation, and other clauses must remain unchanged
 - the target function is identified by being a proof or exec fn whose body does not contain `unimplemented!()`.
     all other proof and exec fn will have a body with `unimplemented!()`
 */
 pub fn check_allowed_additions_only(original_file: PathBuf, changed_file: PathBuf) -> Result<bool, Error> {
     let original = fload_file(&original_file)?;
     let changed = fload_file(&changed_file)?;
+    let original_source = fs::read_to_string(&original_file).map_err(Error::ReadFile)?;
+    let changed_source = fs::read_to_string(&changed_file).map_err(Error::ReadFile)?;
 
     let original_pure_file = remove_verus_macro(&original);
     let changed_pure_file = remove_verus_macro(&changed);
@@ -552,8 +741,8 @@ pub fn check_allowed_additions_only(original_file: PathBuf, changed_file: PathBu
         return Ok(false);
     }
 
-    extract_verus_macro(&original).and_then(|original_verus_macros| {
-        extract_verus_macro(&changed).and_then(|changed_verus_macros| {
+    extract_verus_macro_with_context(&original, &original_file, &original_source).and_then(|original_verus_macros| {
+        extract_verus_macro_with_context(&changed, &changed_file, &changed_source).and_then(|changed_verus_macros| {
 
             if original_verus_macros.len() != changed_verus_macros.len() {
                 println!("Disallowed changes made to Verus macros in the original files.");
@@ -569,7 +758,12 @@ pub fn check_allowed_additions_only(original_file: PathBuf, changed_file: PathBu
             // });
 
             for i in 0..original_verus_macros.len() {
-                if !check_items(&original_verus_macros[i].items[0..], &changed_verus_macros[i].items[0..]) {
+                // Nested `verus!` macros are collected and checked separately.
+                // Remove them from the enclosing parsed macro so their token
+                // bodies are not also treated as opaque executable changes.
+                let original_macro = remove_verus_macro(&original_verus_macros[i]);
+                let changed_macro = remove_verus_macro(&changed_verus_macros[i]);
+                if !check_items(&original_macro.items[0..], &changed_macro.items[0..]) {
                     println!("Disallowed changes made to Verus macros in the original files.");
                     return Ok(false);
                 }
@@ -579,4 +773,3 @@ pub fn check_allowed_additions_only(original_file: PathBuf, changed_file: PathBu
         })
     })
 }
-
