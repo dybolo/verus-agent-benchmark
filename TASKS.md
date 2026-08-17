@@ -1,6 +1,6 @@
 # Verus Proof-Repair Task Manifest
 
-This document catalogues the 53 Verus proof-repair tasks. It describes the corpus snapshot and task definitions only;
+This document catalogues the 64 Verus proof-repair tasks. It describes the corpus snapshot and task definitions only;
 experimental outcomes, costs, and durations are recorded separately in
 [`runs/`](runs/).
 
@@ -8,7 +8,7 @@ experimental outcomes, costs, and durations are recorded separately in
 
 - Repository: [`dybolo/verus-agent-benchmark`](https://github.com/dybolo/verus-agent-benchmark)
 - Corpus snapshot: commit [`5797cd0242a268248797a76da5951b367e5c80eb`](https://github.com/dybolo/verus-agent-benchmark/commit/5797cd0242a268248797a76da5951b367e5c80eb)
-- Tasks: 53 standalone Rust files in [`tasks/`](tasks/)
+- Tasks: 64 standalone Rust files in [`tasks/`](tasks/)
 - Reference proofs: the corresponding fully verified files in
   [`solutions/base/`](solutions/base/)
 
@@ -33,10 +33,10 @@ require tokenized-state-machine inductiveness proofs.
 
 | Task group | Tasks | Proof style | Source families |
 | --- | ---: | --- | --- |
-| Atomic-operation proofs | 21 | Complete ghost reasoning around a concrete atomic operation, either with `atomic_with_ghost!` or by opening an invariant with `open_atomic_invariant!`. | Count-to-Two, Cuckoo, Helping, Once, RwLock, statics, wait queue |
+| Atomic-operation proofs | 32 | Complete ghost reasoning around a concrete atomic operation, either with `atomic_with_ghost!` or by opening an invariant with `open_atomic_invariant!`. | Context, Count-to-Two, Cuckoo, Helping, Log, Once, Replica, RwLock, statics, wait queue |
 | `tokenized_state_machine!` | 32 | Prove that a state-machine transition preserves its invariants. | Cuckoo, CyclicBuffer, distributed RwLock, FIFO, Flat Combining, Unbounded Log |
 
-## Atomic-operation proof tasks (21)
+## Atomic-operation proof tasks (32)
 
 | Task ID | Description | Target proof obligation | Source project | Source module | Task file |
 | --- | --- | --- | --- | --- | --- |
@@ -61,6 +61,17 @@ require tokenized-state-machine inductiveness proofs.
 | `helping_try_cancel_two_flips` | Cancel two pending flip operations through the helping protocol. | Logical-atomic proof in `try_cancel_two_flips` | [Verus](https://github.com/verus-lang/verus) | [`helping.rs`](solutions/base/helping.rs) | [`helping_try_cancel_two_flips.rs`](tasks/helping_try_cancel_two_flips.rs) |
 | `helping_try_handshake` | Complete a handshake in the helping protocol. | Logical-atomic proof in `try_handshake` | [Verus](https://github.com/verus-lang/verus) | [`helping.rs`](solutions/base/helping.rs) | [`helping_try_handshake.rs`](tasks/helping_try_handshake.rs) |
 | `helping_try_simple_flip` | Complete a simple flip in the helping protocol. | Logical-atomic proof in `try_simple_flip` | [Verus](https://github.com/verus-lang/verus) | [`helping.rs`](solutions/base/helping.rs) | [`helping_try_simple_flip.rs`](tasks/helping_try_simple_flip.rs) |
+| `context_enqueue_op` | Enqueue a write operation while synchronizing the client and log ghost state. | Atomic-ghost proof in `Context::enqueue_op` | [verified-node-replication] | [`context.rs`](solutions/base/context.rs) | [`context_enqueue_op.rs`](tasks/context_enqueue_op.rs) |
+| `context_dequeue_response` | Dequeue a response while recovering the client and update ghost state. | Atomic-ghost proof in `Context::dequeue_response` | [verified-node-replication] | [`context.rs`](solutions/base/context.rs) | [`context_dequeue_response.rs`](tasks/context_dequeue_response.rs) |
+| `log_append` | Append a batch of requests while updating log and cyclic-buffer ghost state. | Atomic-ghost proof in `NrLog::append` | [verified-node-replication] | [`log.rs`](solutions/base/log.rs) | [`log_append.rs`](tasks/log_append.rs) |
+| `log_find_min_local_version` | Find the minimum local version while maintaining read-version ghost state. | Atomic-ghost proof in `NrLog::find_min_local_version` | [verified-node-replication] | [`log.rs`](solutions/base/log.rs) | [`log_find_min_local_version.rs`](tasks/log_find_min_local_version.rs) |
+| `log_execute` | Execute log operations while maintaining unbounded-log and cyclic-buffer ghost state. | Atomic-ghost proof in `NrLog::execute` | [verified-node-replication] | [`log.rs`](solutions/base/log.rs) | [`log_execute.rs`](tasks/log_execute.rs) |
+| `log_advance_head` | Advance the log head while synchronizing garbage-collection ghost state. | Atomic-ghost proof in `NrLog::advance_head` | [verified-node-replication] | [`log.rs`](solutions/base/log.rs) | [`log_advance_head.rs`](tasks/log_advance_head.rs) |
+| `log_is_replica_synced_for_reads` | Check whether a replica is synchronized for reads while updating read-state ghost permissions. | Atomic-ghost proof in `NrLog::is_replica_synced_for_reads` | [verified-node-replication] | [`log.rs`](solutions/base/log.rs) | [`log_is_replica_synced_for_reads.rs`](tasks/log_is_replica_synced_for_reads.rs) |
+| `replica_acquire_combiner_lock` | Acquire the combiner lock while synchronizing lock ghost state. | Atomic-ghost proof in `Replica::acquire_combiner_lock` | [verified-node-replication] | [`replica.rs`](solutions/base/replica.rs) | [`replica_acquire_combiner_lock.rs`](tasks/replica_acquire_combiner_lock.rs) |
+| `replica_collect_thread_ops` | Collect thread operations while moving their permissions into the combiner state. | Atomic-ghost proof in `Replica::collect_thread_ops` | [verified-node-replication] | [`replica.rs`](solutions/base/replica.rs) | [`replica_collect_thread_ops.rs`](tasks/replica_collect_thread_ops.rs) |
+| `replica_distribute_thread_resps` | Distribute thread responses while returning response and update ghost permissions. | Atomic-ghost proof in `Replica::distribute_thread_resps` | [verified-node-replication] | [`replica.rs`](solutions/base/replica.rs) | [`replica_distribute_thread_resps.rs`](tasks/replica_distribute_thread_resps.rs) |
+| `replica_release_combiner_lock` | Release the combiner lock while restoring its ghost state. | Atomic-ghost proof in `Replica::release_combiner_lock` | [verified-node-replication] | [`replica.rs`](solutions/base/replica.rs) | [`replica_release_combiner_lock.rs`](tasks/replica_release_combiner_lock.rs) |
 
 ## `tokenized_state_machine!` tasks (32)
 
