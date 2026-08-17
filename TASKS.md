@@ -1,7 +1,6 @@
 # Verus Proof-Repair Task Manifest
 
-This document catalogues the 53 Verus proof-repair tasks used in the thesis
-evaluation. It describes the corpus snapshot and task definitions only;
+This document catalogues the 53 Verus proof-repair tasks. It describes the corpus snapshot and task definitions only;
 experimental outcomes, costs, and durations are recorded separately in
 [`runs/`](runs/).
 
