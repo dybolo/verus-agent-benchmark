@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 """Inline a modular Verus crate into one file accepted by `verus <file>`."""
 
 from __future__ import annotations
@@ -15,9 +15,9 @@ MODULE = re.compile(
     r"^(?P<i>[ \t]*)(?P<v>pub(?:\([^)]*\))?\s+)?mod\s+(?P<n>[A-Za-z_]\w*)\s*;[ \t]*(?://.*)?$",
     re.MULTILINE,
 )
-PROOF = re.compile(r"\b(?:pub\s+)?proof\s+fn\b")
-IMPL = re.compile(
-    r"^(?:[ \t]*)(?:pub(?:\([^)]*\))?\s+)?(?:const\s+)?fn\b", re.MULTILINE
+
+PROOF = re.compile(
+    r"^[ \t]*(?:pub(?:\([^)]*\))?[ \t]+)?proof[ \t]+fn\b", re.MULTILINE
 )
 
 
@@ -103,7 +103,7 @@ def leading_indent(text: str) -> str:
 
 
 def externalize_proofs(text: str) -> str:
-    """Preserve proof signatures/specifications while trusting their bodies."""
+    """Keep proof contracts, replacing only `proof fn` bodies with trusted stubs."""
     out: list[str] = []
     cursor = 0
     for match in PROOF.finditer(text):
@@ -117,38 +117,21 @@ def externalize_proofs(text: str) -> str:
         line = text.rfind("\n", 0, match.start()) + 1
         indent = leading_indent(text[line:])
         nearby = "\n".join(text[:line].splitlines()[-5:])
+
         # Verus requires bodies for functions used to justify recursive specs.
-        if "via_fn" in nearby or "decreases_by" in nearby:
+        # Declarations already marked trusted must also retain their source form:
+        # adding `external_body` changes how their theorem contracts are used.
+        if (
+            "via_fn" in nearby
+            or "decreases_by" in nearby
+            or "verus::trusted" in nearby
+        ):
             continue
+
         out.append(text[cursor:line])
         if "external_body" not in nearby:
             out.append(f"{indent}#[verifier::external_body]\n")
         out.append(text[line:opening])
-        out.append(f"{{\n{indent}    unimplemented!()\n{indent}}}")
-        cursor = end + 1
-    out.append(text[cursor:])
-    return "".join(out)
-
-
-def externalize_impls(text: str) -> str:
-    """Trust dependency executable methods while retaining their contracts."""
-    out: list[str] = []
-    cursor = 0
-    for match in IMPL.finditer(text):
-        opening, semicolon = (
-            proof_body_opening(text, match.end()),
-            text.find(";", match.end()),
-        )
-        if opening < 0 or 0 <= semicolon < opening:
-            continue
-        line = text.rfind("\n", 0, match.start()) + 1
-        nearby = "\n".join(text[:line].splitlines()[-5:])
-        if "external_body" in nearby:
-            continue
-        end = closing_brace(text, opening)
-        indent = leading_indent(text[line:])
-        out.append(text[cursor:line])
-        out.append(f"{indent}#[verifier::external_body]\n{text[line:opening]}")
         out.append(f"{{\n{indent}    unimplemented!()\n{indent}}}")
         cursor = end + 1
     out.append(text[cursor:])
@@ -169,15 +152,10 @@ def ensure_not_recursive(
 
 
 def transform_source(path: Path, context: InlineContext, source: str) -> str:
-    """Trust selected dependency bodies while preserving the target source."""
+    """Trust dependency proof bodies while preserving all other source verbatim."""
     if path == context.target:
         return source
-
-    source = externalize_proofs(source)
-    relative = path.relative_to(context.root)
-    if relative == Path("src/lib.rs") or relative.parts[:2] == ("src", "exec"):
-        return externalize_impls(source)
-    return source
+    return externalize_proofs(source)
 
 
 def inline(path: Path, context: InlineContext, ancestors: tuple[Path, ...] = ()) -> str:
