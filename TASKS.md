@@ -1,20 +1,21 @@
 # Verus Proof-Repair Task Manifest
 
-This document catalogues the 64 Verus proof-repair tasks. It describes the corpus snapshot and task definitions only;
+This document catalogues the 75 Verus proof-repair tasks. It describes the corpus snapshot and task definitions only;
 experimental outcomes, costs, and durations are recorded separately in
 [`runs/`](runs/).
 
 ## Provenance and task contract
 
 - Repository: [`dybolo/verus-agent-benchmark`](https://github.com/dybolo/verus-agent-benchmark)
-- Corpus snapshot: commit [`5797cd0242a268248797a76da5951b367e5c80eb`](https://github.com/dybolo/verus-agent-benchmark/commit/5797cd0242a268248797a76da5951b367e5c80eb)
-- Tasks: 64 standalone Rust files in [`tasks/`](tasks/)
+- Corpus snapshot: commit [`52efc533a234df3d534b53acdb3888cb60d765d1`](https://github.com/dybolo/verus-agent-benchmark/commit/52efc533a234df3d534b53acdb3888cb60d765d1)
+- Tasks: 75 standalone Rust files in [`tasks/`](tasks/)
 - Reference proofs: the corresponding fully verified files in
   [`solutions/base/`](solutions/base/)
 
 [Verus]: https://github.com/verus-lang/verus
 [vostd]: https://github.com/asterinas/vostd
 [verified-node-replication]: https://github.com/verus-lang/verified-node-replication
+[verified-memory-allocator]: https://github.com/verus-lang/verified-memory-allocator
 
 Each task contains one designated incomplete proof obligation. The benchmark
 prompt requires a solver to add only proof annotations: it must preserve
@@ -33,10 +34,10 @@ require tokenized-state-machine inductiveness proofs.
 
 | Task group | Tasks | Proof style | Source families |
 | --- | ---: | --- | --- |
-| Atomic-operation proofs | 32 | Complete ghost reasoning around a concrete atomic operation, either with `atomic_with_ghost!` or by opening an invariant with `open_atomic_invariant!`. | Context, Count-to-Two, Cuckoo, Helping, Log, Once, Replica, RwLock, statics, wait queue |
-| `tokenized_state_machine!` | 32 | Prove that a state-machine transition preserves its invariants. | Cuckoo, CyclicBuffer, distributed RwLock, FIFO, Flat Combining, Unbounded Log |
+| Atomic-operation proofs | 40 | Complete ghost reasoning around a concrete atomic operation, either with `atomic_with_ghost!` or by opening an invariant with `open_atomic_invariant!`. | Context, Count-to-Two, Cuckoo, Helping, Log, Once, Replica, RwLock, statics, verified memory allocator, wait queue |
+| `tokenized_state_machine!` | 35 | Prove that a state-machine transition preserves its invariants. | Cuckoo, CyclicBuffer, distributed RwLock, FIFO, Flat Combining, Unbounded Log, verified memory allocator |
 
-## Atomic-operation proof tasks (32)
+## Atomic-operation proof tasks (40)
 
 | Task ID | Description | Target proof obligation | Source project | Source module | Task file |
 | --- | --- | --- | --- | --- | --- |
@@ -72,8 +73,16 @@ require tokenized-state-machine inductiveness proofs.
 | `replica_collect_thread_ops` | Collect thread operations while moving their permissions into the combiner state. | Atomic-ghost proof in `Replica::collect_thread_ops` | [verified-node-replication] | [`replica.rs`](solutions/base/replica.rs) | [`replica_collect_thread_ops.rs`](tasks/replica_collect_thread_ops.rs) |
 | `replica_distribute_thread_resps` | Distribute thread responses while returning response and update ghost permissions. | Atomic-ghost proof in `Replica::distribute_thread_resps` | [verified-node-replication] | [`replica.rs`](solutions/base/replica.rs) | [`replica_distribute_thread_resps.rs`](tasks/replica_distribute_thread_resps.rs) |
 | `replica_release_combiner_lock` | Release the combiner lock while restoring its ghost state. | Atomic-ghost proof in `Replica::release_combiner_lock` | [verified-node-replication] | [`replica.rs`](solutions/base/replica.rs) | [`replica_release_combiner_lock.rs`](tasks/replica_release_combiner_lock.rs) |
+| `free_free` | Free an allocated block while preserving allocator ownership and ghost state. | Proof in `free` | [verified-memory-allocator] | [`free.rs`](solutions/base/free.rs) | [`free_free.rs`](tasks/free_free.rs) |
+| `free_free_block_mt` | Free a block through the multi-threaded free path while maintaining allocator state. | Proof in `free_block_mt` | [verified-memory-allocator] | [`free.rs`](solutions/base/free.rs) | [`free_free_block_mt.rs`](tasks/free_free_block_mt.rs) |
+| `linked_list_atomic_insert_block` | Atomically add a block to a linked free list while transferring its ghost resources. | Atomic-ghost proof in `LLAtomic::atomic_insert_block` | [verified-memory-allocator] | [`linked_list.rs`](solutions/base/linked_list.rs) | [`linked_list_atomic_insert_block.rs`](tasks/linked_list_atomic_insert_block.rs) |
+| `linked_list_check_is_good` | Check a linked list's delayed-free state while updating its checked-state token. | Atomic-ghost proof in `LLAtomic::check_is_good` | [verified-memory-allocator] | [`linked_list.rs`](solutions/base/linked_list.rs) | [`linked_list_check_is_good.rs`](tasks/linked_list_check_is_good.rs) |
+| `linked_list_enable` | Enable a linked free list and establish its delayed-free state. | Atomic-ghost proof in `LLAtomic::enable` | [verified-memory-allocator] | [`linked_list.rs`](solutions/base/linked_list.rs) | [`linked_list_enable.rs`](tasks/linked_list_enable.rs) |
+| `linked_list_take` | Take all blocks from a linked free list while preserving its list invariant. | Atomic-ghost proof in `LLAtomic::take` | [verified-memory-allocator] | [`linked_list.rs`](solutions/base/linked_list.rs) | [`linked_list_take.rs`](tasks/linked_list_take.rs) |
+| `linked_list_take_` | Take a nonempty linked free list while retaining its delay-state metadata. | Atomic-ghost proof in `LLAtomic::take` | [verified-memory-allocator] | [`linked_list.rs`](solutions/base/linked_list.rs) | [`linked_list_take_.rs`](tasks/linked_list_take_.rs) |
+| `linked_list_try_use_delayed_free` | Attempt to claim a linked list's delayed-free state atomically. | Atomic-ghost proof in `LLAtomic::try_use_delayed_free` | [verified-memory-allocator] | [`linked_list.rs`](solutions/base/linked_list.rs) | [`linked_list_try_use_delayed_free.rs`](tasks/linked_list_try_use_delayed_free.rs) |
 
-## `tokenized_state_machine!` tasks (32)
+## `tokenized_state_machine!` tasks (35)
 
 | Task ID | Description | Target proof obligation | Source project | Source module | Task file |
 | --- | --- | --- | --- | --- | --- |
@@ -104,6 +113,9 @@ require tokenized-state-machine inductiveness proofs.
 | `flat_combine_combiner_send_skip_inductive` | Show that skipping a combiner send preserves invariants. | `combiner_send_skip_inductive` | [verified-node-replication] | [`flat_combine.rs`](solutions/base/flat_combine.rs) | [`flat_combine_combiner_send_skip_inductive.rs`](tasks/flat_combine_combiner_send_skip_inductive.rs) |
 | `flat_combine_combiner_skip_inductive` | Show that skipping a combiner step preserves invariants. | `combiner_skip_inductive` | [verified-node-replication] | [`flat_combine.rs`](solutions/base/flat_combine.rs) | [`flat_combine_combiner_skip_inductive.rs`](tasks/flat_combine_combiner_skip_inductive.rs) |
 | `unbounded_log_exec_dispatch_local_inductive` | Show that local dispatch preserves Unbounded Log invariants. | `exec_dispatch_local_inductive` | [verified-node-replication] | [`unbounded_log.rs`](solutions/base/unbounded_log.rs) | [`unbounded_log_exec_dispatch_local_inductive.rs`](tasks/unbounded_log_exec_dispatch_local_inductive.rs) |
+| `tokens_page_destroy_block_tokens_inductive` | Show that destroying a page's block tokens preserves allocator token invariants. | `page_destroy_block_tokens_inductive` | [verified-memory-allocator] | [`tokens.rs`](solutions/base/tokens.rs) | [`tokens_page_destroy_block_tokens_inductive.rs`](tasks/tokens_page_destroy_block_tokens_inductive.rs) |
+| `tokens_page_mk_block_tokens_inductive` | Show that creating a page's block tokens preserves allocator token invariants. | `page_mk_block_tokens_inductive` | [verified-memory-allocator] | [`tokens.rs`](solutions/base/tokens.rs) | [`tokens_page_mk_block_tokens_inductive.rs`](tasks/tokens_page_mk_block_tokens_inductive.rs) |
+| `tokens_reserve_uniq_identifier_inductive` | Show that reserving a unique allocator identifier preserves token invariants. | `reserve_uniq_identifier_inductive` | [verified-memory-allocator] | [`tokens.rs`](solutions/base/tokens.rs) | [`tokens_reserve_uniq_identifier_inductive.rs`](tasks/tokens_reserve_uniq_identifier_inductive.rs) |
 | `unbounded_log_exec_trivial_start_inductive` | Show that starting trivial execution preserves Unbounded Log invariants. | `exec_trivial_start_inductive` | [verified-node-replication] | [`unbounded_log.rs`](solutions/base/unbounded_log.rs) | [`unbounded_log_exec_trivial_start_inductive.rs`](tasks/unbounded_log_exec_trivial_start_inductive.rs) |
 | `unbounded_log_exec_update_version_upper_bound_inductive` | Show that updating the version upper bound preserves Unbounded Log invariants. | `exec_update_version_upper_bound_inductive` | [verified-node-replication] | [`unbounded_log.rs`](solutions/base/unbounded_log.rs) | [`unbounded_log_exec_update_version_upper_bound_inductive.rs`](tasks/unbounded_log_exec_update_version_upper_bound_inductive.rs) |
 | `unbounded_log_readonly_apply_inductive` | Show that applying a read-only request preserves Unbounded Log invariants. | `readonly_apply_inductive` | [verified-node-replication] | [`unbounded_log.rs`](solutions/base/unbounded_log.rs) | [`unbounded_log_readonly_apply_inductive.rs`](tasks/unbounded_log_readonly_apply_inductive.rs) |
