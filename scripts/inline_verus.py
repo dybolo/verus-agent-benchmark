@@ -40,6 +40,17 @@ def find_crate_root(source: Path) -> Path:
     raise ValueError("could not find crate root; pass --crate-root")
 
 
+def crate_entrypoint(root: Path) -> Path:
+    """Return the library entrypoint for Cargo and flat Verus module trees."""
+    cargo_entrypoint = root / "src/lib.rs"
+    if cargo_entrypoint.is_file():
+        return cargo_entrypoint
+    flat_entrypoint = root / "lib.rs"
+    if flat_entrypoint.is_file():
+        return flat_entrypoint
+    raise ValueError("crate root must contain src/lib.rs or lib.rs")
+
+
 def child_module(parent: Path, name: str) -> Path | None:
     for candidate in (parent.parent / f"{name}.rs", parent.parent / name / "mod.rs"):
         if candidate.is_file():
@@ -48,7 +59,7 @@ def child_module(parent: Path, name: str) -> Path | None:
 
 
 def closing_brace(text: str, opening: int) -> int:
-    depth, i, state = 0, opening, "code"
+    depth, block_depth, i, state = 0, 0, opening, "code"
     while i < len(text):
         char, nxt = text[i], text[i + 1] if i + 1 < len(text) else ""
         if state == "code":
@@ -59,7 +70,7 @@ def closing_brace(text: str, opening: int) -> int:
             elif char == "/" and nxt == "/":
                 state, i = "line", i + 1
             elif char == "/" and nxt == "*":
-                state, i = "block", i + 1
+                state, block_depth, i = "block", 1, i + 1
             elif char == "{":
                 depth += 1
             elif char == "}":
@@ -78,14 +89,19 @@ def closing_brace(text: str, opening: int) -> int:
                 state = "code"
         elif state == "line" and char == "\n":
             state = "code"
-        elif state == "block" and char == "*" and nxt == "/":
-            state, i = "code", i + 1
+        elif state == "block":
+            if char == "/" and nxt == "*":
+                block_depth, i = block_depth + 1, i + 1
+            elif char == "*" and nxt == "/":
+                block_depth, i = block_depth - 1, i + 1
+                if block_depth == 0:
+                    state = "code"
         i += 1
     raise ValueError("unmatched proof-function brace")
 
 
 def proof_body_opening(text: str, start: int) -> int:
-    """Find the opening `{` of a function body, skipping `{` in contract struct literals."""
+    """Find a proof-function body opening, skipping braces in its contract."""
     position = start
     while True:
         position = text.find("{", position)
@@ -93,7 +109,11 @@ def proof_body_opening(text: str, start: int) -> int:
             return -1
         line_start = text.rfind("\n", 0, position) + 1
         prefix = text[line_start:position].strip()
-        if not prefix or prefix.endswith(")"):
+        # In the supported source layout, proof bodies start on their own line.
+        # A contract may also contain a `match ... {` whose expression happens
+        # to end in `)`, so accepting every such line would replace part of the
+        # contract rather than only the proof body.
+        if not prefix:
             return position
         position += 1
 
@@ -198,15 +218,19 @@ def main() -> int:
         parser.error(f"missing source: {source}")
 
     root = args.crate_root.resolve() if args.crate_root else find_crate_root(source)
-    if root / "src" not in [source, *source.parents]:
-        parser.error("source must be below crate-root/src")
+    try:
+        entrypoint = crate_entrypoint(root)
+    except ValueError as error:
+        parser.error(str(error))
+    if root not in source.parents:
+        parser.error("source must be below crate-root")
 
     solutions_base = Path(__file__).resolve().parents[1] / "solutions" / "base"
     output = (solutions_base / f"{source.stem}_standalone.rs").resolve()
     output.parent.mkdir(parents=True, exist_ok=True)
 
     _ = output.write_text(
-        inline(root / "src/lib.rs", InlineContext(root, source)) + "\n\nfn main() {}\n"
+        inline(entrypoint, InlineContext(root, source)) + "\n\nfn main() {}\n"
     )
 
     print(f"Wrote {output}")
