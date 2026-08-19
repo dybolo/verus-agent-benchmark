@@ -25,19 +25,43 @@ Each agent has a single `Dockerfile` shared by all its entrypoints. When the ben
 - Use `-a <pattern>` or `--agent <pattern>` to filter agents by glob pattern (e.g. `opencode`, `open*`).
 - Use `-m <pattern>` or `--model <pattern>` to filter models by glob pattern (e.g. `gpt-5.4`, `*gpt*`).
 
-## Reviewing runs
-
-The Streamlit viewer provides a human-readable overview of run results, conversation logs, and generated solution files. Run it from the repository root:
-
-```bash
-python3 -m pip install -r requirements.txt
-python3 -m streamlit run run_viewer.py
-```
-
-Use the sidebar to select a run, agent/model, result status, and task. Conversation tool calls and outputs are collapsed by default, and the solution view shows a diff whenever the original task is still available.
-
 ## Important
 
 - The script uses the user's current environment variables for provider credentials.
 - Make sure to run the agents with a provider with the credentials set in the environment.
 - `.model` entrypoint files must be executable (`chmod +x`).
+
+
+# Streamlit App
+
+## Reviewing runs
+
+The Streamlit viewer provides a human-readable overview of run results, conversation logs, and generated solution files. Run it from the repository root:
+
+```bash
+python3 -m pip install -e streamlit_app
+benchmark-runs-viewer
+```
+
+Use the sidebar to select a run, agent/model, result status, and task. Conversation tool calls and outputs are collapsed by default, and the solution view shows a diff whenever the original task is still available.
+
+## Generating evaluation plots
+
+The thesis evaluation dashboard reads the JSON files in `runs/` directly and
+selects the latest `opencode` and `pi` harness/model results in the largest
+identical task cohort (runs with common tests) by default. Start it from the repository root:
+
+```bash
+python3 -m pip install -e streamlit_app
+benchmark-plots-viewer
+```
+
+Use the sidebar to select a cohort, harness/model conditions, proof styles,
+source modules, tasks, and figure dimensions. Each plot can be downloaded as
+SVG, PDF, 300-DPI PNG, or CSV containing the exact displayed data. 
+
+Run the analysis and rendering tests with:
+
+```bash
+python3 -m unittest discover -s streamlit_app/tests
+```
