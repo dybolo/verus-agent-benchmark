@@ -5,3 +5,4 @@ todo.txt
 .staging_areas/
 **/.venv/**
 **/venv/**
+**/__pycache__/**

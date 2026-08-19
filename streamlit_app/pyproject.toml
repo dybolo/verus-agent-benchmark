@@ -1,0 +1,40 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "verus-benchmark-streamlit-app"
+version = "0.1.0"
+description = "Streamlit dashboards for Verus benchmark results"
+requires-python = ">=3.10"
+dependencies = [
+    "streamlit>=1.50,<2",
+    "pandas>=2.2,<3",
+    "matplotlib>=3.8,<4",
+]
+
+[project.optional-dependencies]
+dev = [
+    "basedpyright>=1.36",
+    "pandas-stubs>=2.2",
+    "ruff>=0.14",
+]
+
+[project.scripts]
+benchmark-runs-viewer = "streamlit_app.cli:runs_viewer"
+benchmark-plots-viewer = "streamlit_app.cli:plots_viewer"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+streamlit_app = ["task_metadata.csv"]
+
+[tool.basedpyright]
+include = ["src"]
+pythonVersion = "3.10"
+typeCheckingMode = "standard"
+reportMissingTypeStubs = "none"
