@@ -26,24 +26,27 @@ Successful solutions are checked with Verus and the Lynette change checker.
 Tasks are classified by the feature exercised by the **designated proof
 obligation**, rather than every feature used elsewhere in the enclosing source
 file. In particular, Cuckoo and FIFO files contain both atomic ghost operations
-and tokenized state machines. Cuckoo read/insert/delete tasks require completing
-atomic-ghost proof sections, whereas Cuckoo's inductive task and all FIFO tasks
-require tokenized-state-machine inductiveness proofs.
+and tokenized state machines. Cuckoo read/insert/delete and FIFO enqueue/dequeue
+tasks require completing atomic-ghost proof sections, whereas Cuckoo's inductive
+task and FIFO's inductive tasks require tokenized-state-machine inductiveness
+proofs.
 
 ## Task-group overview
 
 | Task group | Tasks | Proof style | Source families |
 | --- | ---: | --- | --- |
-| Atomic-operation proofs | 40 | Complete ghost reasoning around a concrete atomic operation, either with `atomic_with_ghost!` or by opening an invariant with `open_atomic_invariant!`. | Context, Count-to-Two, Cuckoo, Helping, Log, Once, Replica, RwLock, statics, verified memory allocator, wait queue |
-| `tokenized_state_machine!` | 35 | Prove that a state-machine transition preserves its invariants. | Cuckoo, CyclicBuffer, distributed RwLock, FIFO, Flat Combining, Unbounded Log, verified memory allocator |
+| Atomic-operation proofs | 42 | Complete ghost reasoning around a concrete atomic operation, either with `atomic_with_ghost!` or by opening an invariant with `open_atomic_invariant!`. | Context, Count-to-Two, Cuckoo, FIFO, Helping, Log, Once, Replica, RwLock, statics, verified memory allocator, wait queue |
+| `tokenized_state_machine!` | 33 | Prove that a state-machine transition preserves its invariants. | Cuckoo, CyclicBuffer, distributed RwLock, FIFO, Flat Combining, Unbounded Log, verified memory allocator |
 
-## Atomic-operation proof tasks (40)
+## Atomic-operation proof tasks (42)
 
 | Task ID | Description | Target proof obligation | Source project | Source module | Task file |
 | --- | --- | --- | --- | --- | --- |
 | `cuckoo_delete` | Delete a key/value entry while synchronizing ghost state with the atomic update. | Atomic-ghost proof in `MyHashMap::delete` | [Verus](https://github.com/verus-lang/verus) | [`cuckoo.rs`](solutions/base/cuckoo.rs) | [`cuckoo_delete.rs`](tasks/cuckoo_delete.rs) |
 | `cuckoo_insert` | Insert a key/value entry while synchronizing ghost state with the atomic update. | Atomic-ghost proof in `MyHashMap::insert` | [Verus](https://github.com/verus-lang/verus) | [`cuckoo.rs`](solutions/base/cuckoo.rs) | [`cuckoo_insert.rs`](tasks/cuckoo_insert.rs) |
 | `cuckoo_read` | Read a key/value entry while maintaining the atomic ghost-state correspondence. | Atomic-ghost proof in `MyHashMap::read` | [Verus](https://github.com/verus-lang/verus) | [`cuckoo.rs`](solutions/base/cuckoo.rs) | [`cuckoo_read.rs`](tasks/cuckoo_read.rs) |
+| `fifo_dequeue` | Dequeue an item while synchronizing the FIFO's consumer state with atomic ghost tokens. | Atomic-ghost proof in `Consumer::dequeue` | [Verus] | [`fifo.rs`](solutions/base/fifo.rs) | [`fifo_dequeue.rs`](tasks/fifo_dequeue.rs) |
+| `fifo_enqueue` | Enqueue an item while synchronizing the FIFO's producer state with atomic ghost tokens. | Atomic-ghost proof in `Producer::enqueue` | [Verus] | [`fifo.rs`](solutions/base/fifo.rs) | [`fifo_enqueue.rs`](tasks/fifo_enqueue.rs) |
 | `once_get` | Read an optionally initialized value while recovering the correct ghost permission. | Atomic-ghost proof in `OnceImpl::get` | [vostd](https://github.com/asterinas/vostd) | [`once.rs`](solutions/base/once.rs) | [`once_get.rs`](tasks/once_get.rs) |
 | `once_init` | Initialize a one-time cell and establish its initialized ghost state. | Atomic-ghost proof in `OnceImpl::init` | [vostd](https://github.com/asterinas/vostd) | [`once.rs`](solutions/base/once.rs) | [`once_init.rs`](tasks/once_init.rs) |
 | `rwlock_readguard_drop` | Release a read guard and return its shared-read resources. | Atomic-ghost proof in `RwLockReadGuard::drop` | [vostd](https://github.com/asterinas/vostd) | [`rwlock.rs`](solutions/base/rwlock.rs) | [`rwlock_readguard_drop.rs`](tasks/rwlock_readguard_drop.rs) |
@@ -82,7 +85,7 @@ require tokenized-state-machine inductiveness proofs.
 | `linked_list_take_` | Take a nonempty linked free list while retaining its delay-state metadata. | Atomic-ghost proof in `LLAtomic::take` | [verified-memory-allocator] | [`linked_list.rs`](solutions/base/linked_list.rs) | [`linked_list_take_.rs`](tasks/linked_list_take_.rs) |
 | `linked_list_try_use_delayed_free` | Attempt to claim a linked list's delayed-free state atomically. | Atomic-ghost proof in `LLAtomic::try_use_delayed_free` | [verified-memory-allocator] | [`linked_list.rs`](solutions/base/linked_list.rs) | [`linked_list_try_use_delayed_free.rs`](tasks/linked_list_try_use_delayed_free.rs) |
 
-## `tokenized_state_machine!` tasks (35)
+## `tokenized_state_machine!` tasks (33)
 
 | Task ID | Description | Target proof obligation | Source project | Source module | Task file |
 | --- | --- | --- | --- | --- | --- |
@@ -99,8 +102,6 @@ require tokenized-state-machine inductiveness proofs.
 | `dist_rwlock_shared_release_inductive` | Show that releasing a shared lock preserves distributed RwLock invariants. | `shared_release_inductive` | [Verus] | [`dist_rwlock.rs`](solutions/base/dist_rwlock.rs) | [`dist_rwlock_shared_release_inductive.rs`](tasks/dist_rwlock_shared_release_inductive.rs) |
 | `fifo_consume_end_inductive` | Show that ending consumer reservation preserves FIFO state-machine invariants. | `consume_end_inductive` | [Verus] | [`fifo.rs`](solutions/base/fifo.rs) | [`fifo_consume_end_inductive.rs`](tasks/fifo_consume_end_inductive.rs) |
 | `fifo_consume_start_inductive` | Show that starting consumer reservation preserves FIFO state-machine invariants. | `consume_start_inductive` | [Verus] | [`fifo.rs`](solutions/base/fifo.rs) | [`fifo_consume_start_inductive.rs`](tasks/fifo_consume_start_inductive.rs) |
-| `fifo_dequeue` | Prove the FIFO dequeue operation respects the state-machine invariants. | State-machine proof for `dequeue` | [Verus] | [`fifo.rs`](solutions/base/fifo.rs) | [`fifo_dequeue.rs`](tasks/fifo_dequeue.rs) |
-| `fifo_enqueue` | Prove the FIFO enqueue operation respects the state-machine invariants. | State-machine proof for `enqueue` | [Verus] | [`fifo.rs`](solutions/base/fifo.rs) | [`fifo_enqueue.rs`](tasks/fifo_enqueue.rs) |
 | `fifo_initialize_inductive` | Establish the FIFO queue's initial state-machine invariants. | `initialize_inductive` | [Verus] | [`fifo.rs`](solutions/base/fifo.rs) | [`fifo_initialize_inductive.rs`](tasks/fifo_initialize_inductive.rs) |
 | `fifo_produce_end_inductive` | Show that ending producer reservation preserves FIFO state-machine invariants. | `produce_end_inductive` | [Verus] | [`fifo.rs`](solutions/base/fifo.rs) | [`fifo_produce_end_inductive.rs`](tasks/fifo_produce_end_inductive.rs) |
 | `fifo_produce_start_inductive` | Show that starting producer reservation preserves FIFO state-machine invariants. | `produce_start_inductive` | [Verus] | [`fifo.rs`](solutions/base/fifo.rs) | [`fifo_produce_start_inductive.rs`](tasks/fifo_produce_start_inductive.rs) |
