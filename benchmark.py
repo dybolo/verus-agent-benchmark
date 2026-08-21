@@ -476,12 +476,14 @@ def run_single_job(
                 safe_print(
                     f"⚠ Agent {agent.name} hit a usage/rate limit on task {task}; leaving it pending for --resume"
                 )
-                return
-            if result.returncode != 0:
+                task_result.extra_stats["return_error"] = result.stderr
+            elif result.returncode != 0:
                 safe_print(
-                    f"⚠ Agent {agent.name} exited with code {result.returncode} on task {task}"
+                    f"⚠ Agent {agent.name} exited with code {result.returncode} on task {task}; leaving it pending for --resume"
                 )
-            task_result.status = "completed"
+                task_result.extra_stats["return_error"] = result.stderr
+            else:
+                task_result.status = "completed"
 
         except subprocess.TimeoutExpired:
             task_result.timed_out = True
@@ -518,6 +520,7 @@ def run_single_job(
             task_result.extra_stats.update(session_stats)
         except Exception as e:  # noqa: BLE001 - session capture must not discard task results
             safe_print(f"Failed to capture statistics for the agent: {e}")
+            task_result.extra_stats["statistics_error"] = str(e)
     return
 
 
