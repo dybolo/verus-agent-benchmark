@@ -24,6 +24,7 @@ Each agent has a single `Dockerfile` shared by all its entrypoints. When the ben
 - Use the `-j` flag to set the number of parallel workers (defaults to the number of CPU cores).
 - Use `-a <pattern>` or `--agent <pattern>` to filter agents by glob pattern (e.g. `opencode`, `open*`).
 - Use `-m <pattern>` or `--model <pattern>` to filter models by glob pattern (e.g. `gpt-5.4`, `*gpt*`).
+- A run JSON file is created with every task marked `pending` and updated after every completed task. If a provider reports a usage/rate limit, rerun later with `python3 benchmark.py --resume <run-id>`; completed tasks are skipped and the limited task is started again. Timed-out tasks remain final and are not retried.
 
 ## Important
 
