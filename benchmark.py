@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 # pyright: basic
 
+from __future__ import annotations
+
 import argparse
 import dataclasses
 import fnmatch
@@ -16,7 +18,9 @@ import tempfile
 import threading
 import uuid
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from dataclasses import dataclass, field
 from datetime import datetime, timezone
+from typing import Any
 
 from stats_protocol import StatsFn
 
@@ -46,6 +50,168 @@ RATE_LIMIT_PATTERNS = (
 )
 
 
+@dataclass(frozen=True)
+class AgentSpec:
+    """The agent image and entrypoint used for one benchmark condition."""
+
+    name: str
+    tag: str
+    agent_dir: str
+    entrypoint: str
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> AgentSpec:
+        return cls(
+            name=str(data["name"]),
+            tag=str(data["tag"]),
+            agent_dir=str(data["agent_dir"]),
+            entrypoint=str(data["entrypoint"]),
+        )
+
+    def to_dict(self) -> dict[str, str]:
+        return {
+            "name": self.name,
+            "tag": self.tag,
+            "agent_dir": self.agent_dir,
+            "entrypoint": self.entrypoint,
+        }
+
+
+@dataclass
+class Task:
+    """The persisted state and result fields for one benchmark task."""
+
+    name: str
+    status: str = "pending"
+    verus_passed: bool = False
+    cheat_checker_passed: bool = False
+    timed_out: bool = False
+    solution_file: str | None = None
+    extra_stats: dict[str, Any] = field(default_factory=dict)
+
+    @property
+    def is_pending(self) -> bool:
+        return self.status not in FINAL_TASK_STATUSES
+
+    def update_from_stats(self, stats: dict[str, Any]) -> None:
+        self.status = str(stats.pop("status", self.status))
+        self.verus_passed = bool(stats.pop("verus_passed", self.verus_passed))
+        self.cheat_checker_passed = bool(
+            stats.pop("cheat_checker_passed", self.cheat_checker_passed)
+        )
+        self.timed_out = bool(stats.pop("timed_out", self.timed_out))
+        self.solution_file = stats.pop("solution_file", self.solution_file)
+        self.extra_stats.update(stats)
+
+    @classmethod
+    def from_dict(cls, name: str, data: dict[str, Any]) -> Task:
+        data = data.copy()
+        # Historical run files predate task status; their recorded result is final.
+        status = str(data.pop("status", "completed"))
+        return cls(
+            name=name,
+            status=status,
+            verus_passed=bool(data.pop("verus_passed", False)),
+            cheat_checker_passed=bool(data.pop("cheat_checker_passed", False)),
+            timed_out=bool(data.pop("timed_out", False)),
+            solution_file=data.pop("solution_file", None),
+            extra_stats=data,
+        )
+
+    def to_dict(self) -> dict[str, Any]:
+        if self.is_pending and not self.extra_stats:
+            return {"status": self.status}
+        result = {
+            "verus_passed": self.verus_passed,
+            "cheat_checker_passed": self.cheat_checker_passed,
+            "timed_out": self.timed_out,
+            "status": self.status,
+            "solution_file": self.solution_file,
+        }
+        result.update(self.extra_stats)
+        return result
+
+
+@dataclass
+class Run:
+    """A benchmark run and all agent-specific task results persisted to JSON."""
+
+    timestamp: str
+    stats_file: str
+    agents: list[AgentSpec]
+    task_names: list[str]
+    tasks_by_agent: dict[str, dict[str, Task]]
+
+    @classmethod
+    def create(cls, agents: list[AgentSpec], task_names: list[str]) -> Run:
+        timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+        return cls(
+            timestamp=timestamp,
+            stats_file=os.path.join("runs", f"{timestamp}.json"),
+            agents=agents,
+            task_names=task_names,
+            tasks_by_agent={
+                agent.name: {name: Task(name) for name in task_names}
+                for agent in agents
+            },
+        )
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any], stats_file: str) -> Run:
+        configuration = data["configuration"]
+        agents = [AgentSpec.from_dict(agent) for agent in configuration["agents"]]
+        return cls(
+            timestamp=str(data["timestamp"]),
+            stats_file=stats_file,
+            agents=agents,
+            task_names=[str(name) for name in configuration["tasks"]],
+            tasks_by_agent={
+                agent_name: {
+                    name: Task.from_dict(name, stats)
+                    for name, stats in agent_data["tasks"].items()
+                }
+                for agent_name, agent_data in data["agents"].items()
+            },
+        )
+
+    def pending_tasks(self, agent: AgentSpec) -> list[Task]:
+        return [
+            task for task in self.tasks_by_agent[agent.name].values() if task.is_pending
+        ]
+
+    def has_pending_tasks(self) -> bool:
+        return any(
+            task.is_pending
+            for tasks in self.tasks_by_agent.values()
+            for task in tasks.values()
+        )
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "timestamp": self.timestamp,
+            "configuration": {
+                "agents": [agent.to_dict() for agent in self.agents],
+                "tasks": self.task_names,
+            },
+            "agents": {
+                agent.name: {
+                    "tasks": {
+                        task.name: task.to_dict()
+                        for task in self.tasks_by_agent[agent.name].values()
+                    }
+                }
+                for agent in self.agents
+            },
+        }
+
+    def save(self) -> None:
+        """Write the current task states to this run's JSON file."""
+        os.makedirs(os.path.dirname(self.stats_file), exist_ok=True)
+        with open(self.stats_file, "w") as f:
+            json.dump(self.to_dict(), f, indent=2)
+            f.write("\n")
+
+
 def safe_print(*args, **kwargs):
     with print_lock:
         print(*args, **kwargs)
@@ -56,23 +222,6 @@ def is_rate_limited(output: str) -> bool:
     return any(
         re.search(pattern, output, re.IGNORECASE) for pattern in RATE_LIMIT_PATTERNS
     )
-
-
-def write_run_stats(stats_file: str, run_stats: dict) -> None:
-    """Write the current state of a benchmark run."""
-    os.makedirs(os.path.dirname(stats_file), exist_ok=True)
-    with open(stats_file, "w") as f:
-        json.dump(run_stats, f, indent=2)
-        f.write("\n")
-
-
-def tasks_to_run(task_stats: dict) -> list[str]:
-    """Select unfinished tasks; timeouts and completed attempts are final."""
-    return [
-        task
-        for task, stats in task_stats.items()
-        if stats.get("status", "pending") not in FINAL_TASK_STATUSES
-    ]
 
 
 def build_agent_image(agent_tag, agent_path):
@@ -236,25 +385,17 @@ def extract_solution_file(
 
 
 def run_single_job(
-    agent_name,
-    agent_tag,
-    agent_dir,
-    entrypoint,
-    task,
-    timestamp,
+    agent: AgentSpec,
+    task_result: Task,
+    run: Run,
     prompt_template,
     staging_base,
-) -> dict:
-    """Run a single agent on a single task and return its stats."""
+) -> None:
+    """Run a single agent on a single task and update its persisted state."""
+    task = task_result.name
+    timestamp = run.timestamp
     task_base = task.removesuffix(".rs")
     solution_filename = f"{task_base}_verified.rs"
-
-    task_stats = {
-        "verus_passed": False,
-        "cheat_checker_passed": False,
-        "timed_out": False,
-        "status": "pending",
-    }
 
     with tempfile.TemporaryDirectory(dir=staging_base) as staging_dir:
         original_task_path = os.path.abspath(os.path.join("tasks", task))
@@ -264,9 +405,11 @@ def run_single_job(
         session_dir_staging = os.path.join(staging_dir, "session")
         os.makedirs(session_dir_staging)
 
-        entrypoint_path = os.path.join(os.path.abspath("agents"), agent_dir, entrypoint)
-        shutil.copy2(entrypoint_path, os.path.join(staging_dir, entrypoint))
-        os.chmod(os.path.join(staging_dir, entrypoint), 0o755)
+        entrypoint_path = os.path.join(
+            os.path.abspath("agents"), agent.agent_dir, agent.entrypoint
+        )
+        shutil.copy2(entrypoint_path, os.path.join(staging_dir, agent.entrypoint))
+        os.chmod(os.path.join(staging_dir, agent.entrypoint), 0o755)
 
         task_path_in_container = f"/workspace/task_env/{task}"
         output_path_in_container = f"/workspace/task_env/{solution_filename}"
@@ -308,8 +451,8 @@ def run_single_job(
         cmd.extend(
             [
                 "--entrypoint",
-                f"/workspace/task_env/{entrypoint}",
-                f"benchmark-{agent_tag}",
+                f"/workspace/task_env/{agent.entrypoint}",
+                f"benchmark-{agent.tag}",
             ]
         )
 
@@ -331,32 +474,32 @@ def run_single_job(
 
             if is_rate_limited(f"{result.stdout}\n{result.stderr}"):
                 safe_print(
-                    f"⚠ Agent {agent_name} hit a usage/rate limit on task {task}; leaving it pending for --resume"
+                    f"⚠ Agent {agent.name} hit a usage/rate limit on task {task}; leaving it pending for --resume"
                 )
-                return {task: task_stats}
+                return
             if result.returncode != 0:
                 safe_print(
-                    f"⚠ Agent {agent_name} exited with code {result.returncode} on task {task}"
+                    f"⚠ Agent {agent.name} exited with code {result.returncode} on task {task}"
                 )
-            task_stats["status"] = "completed"
+            task_result.status = "completed"
 
         except subprocess.TimeoutExpired:
-            task_stats["timed_out"] = True
-            task_stats["status"] = "completed"
-            safe_print(f"✗ Agent {agent_name} timed out on task {task} (20 minutes)")
+            task_result.timed_out = True
+            task_result.status = "completed"
+            safe_print(f"✗ Agent {agent.name} timed out on task {task} (20 minutes)")
             subprocess.run(
                 ["docker", "stop", container_name], capture_output=True, check=False
             )
 
         except subprocess.CalledProcessError as e:
-            safe_print(f"✗ Agent {agent_name} failed on task {task}: {e}")
-            return {task: task_stats}
+            safe_print(f"✗ Agent {agent.name} failed on task {task}: {e}")
+            return
 
         extracted = extract_solution_file(
-            staging_dir, solution_filename, agent_name, timestamp
+            staging_dir, solution_filename, agent.name, timestamp
         )
-        task_stats.update(extracted)
-        if extracted["solution_file"]:
+        task_result.update_from_stats(extracted)
+        if task_result.solution_file:
             verification_status = verify_solution(
                 staging_dir,
                 task,
@@ -364,19 +507,18 @@ def run_single_job(
                 original_task_path,
                 staged_task_path,
             )
-            task_stats.update(verification_status)
+            task_result.update_from_stats(verification_status)
 
         session_dir_path = os.path.abspath(
-            os.path.join("sessions", agent_name, f"{timestamp}", task_base)
+            os.path.join("sessions", agent.name, f"{timestamp}", task_base)
         )
         try:
             shutil.copytree(session_dir_staging, session_dir_path)
-            session_stats = compute_session_statistics(agent_name, session_dir_path)
-            task_stats.update(session_stats)
+            session_stats = compute_session_statistics(agent.name, session_dir_path)
+            task_result.extra_stats.update(session_stats)
         except Exception as e:  # noqa: BLE001 - session capture must not discard task results
             safe_print(f"Failed to capture statistics for the agent: {e}")
-
-    return {task: task_stats}
+    return
 
 
 def discover_agents(agent_filter=None, model_filter=None):
@@ -397,32 +539,23 @@ def discover_agents(agent_filter=None, model_filter=None):
                 if model_filter and not fnmatch.fnmatch(name_no_ext, model_filter):
                     continue
                 agents.append(
-                    {
-                        "name": f"{agent_dir}/{name_no_ext}",
-                        "tag": agent_dir,
-                        "entrypoint": model_name,
-                        "agent_dir": agent_dir,
-                    }
+                    AgentSpec(
+                        name=f"{agent_dir}/{name_no_ext}",
+                        tag=agent_dir,
+                        entrypoint=model_name,
+                        agent_dir=agent_dir,
+                    )
                 )
     return agents
 
 
 def start_new_run(agent_filter=None, model_filter=None):
     """Create a run file with every selected task marked pending."""
-    tasks = sorted(f for f in os.listdir("tasks") if f.endswith(".rs"))
+    task_names = sorted(f for f in os.listdir("tasks") if f.endswith(".rs"))
     agents = discover_agents(agent_filter, model_filter)
-    timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
-    stats_file = os.path.join("runs", f"{timestamp}.json")
-    run_stats = {
-        "timestamp": timestamp,
-        "configuration": {"agents": agents, "tasks": tasks},
-        "agents": {
-            agent["name"]: {"tasks": {task: {"status": "pending"} for task in tasks}}
-            for agent in agents
-        },
-    }
-    write_run_stats(stats_file, run_stats)
-    return stats_file, run_stats, tasks, agents
+    run = Run.create(agents, task_names)
+    run.save()
+    return run
 
 
 def resume_run(run_id, agent_filter=None, model_filter=None):
@@ -434,85 +567,83 @@ def resume_run(run_id, agent_filter=None, model_filter=None):
     stats_file = os.path.join("runs", f"{run_id}.json")
     try:
         with open(stats_file) as f:
-            run_stats = json.load(f)
+            data = json.load(f)
     except FileNotFoundError as e:
         raise ValueError(f"Run file not found: {stats_file}") from e
-    if "configuration" not in run_stats or "agents" not in run_stats:
+    if "configuration" not in data or "agents" not in data:
         raise ValueError("Run file predates resumable runs and cannot be resumed")
 
-    tasks = run_stats["configuration"]["tasks"]
-    agents = run_stats["configuration"]["agents"]
-    available_agents = {agent["name"] for agent in discover_agents()}
+    run = Run.from_dict(data, stats_file)
+    available_agents = {agent.name for agent in discover_agents()}
     missing_agents = [
-        agent["name"] for agent in agents if agent["name"] not in available_agents
+        agent.name for agent in run.agents if agent.name not in available_agents
     ]
     if missing_agents:
         raise ValueError(
             f"Cannot resume: configured agent entrypoints are missing: {', '.join(missing_agents)}"
         )
     if agent_filter and any(
-        not fnmatch.fnmatch(agent["agent_dir"], agent_filter) for agent in agents
+        not fnmatch.fnmatch(agent.agent_dir, agent_filter) for agent in run.agents
     ):
         raise ValueError("--agent filter does not match every agent in the run file")
     if model_filter and any(
-        not fnmatch.fnmatch(os.path.splitext(agent["entrypoint"])[0], model_filter)
-        for agent in agents
+        not fnmatch.fnmatch(os.path.splitext(agent.entrypoint)[0], model_filter)
+        for agent in run.agents
     ):
         raise ValueError("--model filter does not match every model in the run file")
 
-    return stats_file, run_stats, tasks, agents
+    return run
 
 
 def run_tasks(max_workers, agent_filter=None, model_filter=None, resume_id=None):
     """Run a new benchmark or resume only the pending tasks from an existing run."""
     if resume_id:
-        stats_file, run_stats, tasks, agents = resume_run(
-            resume_id, agent_filter, model_filter
-        )
+        run = resume_run(resume_id, agent_filter, model_filter)
     else:
-        stats_file, run_stats, tasks, agents = start_new_run(agent_filter, model_filter)
-    timestamp = run_stats["timestamp"]
+        run = start_new_run(agent_filter, model_filter)
+
+    timestamp = run.timestamp
+    agents = run.agents
+    task_names = run.task_names
 
     if not agents:
         print("Error: No agents found in agents/ directory")
         sys.exit(1)
-    if not tasks:
+    if not task_names:
         print("Error: No tasks found in tasks/ directory")
         sys.exit(1)
 
-    print(f"Found {len(agents)} agent(s): {', '.join(a['name'] for a in agents)}")
-    print(f"Found {len(tasks)} task(s)")
+    print(f"Found {len(agents)} agent(s): {', '.join(a.name for a in agents)}")
+    print(f"Found {len(task_names)} task(s)")
     print()
 
     build_base_image()
-    for agent_dir in sorted({agent["agent_dir"] for agent in agents}):
+    for agent_dir in sorted({agent.agent_dir for agent in agents}):
         build_agent_image(agent_dir, os.path.join("agents", agent_dir))
+
     with open("prompt.txt", "r") as f:
         prompt_template = f.read()
 
-    max_workers = min(max_workers, len(tasks))
+    max_workers = min(max_workers, len(task_names))
+
     staging_base = os.path.abspath(".staging_areas")
     os.makedirs(staging_base, exist_ok=True)
 
     for agent in agents:
-        agent_name = agent["name"]
-        pending_tasks = tasks_to_run(run_stats["agents"][agent_name]["tasks"])
+        pending_tasks = run.pending_tasks(agent)
         if not pending_tasks:
-            print(f"No unfinished tasks for agent '{agent_name}'.")
+            print(f"No unfinished tasks for agent '{agent.name}'.")
             continue
         print(
-            f"Submitting {len(pending_tasks)} tasks for agent '{agent_name}' to thread pool ({max_workers} workers)..."
+            f"Submitting {len(pending_tasks)} tasks for agent '{agent.name}' to thread pool ({max_workers} workers)..."
         )
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
             futures = {
                 executor.submit(
                     run_single_job,
-                    agent_name,
-                    agent["tag"],
-                    agent["agent_dir"],
-                    agent["entrypoint"],
+                    agent,
                     task,
-                    timestamp,
+                    run,
                     prompt_template,
                     staging_base,
                 ): task
@@ -521,27 +652,14 @@ def run_tasks(max_workers, agent_filter=None, model_filter=None, resume_id=None)
             for future in as_completed(futures):
                 task = futures[future]
                 try:
-                    run_stats["agents"][agent_name]["tasks"].update(future.result())
+                    future.result()
                 except Exception as e:  # noqa: BLE001 - preserve the remaining tasks after a worker crash
-                    safe_print(f"✗ Task {task} crashed before completion: {e}")
-                    run_stats["agents"][agent_name]["tasks"][task] = {
-                        "status": "pending",
-                        "error": str(e),
-                    }
-                write_run_stats(stats_file, run_stats)
-
-    has_pending = any(
-        tasks_to_run(agent_stats["tasks"])
-        for agent_stats in run_stats["agents"].values()
-    )
-    if has_pending:
-        print(
-            f"Benchmark paused. Resume with: python3 benchmark.py --resume {timestamp}"
-        )
-        return
+                    safe_print(f"✗ Task {task.name} crashed before completion: {e}")
+                    task.extra_stats["error"] = str(e)
+                run.save()
 
     print("=" * 60)
-    print(f"Benchmark complete. Run statistics saved to {stats_file}")
+    print(f"Benchmark complete. Run statistics saved to {run.stats_file}")
     print("=" * 60)
 
     subprocess.run(
@@ -550,7 +668,7 @@ def run_tasks(max_workers, agent_filter=None, model_filter=None, resume_id=None)
             "add",
             f"solutions/**/{timestamp}/**",
             f"sessions/**/{timestamp}/**",
-            f"runs/{timestamp}.json",
+            run.stats_file,
         ],
         capture_output=True,
         text=True,
