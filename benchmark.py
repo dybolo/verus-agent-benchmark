@@ -48,6 +48,7 @@ RATE_LIMIT_PATTERNS = (
     r"insufficient_quota",
     r"resource_exhausted",
 )
+SESSION_ERROR_PATTERNS = (r'"stopReason"\s*:\s*"error"',)
 
 
 @dataclass(frozen=True)
@@ -217,10 +218,21 @@ def safe_print(*args, **kwargs):
         print(*args, **kwargs)
 
 
-def is_rate_limited(output: str) -> bool:
+def detect_rate_limited(output: str) -> bool:
     """Return whether an agent's output indicates an exhausted provider allowance."""
     return any(
         re.search(pattern, output, re.IGNORECASE) for pattern in RATE_LIMIT_PATTERNS
+    )
+
+
+def detect_session_error(session_file: str) -> bool:
+    """Return whether an agents's session messages contain an error that invalidates the session
+    and leaves it pending for a retry"""
+    with open(session_file) as f:
+        session_output = f.read()
+    return any(
+        re.search(pattern, session_output, re.IGNORECASE)
+        for pattern in SESSION_ERROR_PATTERNS
     )
 
 
@@ -472,7 +484,7 @@ def run_single_job(
                 safe_print("[STDERR]")
                 safe_print(result.stderr)
 
-            if is_rate_limited(f"{result.stdout}\n{result.stderr}"):
+            if detect_rate_limited(f"{result.stdout}\n{result.stderr}"):
                 safe_print(
                     f"⚠ Agent {agent.name} hit a usage/rate limit on task {task}; leaving it pending for --resume"
                 )
@@ -518,6 +530,16 @@ def run_single_job(
             shutil.copytree(session_dir_staging, session_dir_path)
             session_stats = compute_session_statistics(agent.name, session_dir_path)
             task_result.extra_stats.update(session_stats)
+
+            session_file = task_result.extra_stats.get("session_file")
+            if not session_file or detect_session_error(session_file):
+                task_result.status = "pending"
+                safe_print(
+                    f"⚠ Agent {agent.name} recorded a session error on task {task}; "
+                    "leaving it pending for --resume"
+                )
+                task_result.extra_stats["session_error"] = "Detected error that invalidated the session. Check the session file."
+
         except Exception as e:  # noqa: BLE001 - session capture must not discard task results
             safe_print(f"Failed to capture statistics for the agent: {e}")
             task_result.extra_stats["statistics_error"] = str(e)
