@@ -665,28 +665,34 @@ def run_tasks(max_workers, agent_filter=None, model_filter=None, resume_id=None)
     print(f"Benchmark complete. Run statistics saved to {run.stats_file}")
     print("=" * 60)
 
-    subprocess.run(
-        [
-            "git",
-            "add",
-            f"solutions/**/{timestamp}/**",
-            f"sessions/**/{timestamp}/**",
-            run.stats_file,
-        ],
+    artifact_paths = [run.stats_file]
+    artifact_paths.extend(
+        glob.glob(os.path.join("solutions", "**", timestamp), recursive=True)
+    )
+    artifact_paths.extend(
+        glob.glob(os.path.join("sessions", "**", timestamp), recursive=True)
+    )
+    result = subprocess.run(
+        ["git", "add", "--", *artifact_paths],
         capture_output=True,
         text=True,
         check=False,
     )
+    git_output = (result.stdout + result.stderr).strip()
+    if result.returncode != 0:
+        print(f"⚠ Git staging skipped: {git_output}")
+        return
     result = subprocess.run(
         ["git", "commit", "-m", f"run {timestamp}"],
         capture_output=True,
         text=True,
         check=False,
     )
+    git_output = (result.stdout + result.stderr).strip()
     if result.returncode == 0:
         print(f"✓ Committed run artifacts: 'run {timestamp}'")
     else:
-        print(f"⚠ Git commit skipped: {result.stderr.strip()}")
+        print(f"⚠ Git commit skipped: {git_output}")
 
 
 def main():
