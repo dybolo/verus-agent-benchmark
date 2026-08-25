@@ -32,6 +32,41 @@ Each agent has a single `Dockerfile` shared by all its entrypoints. When the ben
 - Make sure to run the agents with a provider with the credentials set in the environment.
 - `.model` entrypoint files must be executable (`chmod +x`).
 
+### ChatGPT subscription models
+
+The `opencode/gpt-5.6-luna` and `pi/gpt-5.6-luna` entrypoints use ChatGPT
+Plus/Pro OAuth instead of an OpenAI API key. Credentials live under
+`.agent-auth/<agent>/` by default (or under `$BENCHMARK_AUTH_DIR/<agent>/`) and
+are mounted directly into the container; they are excluded from Git and are
+not copied into session artifacts.
+
+Build the images, then authenticate each agent once:
+
+```bash
+docker build -t benchmark-base:latest -f Dockerfile .
+docker build -t benchmark-opencode agents/opencode
+docker build -t benchmark-pi agents/pi
+
+mkdir -p .agent-auth/opencode .agent-auth/pi
+
+docker run --rm -it --user "$(id -u):$(id -g)" \
+  -e HOME=/root -e XDG_DATA_HOME=/auth -e XDG_STATE_HOME=/tmp/opencode-state \
+  -v "$PWD/.agent-auth/opencode:/auth" \
+  benchmark-opencode opencode auth login
+
+docker run --rm -it --user "$(id -u):$(id -g)" \
+  -e HOME=/root -e PI_CODING_AGENT_DIR=/auth \
+  -v "$PWD/.agent-auth/pi:/auth" \
+  benchmark-pi pi
+```
+
+For OpenCode, choose **OpenAI → ChatGPT Plus/Pro**. In Pi, enter `/login` and
+choose **OpenAI ChatGPT Plus/Pro (Codex)**, then exit after authentication.
+Run only these model entrypoints with:
+
+```bash
+python3 benchmark.py -m gpt-5.6-luna
+```
 
 # Streamlit App
 

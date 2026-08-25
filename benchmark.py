@@ -449,6 +449,21 @@ def run_single_job(
             "SESSION",
         ]
 
+        # Subscription-backed agents keep refreshable OAuth credentials outside
+        # task staging/session directories so they are never copied into run
+        # artifacts. BENCHMARK_AUTH_DIR contains one directory per agent.
+        auth_root = os.environ.get("BENCHMARK_AUTH_DIR", ".agent-auth")
+        agent_auth_dir = os.path.abspath(os.path.join(auth_root, agent.agent_dir))
+        if os.path.isdir(agent_auth_dir):
+            cmd.extend(
+                [
+                    "-v",
+                    f"{agent_auth_dir}:/workspace/agent_auth",
+                    "-e",
+                    "BENCHMARK_AGENT_AUTH_DIR=/workspace/agent_auth",
+                ]
+            )
+
         for key in [
             "ANTHROPIC_API_KEY",
             "OPENAI_API_KEY",

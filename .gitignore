@@ -3,6 +3,7 @@
 todo.txt
 *.zip
 .staging_areas/
+.agent-auth/
 **/.venv/**
 **/venv/**
 **/__pycache__/**
