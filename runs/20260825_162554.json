@@ -84,7 +84,10 @@
       "unbounded_log_update_place_ops_in_log_one_inductive.rs",
       "wait_enqueue.rs",
       "wait_wake_all.rs",
-      "wait_wake_one.rs"
+      "wait_wake_one.rs",
+      "wait.rs",
+      "types_disable.rs",
+      "types_get_heap.rs"
     ]
   },
   "agents": {
@@ -1021,6 +1024,42 @@
           "total_tool_calls": 32,
           "duration_seconds": 148.752,
           "session_file": "sessions/opencode/gpt-5.6-luna/20260825_162554/wait_wake_one/session.jsonl"
+        },
+        "wait.rs": {
+          "verus_passed": true,
+          "cheat_checker_passed": true,
+          "timed_out": false,
+          "status": "completed",
+          "solution_file": "solutions/opencode/gpt-5.6-luna/20260825_162554/wait_verified.rs",
+          "total_costs": 0.0,
+          "total_turns": 20,
+          "total_tool_calls": 33,
+          "duration_seconds": 176.947,
+          "session_file": "sessions/opencode/gpt-5.6-luna/20260825_162554/wait/session.jsonl"
+        },
+        "types_disable.rs": {
+          "verus_passed": true,
+          "cheat_checker_passed": true,
+          "timed_out": false,
+          "status": "completed",
+          "solution_file": "solutions/opencode/gpt-5.6-luna/20260825_162554/types_disable_verified.rs",
+          "total_costs": 0.0,
+          "total_turns": 27,
+          "total_tool_calls": 37,
+          "duration_seconds": 240.025,
+          "session_file": "sessions/opencode/gpt-5.6-luna/20260825_162554/types_disable/session.jsonl"
+        },
+        "types_get_heap.rs": {
+          "verus_passed": true,
+          "cheat_checker_passed": true,
+          "timed_out": false,
+          "status": "completed",
+          "solution_file": "solutions/opencode/gpt-5.6-luna/20260825_162554/types_get_heap_verified.rs",
+          "total_costs": 0.0,
+          "total_turns": 61,
+          "total_tool_calls": 67,
+          "duration_seconds": 630.4,
+          "session_file": "sessions/opencode/gpt-5.6-luna/20260825_162554/types_get_heap/session.jsonl"
         }
       }
     }
