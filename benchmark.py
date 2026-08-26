@@ -388,6 +388,14 @@ def extract_solution_file(
         )
         os.makedirs(final_solution_dir, exist_ok=True)
         final_solution_path = os.path.join(final_solution_dir, solution_filename)
+        if os.path.lexists(final_solution_path):
+            if (
+                os.path.isdir(final_solution_path)
+                and not os.path.islink(final_solution_path)
+            ):
+                shutil.rmtree(final_solution_path)
+            else:
+                os.unlink(final_solution_path)
         shutil.copy2(expected_solution_path, final_solution_path)
         safe_print(f"✓ Solution extracted to {final_solution_path}")
         return {"solution_file": os.path.relpath(final_solution_path)}
@@ -542,7 +550,16 @@ def run_single_job(
             os.path.join("sessions", agent.name, f"{timestamp}", task_base)
         )
         try:
+            if os.path.lexists(session_dir_path):
+                if (
+                    os.path.isdir(session_dir_path)
+                    and not os.path.islink(session_dir_path)
+                ):
+                    shutil.rmtree(session_dir_path)
+                else:
+                    os.unlink(session_dir_path)
             shutil.copytree(session_dir_staging, session_dir_path)
+
             session_stats = compute_session_statistics(agent.name, session_dir_path)
             task_result.extra_stats.update(session_stats)
 
