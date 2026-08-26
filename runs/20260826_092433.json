@@ -84,7 +84,10 @@
       "unbounded_log_update_place_ops_in_log_one_inductive.rs",
       "wait_enqueue.rs",
       "wait_wake_all.rs",
-      "wait_wake_one.rs"
+      "wait_wake_one.rs",
+      "wait.rs",
+      "types_disable.rs",
+      "types_get_heap.rs"
     ]
   },
   "agents": {
@@ -94,13 +97,13 @@
           "verus_passed": true,
           "cheat_checker_passed": true,
           "timed_out": false,
-          "status": "pending",
+          "status": "completed",
           "solution_file": "solutions/pi/gpt-5.6-luna/20260826_092433/context_dequeue_response_verified.rs",
-          "total_costs": 0.511737,
-          "total_turns": 21,
-          "total_tool_calls": 21,
-          "duration_seconds": 194.102,
-          "session_file": "sessions/pi/gpt-5.6-luna/20260826_092433/context_dequeue_response/2026-08-26T09-24-36-266Z_01a03d62-bd2a-71d5-aee9-49562059ff9e.jsonl",
+          "total_costs": 0.487775,
+          "total_turns": 20,
+          "total_tool_calls": 22,
+          "duration_seconds": 169.175,
+          "session_file": "sessions/pi/gpt-5.6-luna/20260826_092433/context_dequeue_response/2026-08-26T13-00-30-472Z_01a03e28-6788-7dc3-9608-03c76e63c569.jsonl",
           "session_error": "Detected error that invalidated the session. Check the session file."
         },
         "context_enqueue_op.rs": {
@@ -671,13 +674,13 @@
           "verus_passed": true,
           "cheat_checker_passed": true,
           "timed_out": false,
-          "status": "pending",
+          "status": "completed",
           "solution_file": "solutions/pi/gpt-5.6-luna/20260826_092433/log_is_replica_synced_for_reads_verified.rs",
-          "total_costs": 0.901601,
-          "total_turns": 27,
-          "total_tool_calls": 29,
-          "duration_seconds": 1081.998,
-          "session_file": "sessions/pi/gpt-5.6-luna/20260826_092433/log_is_replica_synced_for_reads/2026-08-26T09-45-01-915Z_01a03d75-70db-729b-ad8d-fcb3f4ac3907.jsonl",
+          "total_costs": 0.455919,
+          "total_turns": 15,
+          "total_tool_calls": 16,
+          "duration_seconds": 129.393,
+          "session_file": "sessions/pi/gpt-5.6-luna/20260826_092433/log_is_replica_synced_for_reads/2026-08-26T13-00-30-526Z_01a03e28-67be-7263-b51c-4110a03ebd5d.jsonl",
           "session_error": "Detected error that invalidated the session. Check the session file."
         },
         "once_get.rs": {
@@ -991,6 +994,42 @@
           "total_tool_calls": 17,
           "duration_seconds": 92.63,
           "session_file": "sessions/pi/gpt-5.6-luna/20260826_092433/wait_wake_one/2026-08-26T09-58-56-645Z_01a03d82-2d84-7d38-b6f3-b48ebc031ac4.jsonl"
+        },
+        "wait.rs": {
+          "verus_passed": true,
+          "cheat_checker_passed": true,
+          "timed_out": false,
+          "status": "completed",
+          "solution_file": "solutions/pi/gpt-5.6-luna/20260826_092433/wait_verified.rs",
+          "total_costs": 0.797944,
+          "total_turns": 32,
+          "total_tool_calls": 34,
+          "duration_seconds": 231.04,
+          "session_file": "sessions/pi/gpt-5.6-luna/20260826_092433/wait/2026-08-26T13-26-05-881Z_01a03e3f-d539-76dd-9eae-6acf48b71ea0.jsonl"
+        },
+        "types_disable.rs": {
+          "verus_passed": true,
+          "cheat_checker_passed": true,
+          "timed_out": false,
+          "status": "completed",
+          "solution_file": "solutions/pi/gpt-5.6-luna/20260826_092433/types_disable_verified.rs",
+          "total_costs": 0.540942,
+          "total_turns": 21,
+          "total_tool_calls": 21,
+          "duration_seconds": 188.82,
+          "session_file": "sessions/pi/gpt-5.6-luna/20260826_092433/types_disable/2026-08-26T13-00-30-466Z_01a03e28-6782-7797-bc05-ff7ab38d3a0b.jsonl"
+        },
+        "types_get_heap.rs": {
+          "verus_passed": true,
+          "cheat_checker_passed": true,
+          "timed_out": false,
+          "status": "completed",
+          "solution_file": "solutions/pi/gpt-5.6-luna/20260826_092433/types_get_heap_verified.rs",
+          "total_costs": 1.065289,
+          "total_turns": 30,
+          "total_tool_calls": 30,
+          "duration_seconds": 305.995,
+          "session_file": "sessions/pi/gpt-5.6-luna/20260826_092433/types_get_heap/2026-08-26T13-26-06-019Z_01a03e3f-d5c3-7c85-a796-31c84d9c0efd.jsonl"
         }
       }
     }
