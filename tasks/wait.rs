@@ -347,6 +347,7 @@ impl WaitQueue {
             self.num_wakers => fetch_add(1);
             update prev -> next;
             ghost count_auth => {
+                assume(prev < u32::MAX);
             }
         };
         #[verus_spec(with Tracked(count_mirror))]
