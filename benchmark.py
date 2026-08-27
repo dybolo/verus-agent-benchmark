@@ -282,6 +282,8 @@ def verify_solution(
             "verus",
             f"/workspace/task_env/{solution_filename}",
             "--output-json",
+            "--rlimit",
+            "30",
         ]
         verus_res = subprocess.run(
             verus_cmd, capture_output=True, text=True, check=False

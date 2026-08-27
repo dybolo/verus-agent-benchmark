@@ -1,0 +1,71 @@
+#!/bin/sh
+set -eu
+
+if [ -z "${BENCHMARK_AGENT_AUTH_DIR:-}" ] ||
+    [ ! -f "$BENCHMARK_AGENT_AUTH_DIR/auth.json" ]; then
+    echo "Missing Copilot ChatGPT credentials. Follow the ChatGPT subscription setup in README.md." >&2
+    exit 1
+fi
+
+LITELLM_AUTH_DIR=$(mktemp -d)
+trap 'if [ -n "${LITELLM_PID:-}" ]; then kill "$LITELLM_PID" 2>/dev/null || true; fi; rm -rf "$LITELLM_AUTH_DIR"' EXIT
+
+# Codex writes OAuth credentials as {"tokens": { ... }}, while LiteLLM's
+# ChatGPT provider expects access_token/refresh_token/id_token at the top level.
+# Normalize into a temporary file so the mounted credentials stay untouched.
+python3 - "$BENCHMARK_AGENT_AUTH_DIR/auth.json" "$LITELLM_AUTH_DIR/auth.json" <<'PY'
+import json
+import sys
+
+source, target = sys.argv[1:]
+with open(source, encoding="utf-8") as f:
+    data = json.load(f)
+
+tokens = data.get("tokens")
+if isinstance(tokens, dict):
+    normalized = dict(data)
+    normalized.pop("tokens", None)
+    for key in ("id_token", "access_token", "refresh_token", "account_id"):
+        if key not in normalized and key in tokens:
+            normalized[key] = tokens[key]
+else:
+    normalized = data
+
+with open(target, "w", encoding="utf-8") as f:
+    json.dump(normalized, f)
+PY
+
+export CHATGPT_TOKEN_DIR="$LITELLM_AUTH_DIR"
+export CHATGPT_AUTH_FILE=auth.json
+
+cat > /tmp/litellm_config.yaml << 'EOF'
+model_list:
+  - model_name: gpt-5.6-luna
+    model_info:
+      mode: responses
+      input_cost_per_token: 0.0000002
+      cache_read_input_token_cost: 0.00000002
+      cache_creation_input_token_cost: 0.00000025
+      output_cost_per_token: 0.0000012
+    litellm_params:
+      model: chatgpt/gpt-5.6-luna
+general_settings:
+  disable_master_key_required: true
+EOF
+
+litellm --port 11434 --config /tmp/litellm_config.yaml 2> /dev/null &
+LITELLM_PID=$!
+
+for i in $(seq 1 30); do
+  curl -s http://localhost:11434/health > /dev/null 2>&1 && break
+  sleep 1
+done
+
+export COPILOT_PROVIDER_TYPE=openai
+export COPILOT_PROVIDER_BASE_URL="http://localhost:11434/v1"
+export COPILOT_MODEL=gpt-5.6-luna
+export COPILOT_HOME="$SESSION"
+export XDG_CACHE_HOME="$SESSION/cache"
+mkdir -p "$XDG_CACHE_HOME"
+
+copilot --autopilot -p "$TASK_PROMPT" --allow-all-tools --allow-all-paths -s

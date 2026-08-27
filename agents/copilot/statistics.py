@@ -6,6 +6,7 @@ from datetime import datetime
 from stats_protocol import Stats
 
 MODEL_PRICING = {
+    "gpt-5.6-luna":         {"input": 0.20, "cachedInput": 0.02,  "output": 1.20},
     "gpt-4.1":              {"input": 2.00, "cachedInput": 0.50,  "output": 8.00},
     "gpt-5-mini":           {"input": 0.25, "cachedInput": 0.025, "output": 2.00},
     "gpt-5.2":              {"input": 1.75, "cachedInput": 0.175, "output": 14.00},
@@ -41,7 +42,11 @@ def compute_statistics(session_dir: str) -> Stats:
         pattern = os.path.join(session_dir, "session-state", "*", "*.jsonl")
         jsonl_files = sorted(glob.glob(pattern))
         if not jsonl_files:
-            raise FileNotFoundError(f"no .jsonl files found in {session_dir}")
+            # A provider can fail before Copilot creates its session event log
+            # (for example, while the custom proxy is starting). Keep the
+            # agent failure as the primary result instead of raising a second,
+            # misleading statistics error.
+            return Stats(session_file="")
         path = jsonl_files[0]
     else:
         path = session_dir
