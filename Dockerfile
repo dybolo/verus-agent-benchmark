@@ -22,6 +22,9 @@ COPY lynette/ ./
 # fetch_verus_release.py automatically detects and installs the required Rust toolchain
 RUN python3 fetch_verus_release.py
 
+# remove examples from verus (some tasks are removed from there)
+RUN rm -rf /opt/.verus/examples
+
 # Add Cargo and Rustup to the PATH
 ENV PATH="/usr/local/cargo/bin:/usr/local/rustup/bin:${PATH}"
 # Add the downloaded Verus binaries to the system PATH so the agent can just run `verus`
@@ -36,5 +39,5 @@ WORKDIR /workspace
 # Add symbolic link from vstd of the verus release to the working directory
 RUN ln -s /opt/.verus/vstd /workspace/vstd
 
-# Give agents access to needed folders 
+# Give agents access to needed folders
 RUN chmod -R a+rwX /opt /workspace /root

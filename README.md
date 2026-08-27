@@ -34,8 +34,8 @@ Each agent has a single `Dockerfile` shared by all its entrypoints. When the ben
 
 ### ChatGPT subscription models
 
-The `opencode/gpt-5.6-luna` and `pi/gpt-5.6-luna` entrypoints use ChatGPT
-Plus/Pro OAuth instead of an OpenAI API key. Credentials live under
+The `codex/gpt-5.6-luna`, `opencode/gpt-5.6-luna`, and `pi/gpt-5.6-luna`
+entrypoints use ChatGPT Plus/Pro OAuth instead of an OpenAI API key. Credentials live under
 `.agent-auth/<agent>/` by default (or under `$BENCHMARK_AUTH_DIR/<agent>/`) and
 are mounted directly into the container; they are excluded from Git and are
 not copied into session artifacts.
@@ -44,10 +44,16 @@ Build the images, then authenticate each agent once:
 
 ```bash
 docker build -t benchmark-base:latest -f Dockerfile .
+docker build -t benchmark-codex agents/codex
 docker build -t benchmark-opencode agents/opencode
 docker build -t benchmark-pi agents/pi
 
-mkdir -p .agent-auth/opencode .agent-auth/pi
+mkdir -p .agent-auth/codex .agent-auth/opencode .agent-auth/pi
+
+docker run --rm -it --user "$(id -u):$(id -g)" \
+  -e CODEX_HOME=/auth \
+  -v "$PWD/.agent-auth/codex:/auth" \
+  benchmark-codex codex login --device-auth
 
 docker run --rm -it --user "$(id -u):$(id -g)" \
   -e HOME=/root -e XDG_DATA_HOME=/auth -e XDG_STATE_HOME=/tmp/opencode-state \
@@ -60,7 +66,8 @@ docker run --rm -it --user "$(id -u):$(id -g)" \
   benchmark-pi pi
 ```
 
-For OpenCode, choose **OpenAI → ChatGPT Plus/Pro**. In Pi, enter `/login` and
+For Codex, complete the browser OAuth login. For OpenCode, choose
+**OpenAI → ChatGPT Plus/Pro**. In Pi, enter `/login` and
 choose **OpenAI ChatGPT Plus/Pro (Codex)**, then exit after authentication.
 Run only these model entrypoints with:
 
