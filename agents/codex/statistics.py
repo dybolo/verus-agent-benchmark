@@ -56,7 +56,8 @@ def compute_statistics(session_dir: str) -> Stats:
             if not line.strip():
                 continue
             event = json.loads(line)
-            event_ts = _timestamp(event.get("timestamp"))
+            # `received_at` is added by the model launcher.
+            event_ts = _timestamp(event.get("received_at", event.get("timestamp")))
             if event_ts is not None:
                 first_ts = event_ts if first_ts is None else min(first_ts, event_ts)
                 last_ts = event_ts if last_ts is None else max(last_ts, event_ts)
