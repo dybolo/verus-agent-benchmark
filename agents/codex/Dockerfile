@@ -4,6 +4,8 @@ RUN apt-get update && apt-get install -y curl \
     && curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
     && apt-get install -y nodejs \
     && apt-get install -y jq \
+    && apt-get purge -y curl wget \
+    && apt-get autoremove -y \
     && rm -rf /var/lib/apt/lists/*
 
 RUN npm i -g @openai/codex

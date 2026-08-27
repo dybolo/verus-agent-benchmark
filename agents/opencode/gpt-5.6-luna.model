@@ -10,7 +10,8 @@ fi
 export XDG_DATA_HOME="$BENCHMARK_AGENT_AUTH_DIR"
 export XDG_STATE_HOME="$SESSION/opencode-state"
 export XDG_CACHE_HOME="$SESSION/opencode-cache"
+export OPENCODE_PERMISSION='{"websearch":"deny","webfetch":"deny","bash":{"*":"allow","curl":"deny","curl *":"deny","wget":"deny","wget *":"deny"}}'
 
-opencode run --dangerously-skip-permissions --format json \
+opencode run --auto --format json \
     -m openai/gpt-5.6-luna "$TASK_PROMPT" \
     > "$SESSION/session.jsonl"

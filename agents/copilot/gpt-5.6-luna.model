@@ -68,4 +68,7 @@ export COPILOT_HOME="$SESSION"
 export XDG_CACHE_HOME="$SESSION/cache"
 mkdir -p "$XDG_CACHE_HOME"
 
-copilot --autopilot -p "$TASK_PROMPT" --allow-all-tools --allow-all-paths -s
+copilot --autopilot -p "$TASK_PROMPT" --allow-all-tools --allow-all-paths \
+  --excluded-tools='web_search,web_fetch' \
+  --deny-tool='shell(curl)' --deny-tool='shell(curl:*)' \
+  --deny-tool='shell(wget)' --deny-tool='shell(wget:*)' -s
