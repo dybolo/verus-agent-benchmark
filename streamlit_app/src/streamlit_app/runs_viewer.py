@@ -146,9 +146,9 @@ def render_timeline_item(item: TimelineItem, show_thinking: bool, show_full: boo
             render_payload("Details", item.details, show_full)
 
 
-def render_sidebar_run_summary(run: dict[str, Any]) -> None:
-    """Render aggregate task counts and costs for the selected run."""
-    rows = all_task_results(run)
+def render_sidebar_run_summary(run: dict[str, Any], agent_name: str) -> None:
+    """Render aggregate task counts and costs for the selected agent."""
+    rows = [row for row in all_task_results(run) if row[0] == agent_name]
     total = len(rows)
     passed = sum(result_status(result) == "Passed" for _, _, result in rows)
     failed = sum(result_status(result) == "Failed" for _, _, result in rows)
@@ -335,7 +335,7 @@ def main() -> None:
         st.stop()
     agent_data = selected_run["agents"][selected_agent]
     tasks = agent_data.get("tasks", {}) if isinstance(agent_data, dict) else {}
-    render_sidebar_run_summary(selected_run)
+    render_sidebar_run_summary(selected_run, selected_agent)
 
     st.sidebar.subheader("Task results")
     statuses = st.sidebar.multiselect(
