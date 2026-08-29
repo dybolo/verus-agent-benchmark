@@ -1,0 +1,5 @@
+#!/bin/sh
+
+semantic_grep --repo-path "/workspace/task_env" --skip-descriptions --generation-model "openrouter/owl-alpha"
+
+pi --model openrouter/owl-alpha --session-dir "$SESSION" -p "$TASK_PROMPT"

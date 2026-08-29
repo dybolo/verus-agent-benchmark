@@ -1,0 +1,31 @@
+2026-08-29T11:46:25.428Z [WARNING] Model "gpt-5.6-luna" is not in the built-in catalog. Using defaults for: prompt tokens (COPILOT_PROVIDER_MAX_PROMPT_TOKENS), output tokens (COPILOT_PROVIDER_MAX_OUTPUT_TOKENS). Run `copilot help providers` for configuration details.
+2026-08-29T11:46:25.430Z [INFO] Shell completions: no supported shell detected, skipping
+2026-08-29T11:46:25.434Z [INFO] [rust:otel] OpenTelemetry enabled: exporter=file, source=github.copilot
+2026-08-29T11:46:25.434Z [INFO] Session indexing debug: SESSION_INDEXING=true, repository=undefined
+2026-08-29T11:46:25.437Z [INFO] [managedSettings] device MDM: no policy present on this device
+2026-08-29T11:46:25.437Z [INFO] [managedSettings] server policy fetch skipped: no authenticated GitHub host available
+2026-08-29T11:46:25.437Z [INFO] [managedSettings] effective policy resolved: source=none, bypassDisabled=false, serverFetchFailed=false
+2026-08-29T11:46:25.438Z [INFO] [rust:otel] OpenTelemetry configured from managed settings: exporter=file, source=github.copilot
+2026-08-29T11:46:25.464Z [INFO] [managedSettings] applied: no bypass restriction in force (managed policy absent)
+2026-08-29T11:46:25.479Z [INFO] [rust:otel] OpenTelemetry SDK initialized successfully
+2026-08-29T11:46:25.479Z [INFO] [rust:otel] OpenTelemetry tracker created for session df26c99c-4257-46fa-992c-1be9b5ca2811
+2026-08-29T11:46:25.553Z [INFO] Workspace initialized: df26c99c-4257-46fa-992c-1be9b5ca2811 (checkpoints: 0)
+2026-08-29T11:46:25.568Z [INFO] Starting Copilot CLI: 1.0.80
+2026-08-29T11:46:25.568Z [INFO] Node.js version: v24.18.1
+2026-08-29T11:46:25.775Z [INFO] Using custom provider: type=openai, baseUrl=http://localhost:11434/v1, wireApi=completions
+2026-08-29T11:46:25.776Z [INFO]  
+2026-08-29T11:46:25.781Z [INFO] --- Start of group: Custom provider configured settings: ---
+2026-08-29T11:46:25.781Z [INFO] --- End of group ---
+2026-08-29T11:46:25.841Z [INFO] --- Start of group: Completion request configuration:  ---
+2026-08-29T11:46:25.844Z [INFO] --- End of group ---
+2026-08-29T11:47:24.116Z [INFO] Successfully downloaded package, restart to update to version 1.0.81
+2026-08-29T11:47:24.117Z [INFO] Downloading updated linux-x64 binary...
+2026-08-29T11:48:25.567Z [WARNING] Failed to update binary: Error: EACCES: permission denied, mkdir '/usr/lib/node_modules/@github/copilot/node_modules/@github/copilot-linux-x64/.copilot-update-1788004105565'
+2026-08-29T11:50:06.912Z [INFO] System notification: Shell command "Verify completed proof annotations" (shellId: 11) has exited with...
+2026-08-29T11:51:16.368Z [INFO] System notification: Shell command "Recheck Verus proof" (shellId: 12) has exited with exit code 1. U...
+2026-08-29T11:52:11.499Z [INFO] System notification: Shell command "Verify final proof source" (shellId: 13) has exited with exit cod...
+2026-08-29T11:53:39.057Z [INFO] System notification: Shell command "Verify proof annotations" (shellId: 14) has exited with exit code...
+2026-08-29T11:54:26.181Z [INFO] System notification: Shell command "Run Verus verification" (shellId: 15) has exited with exit code 1...
+2026-08-29T11:55:41.363Z [INFO] System notification: Shell command "Confirm Verus verification succeeds" (shellId: 16) has exited wit...
+2026-08-29T11:57:07.350Z [INFO] System notification: Shell command "Verify final annotated file" (shellId: 17) has exited with exit c...
+2026-08-29T11:58:27.819Z [INFO] System notification: Shell command "Verify source and compare Lynette legality" (shellId: 18) has com...

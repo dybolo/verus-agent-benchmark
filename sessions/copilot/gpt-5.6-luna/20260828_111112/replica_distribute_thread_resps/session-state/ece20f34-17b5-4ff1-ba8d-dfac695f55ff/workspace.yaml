@@ -1,0 +1,8 @@
+id: ece20f34-17b5-4ff1-ba8d-dfac695f55ff
+cwd: /workspace
+client_name: github/cli
+name: The file /workspace/task_env/replica_distribute_thread_resps.rs cannot be verified by Verus, a verification tool for Rust programs, yet. Please add proof annotations to /workspace/task_env/replica_distribute_thread_resps.rs so that it can be successfully verified by Verus, and write the resulting code with proof into a new file with the name /workspace/task_env/replica_distribute_thread_resps_verified.rs. The /workspace/vstd folder is a copy of Verus' vstd definitions and helper lemmas; please f...
+user_named: false
+summary_count: 0
+created_at: 2026-08-28T15:13:17.954Z
+updated_at: 2026-08-28T15:13:18.303Z

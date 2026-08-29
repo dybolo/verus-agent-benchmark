@@ -1,0 +1,34 @@
+{
+  "schema": 1,
+  "snapshots": [
+    {
+      "snapshotId": "3efd96d7-a4bd-47ec-a1e4-ee02d9af1c05",
+      "eventId": "54568ab3-7fd6-4353-87aa-915ad2c9c50a",
+      "userMessage": "The file /workspace/task_env/log_is_replica_synced_for_reads.rs cannot be verified by Verus, a verification tool for Rust programs, yet. Please add proof annotations to /workspace/task_env/log_is_replica_synced_for_reads.rs so that it can be successfully verified by Verus, and write the resulting code with proof into a new file with the name /workspace/task_env/log_is_replica_synced_for_reads_verified.rs. The /workspace/vstd folder is a copy of Verus' vstd definitions and helper lemmas; please feel free to check it when needed. You should KEEP editing your proof annotations until Verus shows there is no error. Preserve all existing admits and unrelated proof holes; do not add new ones. You should NOT change existing functions' pre- conditions or post-conditions; you should NOT change any executable Rust code; and you should NEVER use admit(...) or assume(...) in your code. You are also NOT allowed to create unimplemented, external-body lemma functions for any new lemma functions you add, you should provide complete proof. You are NOT allowed to create new axiom functions or change the pre/post conditions of existing axiom functions, and you should NEVER add external_body tag to any existing non-external-body functions. I have installed Verus locally; you can just run verus. Before you are done, MAKE SURE to run lynette on both the original /workspace/task_env/log_is_replica_synced_for_reads.rs and the generated verified file to double check whether you have made any illegal changes (fix those if you did).\n",
+      "timestamp": "2026-08-28T12:46:27.670Z",
+      "files": {
+        "d79908b6a46a90a012bc3d13832e12de": {
+          "path": "/workspace/task_env/log_is_replica_synced_for_reads_verified.rs",
+          "preimage": {
+            "kind": "absent"
+          },
+          "postimage": {
+            "kind": "content",
+            "contentHash": "695eb1cd047f643d6728535ec746c3dc98664243c0beea0006f3e3f19570c415",
+            "resolvedPath": "/workspace/task_env/log_is_replica_synced_for_reads_verified.rs",
+            "encodedPath": {
+              "encoding": "unix-bytes",
+              "data": "2f776f726b73706163652f7461736b5f656e762f6c6f675f69735f7265706c6963615f73796e6365645f666f725f72656164735f76657269666965642e7273"
+            }
+          },
+          "linesAdded": 8789,
+          "linesRemoved": 0
+        }
+      },
+      "backupFiles": [],
+      "fileCount": 1,
+      "linesAdded": 8789,
+      "linesRemoved": 0
+    }
+  ]
+}

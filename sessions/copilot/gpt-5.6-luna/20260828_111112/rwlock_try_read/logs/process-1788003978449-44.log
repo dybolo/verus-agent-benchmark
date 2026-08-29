@@ -1,0 +1,23 @@
+2026-08-29T11:46:18.452Z [WARNING] Model "gpt-5.6-luna" is not in the built-in catalog. Using defaults for: prompt tokens (COPILOT_PROVIDER_MAX_PROMPT_TOKENS), output tokens (COPILOT_PROVIDER_MAX_OUTPUT_TOKENS). Run `copilot help providers` for configuration details.
+2026-08-29T11:46:18.453Z [INFO] Shell completions: no supported shell detected, skipping
+2026-08-29T11:46:18.456Z [INFO] [rust:otel] OpenTelemetry enabled: exporter=file, source=github.copilot
+2026-08-29T11:46:18.456Z [INFO] Session indexing debug: SESSION_INDEXING=true, repository=undefined
+2026-08-29T11:46:18.458Z [INFO] [managedSettings] device MDM: no policy present on this device
+2026-08-29T11:46:18.458Z [INFO] [managedSettings] server policy fetch skipped: no authenticated GitHub host available
+2026-08-29T11:46:18.458Z [INFO] [managedSettings] effective policy resolved: source=none, bypassDisabled=false, serverFetchFailed=false
+2026-08-29T11:46:18.459Z [INFO] [rust:otel] OpenTelemetry configured from managed settings: exporter=file, source=github.copilot
+2026-08-29T11:46:18.688Z [INFO] [managedSettings] applied: no bypass restriction in force (managed policy absent)
+2026-08-29T11:46:18.699Z [INFO] [rust:otel] OpenTelemetry SDK initialized successfully
+2026-08-29T11:46:18.700Z [INFO] [rust:otel] OpenTelemetry tracker created for session d8828ff3-18fc-466d-98f7-c82cc16af0ae
+2026-08-29T11:46:22.457Z [INFO] Workspace initialized: d8828ff3-18fc-466d-98f7-c82cc16af0ae (checkpoints: 0)
+2026-08-29T11:46:22.486Z [INFO] Starting Copilot CLI: 1.0.80
+2026-08-29T11:46:22.486Z [INFO] Node.js version: v24.18.1
+2026-08-29T11:46:22.690Z [INFO] Using custom provider: type=openai, baseUrl=http://localhost:11434/v1, wireApi=completions
+2026-08-29T11:46:22.691Z [INFO]  
+2026-08-29T11:46:22.695Z [INFO] --- Start of group: Custom provider configured settings: ---
+2026-08-29T11:46:22.695Z [INFO] --- End of group ---
+2026-08-29T11:46:22.807Z [INFO] --- Start of group: Completion request configuration:  ---
+2026-08-29T11:46:22.809Z [INFO] --- End of group ---
+2026-08-29T11:47:13.700Z [INFO] Successfully downloaded package, restart to update to version 1.0.81
+2026-08-29T11:47:13.701Z [INFO] Downloading updated linux-x64 binary...
+2026-08-29T11:48:06.979Z [WARNING] Failed to update binary: Error: EACCES: permission denied, mkdir '/usr/lib/node_modules/@github/copilot/node_modules/@github/copilot-linux-x64/.copilot-update-1788004086931'

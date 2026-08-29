@@ -1,0 +1,8 @@
+#!/bin/sh
+
+cd /workspace/task_env
+
+semantic_grep --repo-path "/workspace/task_env" --index --embedding-model bedrock/amazon.titan-embed-text-v1 --generation-model bedrock/global.anthropic.claude-sonnet-4-6
+
+EXTRA_PROMPT="Please define a structured proof plan for your verification problem (covering: what needs to be shown, assumptions, key ideas, high-level strategy, sub-goals) and use the semantic_grep tool to help you complete your task."
+pi --model amazon-bedrock/global.anthropic.claude-sonnet-4-6 --session-dir "$SESSION" -p "$TASK_PROMPT $EXTRA_PROMPT"

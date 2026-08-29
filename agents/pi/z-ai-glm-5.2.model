@@ -1,0 +1,3 @@
+#!/bin/sh
+pi --tools read,write,edit,bash,grep,find,ls \
+  --model openrouter/z-ai/glm-5.2:free --session-dir "$SESSION" -p "$TASK_PROMPT"

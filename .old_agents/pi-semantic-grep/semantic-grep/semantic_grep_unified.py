@@ -1,0 +1,636 @@
+#!/usr/bin/env python3
+"""
+Unified Semantic Grep Tool
+Combines indexing (ast-grep + embeddings) and searching in a single script.
+
+Supplies code snippets relevant to a proof plan.
+
+Usage:
+    python semantic_grep_unified.py --index [--repo-path <path>] [--db-path <path>]
+    python semantic_grep_unified.py --search <proof-plan> [--type proofs|specs] [--db-path <path>] [--num-results 10]
+    python semantic_grep_unified.py --search [--type proofs|specs] [--db-path <path>]
+
+The --search argument accepts a proof plan as input — a structured analysis of the
+verification goal. The tool then returns code snippets relevant to that plan.
+The proof plan should follow this template:
+  - What needs to be shown
+  - Assumptions
+  - Key ideas
+  - High-level strategy
+  - Sub-goals
+"""
+
+import sys
+import re
+import json
+import random
+import argparse
+import asyncio
+import litellm
+import chromadb
+import yaml
+from pathlib import Path
+from typing import Optional, List, Dict, Any
+from ast_grep_py import register_dynamic_language
+from ast_grep_py import SgRoot
+
+
+def log(*args, **kwargs):
+    kwargs.setdefault('file', sys.stderr)
+    print(*args, **kwargs)
+
+
+class SemanticGrepConfig:
+    """Configuration for the semantic grep tool."""
+
+    def __init__(self, repo_path: str = ".", db_path: Optional[str] = None,
+                 patterns_file: Optional[str] = None, skip_descriptions: bool = False,
+                 tree_sitter_verus_path: Optional[str] = None,
+                 embedding_model: str = "openai/text-embedding-3-small",
+                 generation_model: str = "openai/gpt-5.4-nano"):
+        self.repo_path = Path(repo_path).resolve()
+        self.db_path = Path(db_path) if db_path else self.repo_path / ".semantic_grep_db"
+        self.patterns_file = patterns_file or self._find_patterns_file()
+        self.skip_descriptions = skip_descriptions
+        self.tree_sitter_verus_path = Path(tree_sitter_verus_path) if tree_sitter_verus_path else None
+
+        self.chunks_file = self.repo_path / "ast-grep_chunks.json"
+        self.processed_chunks_file = self.repo_path / "ast-grep_chunks_processed.json"
+        self.collection_name = "code_chunks"
+
+        # Embedding and generation settings
+        self.embedding_model = embedding_model
+        self.generation_model = generation_model
+
+    def _find_patterns_file(self) -> str:
+        """Look for patterns file in common locations."""
+        candidates = [
+            self.repo_path / "verus_patterns.yml",
+            self.repo_path / "patterns.yml",
+            Path(__file__).parent / "verus_patterns.yml",
+        ]
+        for candidate in candidates:
+            if candidate.exists():
+                return str(candidate)
+        raise FileNotFoundError("Could not find patterns file (verus_patterns.yml or patterns.yml)")
+
+    def validate(self):
+        """Validate configuration."""
+        if not self.repo_path.exists():
+            raise ValueError(f"Repository path does not exist: {self.repo_path}")
+        if not self.patterns_file or not Path(self.patterns_file).exists():
+            raise ValueError(f"Patterns file does not exist: {self.patterns_file}")
+        if not self.tree_sitter_verus_path or not self.tree_sitter_verus_path.exists():
+            raise ValueError(f"Tree-sitter Verus library path does not exist: {self.tree_sitter_verus_path}")
+
+
+class AstGrepChunker:
+    """Handles code extraction using the ast-grep Python API."""
+
+    def __init__(self, config: SemanticGrepConfig):
+        self.config = config
+        self._register_language()
+
+    def _register_language(self):
+        """Register the Verus custom language from the provided library path."""
+        register_dynamic_language({
+            "verus": {
+                "library_path": str(self.config.tree_sitter_verus_path),
+                "extensions": ["rs"],
+            }
+        })
+
+    def _load_rules(self) -> List[Dict]:
+        """Load rules from the patterns YAML file."""
+        rules = []
+        with open(self.config.patterns_file) as f:
+            for doc in yaml.safe_load_all(f):
+                if doc:
+                    rules.append(doc)
+        return rules
+
+    def run(self) -> List[Dict]:
+        """Run ast-grep via Python API to extract code chunks."""
+
+        rules = self._load_rules()
+        repo = self.config.repo_path
+
+        chunks = []
+        rs_files = sorted(repo.rglob("*.rs"))
+
+        for _, file_path in enumerate(rs_files):
+            rel_path = file_path.relative_to(repo)
+
+            with open(file_path) as f:
+                content = f.read()
+            lines = content.split("\n")
+            root = SgRoot(content, "verus").root()
+
+            for rule in rules:
+                config_dict = {"rule": rule["rule"]}
+                matches = root.find_all(config=config_dict)
+                for node in matches:
+                    r = node.range()
+                    ctx_start = max(0, r.start.line)
+                    ctx_end = min(len(lines), r.end.line)
+                    chunks.append({
+                        "text": "\n".join(lines[ctx_start:ctx_end]),
+                        "file": str(rel_path),
+                        "range": {
+                            "start": {"line": r.start.line},
+                            "end": {"line": r.end.line},
+                        },
+                        "ruleId": rule["id"],
+                        "language": rule.get("language", "verus"),
+                    })
+
+        log(f"✓ Extracted {len(chunks)} chunks")
+
+        with open(self.config.chunks_file, "w") as f:
+            json.dump(chunks, f, indent=2)
+
+        return chunks
+
+
+class DescriptionGenerator:
+    """Generates natural language descriptions for code chunks using LLM."""
+
+    def __init__(self, model: str, skip: bool = False):
+        self.skip = skip
+        self.model = model
+        prompts_dir = Path(__file__).parent / "prompts"
+        self.spec_prompt_template = (prompts_dir / "spec-prompt.txt").read_text()
+        self.proof_prompt_template = (prompts_dir / "proof-prompt.txt").read_text()
+
+    async def generate_description(self, code_text: str, kind: str) -> str:
+        """Generate description for a code chunk."""
+        if self.skip:
+            return "[Description generation skipped]"
+
+        prompt = (
+            self.proof_prompt_template.format(code_text=code_text)
+            if kind == "proof"
+            else self.spec_prompt_template.format(code_text=code_text)
+        )
+
+        for attempt in range(5):
+            try:
+                response = await litellm.acompletion(
+                    model=self.model,
+                    messages=[{"role": "user", "content": prompt}],
+                )
+                content = response.choices[0].message.content.strip()
+
+                content = re.sub(r'[*_]{1,3}', '', content)
+                content = re.sub(r'^#+\s*', '', content, flags=re.MULTILINE)
+                content = re.sub(r'\n+', ' ', content)
+
+                return content.strip()
+            except litellm.RateLimitError as e:
+                if attempt == 4:
+                    log(f"Warning: Failed to generate description after 5 retries: {repr(e)}")
+                    return "[Error generating description]"
+                wait = 2 ** attempt + random.uniform(0, 1)
+                log(f"Rate limited, retrying in {wait:.1f}s (attempt {attempt + 1})")
+                await asyncio.sleep(wait)
+                continue
+            except Exception as e:
+                log(f"Warning: Failed to generate description: {repr(e)}")
+                return "[Error generating description]"
+
+    async def generate_batch(self, chunks: List[Dict], max_concurrent: int = 3) -> None:
+        """Generate descriptions for multiple chunks concurrently."""
+        if self.skip:
+            return
+
+        semaphore = asyncio.Semaphore(max_concurrent)
+
+        async def bounded_request(chunk: Dict):
+               async with semaphore:
+                   try:
+                       chunk["description"] = await self.generate_description(chunk["code"], chunk["kind"])
+                   except Exception as e:
+                       log(f"Error processing chunk {chunk['id']}: {e}")
+                       chunk["description"] = "[Error generating description]"
+
+        tasks = [bounded_request(chunk) for chunk in chunks]
+        await asyncio.gather(*tasks, return_exceptions=True)
+
+
+class EmbeddingGenerator:
+    """Generates embeddings for code chunks via litellm."""
+
+    def __init__(self, model_name: str = "openai/text-embedding-3-small"):
+        self.model_name = model_name
+
+    def encode(self, texts: List[str]) -> List:
+        """Encode texts to embeddings via litellm."""
+
+        log(f"\nGenerating embeddings for {len(texts)} chunks...")
+
+        BATCH_SIZE = 128
+        all_embeddings = []
+
+        for i in range(0, len(texts), BATCH_SIZE):
+            batch = texts[i:i + BATCH_SIZE]
+
+            try:
+                response = litellm.embedding(model=self.model_name, input=batch)
+                embeddings = [item.embedding for item in response.data]
+                all_embeddings.extend(embeddings)
+            except Exception as e:
+                log(f"Error generating embeddings: {repr(e)}")
+                raise
+
+        return all_embeddings
+
+
+class ChromaDBManager:
+    """Manages ChromaDB operations."""
+
+    def __init__(self, db_path: Path, collection_name: str = "code_chunks"):
+        self.db_path = db_path
+        self.collection_name = collection_name
+        self.client = None
+        self.collection = None
+
+    @property
+    def stored_embedding_model(self) -> Optional[str]:
+        if self.collection and self.collection.metadata:
+            return self.collection.metadata.get("embedding_model")
+        return None
+
+    def initialize(self, recreate: bool = False, embedding_model: Optional[str] = None):
+        """Initialize ChromaDB client and collection."""
+        self.db_path.parent.mkdir(parents=True, exist_ok=True)
+
+        self.client = chromadb.PersistentClient(path=str(self.db_path))
+
+        if not recreate:
+            self.collection = self.client.get_or_create_collection(name=self.collection_name)
+            return
+
+        try:
+            self.client.delete_collection(self.collection_name)
+        except Exception as e:
+            log(f"Note: Could not delete existing collection: {e}")
+
+        meta = {"hnsw:space": "cosine"}
+        if embedding_model:
+            meta["embedding_model"] = embedding_model
+
+        self.collection = self.client.get_or_create_collection(
+            name=self.collection_name,
+            metadata=meta
+        )
+
+    def store_chunks(self, processed_chunks: List[Dict], embeddings: List):
+        """Store chunks with embeddings in ChromaDB."""
+        log("\nStoring vectors in ChromaDB...")
+
+        documents = [chunk["description"] for chunk in processed_chunks]
+        ids = [chunk["id"] for chunk in processed_chunks]
+
+        metadatas = [
+            {
+                "file": chunk["file"],
+                "start_line": chunk["start_line"],
+                "end_line": chunk["end_line"],
+                "language": chunk.get("language", "unknown"),
+                "code": chunk["code"],
+                "description": chunk["description"],
+                # include original ast-grep rule id and the derived kind
+                "ruleId": chunk.get("ruleId", ""),
+                "kind": chunk.get("kind", "unknown"),
+            }
+            for chunk in processed_chunks
+        ]
+
+        self.collection.add(
+            embeddings=embeddings,
+            documents=documents,
+            ids=ids,
+            metadatas=metadatas
+        )
+
+        log(f"✓ Stored {len(processed_chunks)} chunks in ChromaDB")
+
+    def search(self, query: str, embedder: EmbeddingGenerator, num_results: int = 3, filter_type: Optional[str] = None) -> Dict:
+        """Search the ChromaDB collection.
+
+        Args:
+            query: The search query string
+            embedder: Embedding generator with .encode() method
+            num_results: Number of results to return
+            filter_type: Optional filter - "proofs", "specs", or None for all
+        """
+        query_embedding = embedder.encode([query])
+
+        # Build where clause for filtering by type
+        where_clause = None
+        if filter_type and filter_type.lower() == "proofs":
+            where_clause = {"kind": "proof"}
+        elif filter_type and filter_type.lower() == "specs":
+            where_clause = {"kind": "spec"}
+
+        results = self.collection.query(
+            query_embeddings=query_embedding,
+            n_results=num_results,
+            where=where_clause
+        )
+
+        return results
+
+
+
+class SemanticGrep:
+    """Main semantic grep tool combining all components."""
+
+    def __init__(self, config: SemanticGrepConfig):
+        self.config = config
+        self.chunker = AstGrepChunker(config)
+        self.description_gen = DescriptionGenerator(skip=config.skip_descriptions, model=config.generation_model)
+        self.embedding_gen = EmbeddingGenerator(config.embedding_model)
+        self.db_manager = ChromaDBManager(config.db_path, config.collection_name)
+
+    def index(self):
+        """Index a repository."""
+        log("\n" + "="*60 + "")
+        log("Semantic Grep Indexing")
+        log(f"Repository: {self.config.repo_path}")
+        log(f"Database: {self.config.db_path}")
+        log("" + "="*60 + "")
+
+        try:
+            self.config.validate()
+
+            # Step 1: Extract chunks using ast-grep
+            log("\n[1/4] Running ast-grep scan...")
+            chunks = self.chunker.run()
+            if not chunks:
+                log("Warning: No chunks extracted")
+                return
+
+            # Step 2: Process chunks first to classify them by kind (spec vs proof)
+            log("\n[2/4] Processing chunks...")
+            processed_chunks = self._process_chunks(chunks)
+
+            # Step 3: Generate descriptions based on chunk kind
+            log("\n[3/4] Generating natural language descriptions...")
+            if not self.config.skip_descriptions:
+                asyncio.run(self.description_gen.generate_batch(processed_chunks))
+            else:
+                for chunk in processed_chunks:
+                    chunk["description"] = "[Skipped]"
+
+            # Save processed chunks
+            with open(self.config.processed_chunks_file, "w") as f:
+                json.dump(processed_chunks, f, indent=2)
+
+            # Step 4: Generate embeddings
+            log("\n[4/4] Generating embeddings...")
+            documents = [chunk["description"] for chunk in processed_chunks]
+            embeddings = self.embedding_gen.encode(documents)
+
+            # Step 5: Store in ChromaDB
+            self.db_manager.initialize(recreate=True, embedding_model=self.config.embedding_model)
+            self.db_manager.store_chunks(processed_chunks, embeddings)
+
+            log("\n" + "="*60 + "")
+            log("✓ Indexing complete!")
+            log(f"Database location: {self.config.db_path}")
+            log("" + "="*60 + "\n")
+
+        except Exception as e:
+            log(f"Error during indexing: {e}")
+            sys.exit(1)
+
+    def _process_chunks(self, chunks: List[Dict]) -> List[Dict]:
+        """Process raw chunks into processable format."""
+        processed = []
+
+        for i, chunk in enumerate(chunks):
+            code_text = chunk.get("text", "")
+            file_path = chunk.get("file", "unknown")
+            range_info = chunk.get("range", {})
+            start_line = range_info.get("start", {}).get("line", 0) + 1
+            end_line = range_info.get("end", {}).get("line", 0) + 1
+
+            processed.append({
+                "id": f"chunk_{i}",
+                "code": code_text,
+                "description": "",  # Placeholder, will be filled by generate_batch or set to "[Skipped]"
+                # preserve ast-grep rule id and add a simple classification
+                "ruleId": chunk.get("ruleId", ""),
+                "kind": (
+                    "spec" if chunk.get("ruleId", "").startswith("capture-spec")
+                    else "proof" if (chunk.get("ruleId", "").startswith("capture-proof")
+                                      or chunk.get("ruleId", "") == "capture-functions-with-contracts")
+                    else "unknown"
+                ),
+                "file": file_path,
+                "language": chunk.get("language", "unknown"),
+                "start_line": start_line,
+                "end_line": end_line
+            })
+
+        return processed
+
+    def search(self, query: str, num_results: int = 3, filter_type: Optional[str] = None, text_output: bool = False):
+        """Search for a query.
+
+        Args:
+            query: The search query string
+            num_results: Number of results to return
+            filter_type: Optional filter - "proofs", "specs", or None for all
+            text_output: If True, output results as formatted text instead of JSON
+        """
+        try:
+            # Initialize and load DB
+            self.db_manager.initialize()
+
+            if self.db_manager.collection.count() == 0:
+                log("Error: Database is empty. Run --index first.")
+                sys.exit(1)
+
+            # Auto-switch to the embedding model used during indexing
+            stored_model = self.db_manager.stored_embedding_model
+            if stored_model:
+                self.embedding_gen = EmbeddingGenerator(stored_model)
+            else:
+                log("Warning: No embedding model recorded in database.")
+                if stored_model != self.embedding_gen.model_name:
+                    log("Error: Embedding model used for search different than model used for indexing.")
+                    sys.exit(1)
+
+            # Perform search with optional type filter
+            results = self.db_manager.search(query, self.embedding_gen, num_results, filter_type)
+
+            # Display results
+            if text_output:
+                self._display_results(query, results, filter_type)
+            else:
+                self._display_results_json(query, results, filter_type)
+
+        except Exception as e:
+            log(f"Error during search: {e}")
+            sys.exit(1)
+
+    def _display_results(self, query: str, results: Dict, filter_type: Optional[str] = None):
+        """Display search results in a formatted table.
+
+        Args:
+            query: The search query that was executed
+            results: Results from ChromaDB search
+            filter_type: Optional type filter that was applied
+        """
+        filter_display = f" (type: {filter_type})" if filter_type else ""
+        print(f"\n=== Search Results for: '{query}'{filter_display} ===\n")
+
+        docs = results.get('documents', [[]])[0]
+        ids = results.get('ids', [[]])[0]
+        metadatas = results.get('metadatas', [[]])[0]
+        distances = results.get('distances', [[0] * len(docs)])[0]
+
+        if not docs:
+            print("No results found.\n")
+            return
+
+        for i, (doc_id, metadata, distance) in enumerate(zip(ids, metadatas, distances)):
+            similarity = 1 - (distance / 2)  # Convert distance to similarity
+
+            print(f">> Match {i+1} | {doc_id} | Similarity: {similarity:.2%}")
+            print(f"   File: {metadata.get('file')} (lines {metadata.get('start_line')}-{metadata.get('end_line')})")
+            print(f"   Description: {metadata.get('description')}")
+
+            code = metadata.get('code', '')
+            code_lines = code.split('\n')[:5]  # Show first 5 lines
+            code_preview = '\n'.join(f"    {line}" for line in code_lines)
+            print(f"\n{code_preview}")
+
+            if len(code.split('\n')) > 5:
+                print(f"    ... ({len(code.split(chr(10)))} lines total)")
+
+            print()
+
+    def _display_results_json(self, query: str, results: Dict, filter_type: Optional[str] = None):
+        """Display search results in JSON format for agent consumption.
+
+        Args:
+            query: The search query that was executed
+            results: Results from ChromaDB search
+            filter_type: Optional type filter that was applied
+        """
+        docs = results.get('documents', [[]])[0]
+        ids = results.get('ids', [[]])[0]
+        metadatas = results.get('metadatas', [[]])[0]
+        distances = results.get('distances', [[0] * len(docs)])[0]
+
+        result_list = []
+        for _, (doc_id, metadata, distance) in enumerate(zip(ids, metadatas, distances)):
+            similarity = 1 - (distance / 2)  # Convert distance to similarity
+
+            result_list.append({
+                "id": doc_id,
+                "similarity": round(similarity, 4),
+                "file": metadata.get('file'),
+                "start_line": metadata.get('start_line'),
+                "end_line": metadata.get('end_line'),
+                "description": metadata.get('description'),
+                "code": metadata.get('code'),
+                "kind": metadata.get('kind')
+            })
+
+        output = {
+            "query": query,
+            "filter_type": filter_type,
+            "num_results": len(result_list),
+            "results": result_list
+        }
+
+        print(json.dumps(output, indent=2))
+
+
+def main():
+    parser = argparse.ArgumentParser(
+        description="Unified Semantic Grep: Index proof/spec code and search with proof plans. The agent supplies a structured proof plan, the tool returns relevant code snippets.",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+  # Index current directory
+  python semantic_grep_unified.py --index
+
+  # Index specific repository
+  python semantic_grep_unified.py --index --repo-path /path/to/repo
+
+  # Search with a proof plan (outputs JSON by default)
+  python semantic_grep_unified.py --search "What needs to be shown: Liveness assumptions are stable. Assumptions: Base invariant is stable..."
+
+  # Search with formatted text output
+  python semantic_grep_unified.py --search "What needs to be shown: ..." --text
+
+  # Search for only proofs
+  python semantic_grep_unified.py --search "What needs to be shown: ..." --type proofs
+
+  # Search for only specs
+  python semantic_grep_unified.py --search "Assumptions: ..." --type specs
+        """
+    )
+
+    parser.add_argument("--index", action="store_true", help="Index a repository")
+    parser.add_argument("--search", metavar="PROOF_PLAN",
+                        help="Search for code relevant to a proof plan. The input should be a structured analysis of the verification goal, following the template: what needs to be shown, assumptions, key ideas, high-level strategy, sub-goals.")
+    parser.add_argument("--repo-path", default=".", help="Path to repository (default: current directory)")
+    parser.add_argument("--db-path", help="Path to ChromaDB database (default: <repo-path>/.semantic_grep_db)")
+    parser.add_argument("--patterns", help="Path to ast-grep patterns file (auto-detected if not provided)")
+    parser.add_argument("--num-results", type=int, default=10, help="Number of results to return (default: 10)")
+    parser.add_argument("--type", choices=["proofs", "specs"],
+                        help="Filter results by type: 'proofs' or 'specs' (default: all)")
+    parser.add_argument("--tree-sitter-verus-path", required=True,
+                        help="Path to the Verus tree-sitter shared library (.so / .dylib)")
+    parser.add_argument("--skip-descriptions", action="store_true",
+                        help="Skip LLM description generation (faster indexing)")
+    parser.add_argument("--embedding-model", default="openai/text-embedding-3-small",
+                        help="Embedding model to use (default: openai/text-embedding-3-small)")
+    parser.add_argument("--generation-model", default="openai/gpt-5.4-nano",
+                        help="Generation model to use (default: openai/gpt-5.4-nano)")
+    parser.add_argument("--text", action="store_true",
+                        help="Output search results as formatted text instead of JSON")
+
+    args = parser.parse_args()
+
+    if not args.index and not args.search:
+        parser.print_help()
+        sys.exit(0)
+
+    try:
+        # Create configuration
+        config = SemanticGrepConfig(
+            repo_path=args.repo_path,
+            db_path=args.db_path,
+            patterns_file=args.patterns,
+            skip_descriptions=args.skip_descriptions,
+            tree_sitter_verus_path=args.tree_sitter_verus_path,
+            embedding_model=args.embedding_model,
+            generation_model=args.generation_model,
+        )
+
+        # Create semantic grep instance
+        sg = SemanticGrep(config)
+
+        if args.index:
+            sg.index()
+
+        elif args.search:
+            sg.search(args.search, args.num_results, args.type, args.text)
+
+    except KeyboardInterrupt:
+        log("\nInterrupted by user")
+        sys.exit(0)
+    except Exception as e:
+        log(f"Fatal error: {e}")
+        sys.exit(1)
+
+
+if __name__ == "__main__":
+    main()

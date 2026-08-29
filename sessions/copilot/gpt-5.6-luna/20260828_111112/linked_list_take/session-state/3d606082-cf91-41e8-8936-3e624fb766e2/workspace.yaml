@@ -1,0 +1,8 @@
+id: 3d606082-cf91-41e8-8936-3e624fb766e2
+cwd: /workspace
+client_name: github/cli
+name: The file /workspace/task_env/linked_list_take.rs cannot be verified by Verus, a verification tool for Rust programs, yet. Please add proof annotations to /workspace/task_env/linked_list_take.rs so that it can be successfully verified by Verus, and write the resulting code with proof into a new file with the name /workspace/task_env/linked_list_take_verified.rs. The /workspace/vstd folder is a copy of Verus' vstd definitions and helper lemmas; please feel free to check it when needed. You should...
+user_named: false
+summary_count: 0
+created_at: 2026-08-28T15:03:59.771Z
+updated_at: 2026-08-28T15:04:00.135Z

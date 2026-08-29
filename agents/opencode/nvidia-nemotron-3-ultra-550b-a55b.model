@@ -1,0 +1,9 @@
+#!/bin/bash
+set -e
+
+export XDG_DATA_HOME=$SESSION
+export OPENCODE_PERMISSION='{"websearch":"deny","webfetch":"deny","bash":{"*":"allow","curl":"deny","curl *":"deny","wget":"deny","wget *":"deny"}}'
+
+opencode run --format json \
+    -m openrouter/nvidia/nemotron-3-ultra-550b-a55b:free "$TASK_PROMPT" \
+    > "$SESSION/session.jsonl"

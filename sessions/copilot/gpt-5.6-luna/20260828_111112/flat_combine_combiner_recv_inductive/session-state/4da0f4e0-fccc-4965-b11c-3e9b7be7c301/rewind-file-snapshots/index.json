@@ -1,0 +1,510 @@
+{
+  "schema": 1,
+  "snapshots": [
+    {
+      "snapshotId": "f0334e18-8e2d-4d0e-ba15-ad26669e9cae",
+      "eventId": "08d4446a-9be3-416b-8247-9661153870d6",
+      "userMessage": "The file /workspace/task_env/flat_combine_combiner_recv_inductive.rs cannot be verified by Verus, a verification tool for Rust programs, yet. Please add proof annotations to /workspace/task_env/flat_combine_combiner_recv_inductive.rs so that it can be successfully verified by Verus, and write the resulting code with proof into a new file with the name /workspace/task_env/flat_combine_combiner_recv_inductive_verified.rs. The /workspace/vstd folder is a copy of Verus' vstd definitions and helper lemmas; please feel free to check it when needed. You should KEEP editing your proof annotations until Verus shows there is no error. Preserve all existing admits and unrelated proof holes; do not add new ones. You should NOT change existing functions' pre- conditions or post-conditions; you should NOT change any executable Rust code; and you should NEVER use admit(...) or assume(...) in your code. You are also NOT allowed to create unimplemented, external-body lemma functions for any new lemma functions you add, you should provide complete proof. You are NOT allowed to create new axiom functions or change the pre/post conditions of existing axiom functions, and you should NEVER add external_body tag to any existing non-external-body functions. I have installed Verus locally; you can just run verus. Before you are done, MAKE SURE to run lynette on both the original /workspace/task_env/flat_combine_combiner_recv_inductive.rs and the generated verified file to double check whether you have made any illegal changes (fix those if you did).\n",
+      "timestamp": "2026-08-28T12:29:30.824Z",
+      "files": {
+        "cdfa6f9aebf00be0817852ad45eeabbb": {
+          "path": "/workspace/task_env/flat_combine_combiner_recv_inductive_verified.rs",
+          "preimage": {
+            "kind": "absent"
+          },
+          "postimage": {
+            "kind": "content",
+            "contentHash": "68fc4a221f58bfdd14c50875d0eab0a0714473bd9c8d7c3ce8ccda6b36d40bac",
+            "resolvedPath": "/workspace/task_env/flat_combine_combiner_recv_inductive_verified.rs",
+            "encodedPath": {
+              "encoding": "unix-bytes",
+              "data": "2f776f726b73706163652f7461736b5f656e762f666c61745f636f6d62696e655f636f6d62696e65725f726563765f696e647563746976655f76657269666965642e7273"
+            }
+          },
+          "linesAdded": 344,
+          "linesRemoved": 0
+        },
+        "3248a740412cd534ab5b08b9b73d89aa": {
+          "path": "/tmp/verus.out",
+          "preimage": {
+            "kind": "absent"
+          },
+          "postimage": {
+            "kind": "content",
+            "contentHash": "98da08bdcb4f8dc7775f2aac0ce7206dc196894a2c6a08608d9b6f28ec3214a6",
+            "resolvedPath": "/tmp/verus.out",
+            "encodedPath": {
+              "encoding": "unix-bytes",
+              "data": "2f746d702f76657275732e6f7574"
+            }
+          },
+          "linesAdded": 52,
+          "linesRemoved": 0
+        },
+        "c4eaf4b3afc81bc49d98d6aebe845499": {
+          "path": "/tmp/lynette.out",
+          "preimage": {
+            "kind": "absent"
+          },
+          "postimage": {
+            "kind": "content",
+            "contentHash": "cd79d104c81f2262a5d2320559077d1943e5c461b594d9f3a462f9bfb0c6db14",
+            "resolvedPath": "/tmp/lynette.out",
+            "encodedPath": {
+              "encoding": "unix-bytes",
+              "data": "2f746d702f6c796e657474652e6f7574"
+            }
+          },
+          "linesAdded": 1,
+          "linesRemoved": 0
+        },
+        "a6bc1a98be7342ccb1dcad6b8115adfa": {
+          "path": "/tmp/v",
+          "preimage": {
+            "kind": "absent"
+          },
+          "postimage": {
+            "kind": "content",
+            "contentHash": "98da08bdcb4f8dc7775f2aac0ce7206dc196894a2c6a08608d9b6f28ec3214a6",
+            "resolvedPath": "/tmp/v",
+            "encodedPath": {
+              "encoding": "unix-bytes",
+              "data": "2f746d702f76"
+            }
+          },
+          "linesAdded": 52,
+          "linesRemoved": 0
+        },
+        "2a34316895f70398216352bc5cdb381a": {
+          "path": "/tmp/l",
+          "preimage": {
+            "kind": "absent"
+          },
+          "postimage": {
+            "kind": "content",
+            "contentHash": "cd79d104c81f2262a5d2320559077d1943e5c461b594d9f3a462f9bfb0c6db14",
+            "resolvedPath": "/tmp/l",
+            "encodedPath": {
+              "encoding": "unix-bytes",
+              "data": "2f746d702f6c"
+            }
+          },
+          "linesAdded": 1,
+          "linesRemoved": 0
+        },
+        "bcea19eb9c430c97b71f75017b315bfe": {
+          "path": "/tmp/v2",
+          "preimage": {
+            "kind": "absent"
+          },
+          "postimage": {
+            "kind": "content",
+            "contentHash": "98da08bdcb4f8dc7775f2aac0ce7206dc196894a2c6a08608d9b6f28ec3214a6",
+            "resolvedPath": "/tmp/v2",
+            "encodedPath": {
+              "encoding": "unix-bytes",
+              "data": "2f746d702f7632"
+            }
+          },
+          "linesAdded": 52,
+          "linesRemoved": 0
+        },
+        "4c0bb4bf95cc3eaf14254e76feb3fc03": {
+          "path": "/tmp/l2",
+          "preimage": {
+            "kind": "absent"
+          },
+          "postimage": {
+            "kind": "content",
+            "contentHash": "cd79d104c81f2262a5d2320559077d1943e5c461b594d9f3a462f9bfb0c6db14",
+            "resolvedPath": "/tmp/l2",
+            "encodedPath": {
+              "encoding": "unix-bytes",
+              "data": "2f746d702f6c32"
+            }
+          },
+          "linesAdded": 1,
+          "linesRemoved": 0
+        },
+        "2f53949e076315ddf15012f664c23042": {
+          "path": "/tmp/v3",
+          "preimage": {
+            "kind": "absent"
+          },
+          "postimage": {
+            "kind": "content",
+            "contentHash": "98da08bdcb4f8dc7775f2aac0ce7206dc196894a2c6a08608d9b6f28ec3214a6",
+            "resolvedPath": "/tmp/v3",
+            "encodedPath": {
+              "encoding": "unix-bytes",
+              "data": "2f746d702f7633"
+            }
+          },
+          "linesAdded": 52,
+          "linesRemoved": 0
+        },
+        "7f771c2ef9963cecfa0c3ddbfa0d3141": {
+          "path": "/tmp/l3",
+          "preimage": {
+            "kind": "absent"
+          },
+          "postimage": {
+            "kind": "content",
+            "contentHash": "cd79d104c81f2262a5d2320559077d1943e5c461b594d9f3a462f9bfb0c6db14",
+            "resolvedPath": "/tmp/l3",
+            "encodedPath": {
+              "encoding": "unix-bytes",
+              "data": "2f746d702f6c33"
+            }
+          },
+          "linesAdded": 1,
+          "linesRemoved": 0
+        },
+        "feee4a30a7899782889ffcfff1dec7f7": {
+          "path": "/tmp/v4",
+          "preimage": {
+            "kind": "absent"
+          },
+          "postimage": {
+            "kind": "content",
+            "contentHash": "98da08bdcb4f8dc7775f2aac0ce7206dc196894a2c6a08608d9b6f28ec3214a6",
+            "resolvedPath": "/tmp/v4",
+            "encodedPath": {
+              "encoding": "unix-bytes",
+              "data": "2f746d702f7634"
+            }
+          },
+          "linesAdded": 52,
+          "linesRemoved": 0
+        },
+        "32969595c1e8e9531b756779e03d3a8b": {
+          "path": "/tmp/l4",
+          "preimage": {
+            "kind": "absent"
+          },
+          "postimage": {
+            "kind": "content",
+            "contentHash": "cd79d104c81f2262a5d2320559077d1943e5c461b594d9f3a462f9bfb0c6db14",
+            "resolvedPath": "/tmp/l4",
+            "encodedPath": {
+              "encoding": "unix-bytes",
+              "data": "2f746d702f6c34"
+            }
+          },
+          "linesAdded": 1,
+          "linesRemoved": 0
+        },
+        "7725dff94cfd80d3375ed516bca231cf": {
+          "path": "/tmp/v5",
+          "preimage": {
+            "kind": "absent"
+          },
+          "postimage": {
+            "kind": "content",
+            "contentHash": "97171f3e6066107822228924b186a5e7896326f6f4446e04913fddbc8321dcec",
+            "resolvedPath": "/tmp/v5",
+            "encodedPath": {
+              "encoding": "unix-bytes",
+              "data": "2f746d702f7635"
+            }
+          },
+          "linesAdded": 63,
+          "linesRemoved": 0
+        },
+        "4a640a77f9c2621e81a0a8f36733b8a7": {
+          "path": "/tmp/l5",
+          "preimage": {
+            "kind": "absent"
+          },
+          "postimage": {
+            "kind": "content",
+            "contentHash": "cd79d104c81f2262a5d2320559077d1943e5c461b594d9f3a462f9bfb0c6db14",
+            "resolvedPath": "/tmp/l5",
+            "encodedPath": {
+              "encoding": "unix-bytes",
+              "data": "2f746d702f6c35"
+            }
+          },
+          "linesAdded": 1,
+          "linesRemoved": 0
+        },
+        "0a88b2f794a84e2d1b82b83784a57b64": {
+          "path": "/tmp/v6",
+          "preimage": {
+            "kind": "absent"
+          },
+          "postimage": {
+            "kind": "content",
+            "contentHash": "97171f3e6066107822228924b186a5e7896326f6f4446e04913fddbc8321dcec",
+            "resolvedPath": "/tmp/v6",
+            "encodedPath": {
+              "encoding": "unix-bytes",
+              "data": "2f746d702f7636"
+            }
+          },
+          "linesAdded": 63,
+          "linesRemoved": 0
+        },
+        "344a0533dd3fe24b26a79f2f9d9c672f": {
+          "path": "/tmp/l6",
+          "preimage": {
+            "kind": "absent"
+          },
+          "postimage": {
+            "kind": "content",
+            "contentHash": "cd79d104c81f2262a5d2320559077d1943e5c461b594d9f3a462f9bfb0c6db14",
+            "resolvedPath": "/tmp/l6",
+            "encodedPath": {
+              "encoding": "unix-bytes",
+              "data": "2f746d702f6c36"
+            }
+          },
+          "linesAdded": 1,
+          "linesRemoved": 0
+        },
+        "77d14fe00439c4436a224ca033ba1a4f": {
+          "path": "/tmp/v7",
+          "preimage": {
+            "kind": "absent"
+          },
+          "postimage": {
+            "kind": "content",
+            "contentHash": "97171f3e6066107822228924b186a5e7896326f6f4446e04913fddbc8321dcec",
+            "resolvedPath": "/tmp/v7",
+            "encodedPath": {
+              "encoding": "unix-bytes",
+              "data": "2f746d702f7637"
+            }
+          },
+          "linesAdded": 63,
+          "linesRemoved": 0
+        },
+        "4b94b994daa2f9bbc61d3ac888fc37c2": {
+          "path": "/tmp/l7",
+          "preimage": {
+            "kind": "absent"
+          },
+          "postimage": {
+            "kind": "content",
+            "contentHash": "cd79d104c81f2262a5d2320559077d1943e5c461b594d9f3a462f9bfb0c6db14",
+            "resolvedPath": "/tmp/l7",
+            "encodedPath": {
+              "encoding": "unix-bytes",
+              "data": "2f746d702f6c37"
+            }
+          },
+          "linesAdded": 1,
+          "linesRemoved": 0
+        },
+        "17469c59af5c3b4c72b4277fe15d33d7": {
+          "path": "/tmp/v8",
+          "preimage": {
+            "kind": "absent"
+          },
+          "postimage": {
+            "kind": "content",
+            "contentHash": "40df943fc9238a9258420553fbd5d8bdcdc1c2e6baa9001af7cf8a1d42eedb6e",
+            "resolvedPath": "/tmp/v8",
+            "encodedPath": {
+              "encoding": "unix-bytes",
+              "data": "2f746d702f7638"
+            }
+          },
+          "linesAdded": 26,
+          "linesRemoved": 0
+        },
+        "b1e67da9cf5fb2c207a25c51cbb1dd66": {
+          "path": "/tmp/l8",
+          "preimage": {
+            "kind": "absent"
+          },
+          "postimage": {
+            "kind": "content",
+            "contentHash": "a5bf71fdbeb98e8d8055e0321e24a5b668cdcc0e3fcec9d6733ee2b6e2689dbc",
+            "resolvedPath": "/tmp/l8",
+            "encodedPath": {
+              "encoding": "unix-bytes",
+              "data": "2f746d702f6c38"
+            }
+          },
+          "linesAdded": 1,
+          "linesRemoved": 0
+        },
+        "5fcbfbabea6a96a6705f31c8e1ef4c05": {
+          "path": "/tmp/v9",
+          "preimage": {
+            "kind": "absent"
+          },
+          "postimage": {
+            "kind": "content",
+            "contentHash": "5ceb02fcb3c45150cb8365e6f6d8d67ac92df40fec1cca1aa18e34425e62cb46",
+            "resolvedPath": "/tmp/v9",
+            "encodedPath": {
+              "encoding": "unix-bytes",
+              "data": "2f746d702f7639"
+            }
+          },
+          "linesAdded": 26,
+          "linesRemoved": 0
+        },
+        "30dc0d3f645fdc94be4e0d6c6a407f5b": {
+          "path": "/tmp/l9",
+          "preimage": {
+            "kind": "absent"
+          },
+          "postimage": {
+            "kind": "content",
+            "contentHash": "e51a4443abecb87b8e04207d9e26f2ada05c3fd28d0ac96d99d129818a256782",
+            "resolvedPath": "/tmp/l9",
+            "encodedPath": {
+              "encoding": "unix-bytes",
+              "data": "2f746d702f6c39"
+            }
+          },
+          "linesAdded": 1,
+          "linesRemoved": 0
+        },
+        "ec378739ffbbeee831b111835dc4be51": {
+          "path": "/tmp/v10",
+          "preimage": {
+            "kind": "absent"
+          },
+          "postimage": {
+            "kind": "content",
+            "contentHash": "40df943fc9238a9258420553fbd5d8bdcdc1c2e6baa9001af7cf8a1d42eedb6e",
+            "resolvedPath": "/tmp/v10",
+            "encodedPath": {
+              "encoding": "unix-bytes",
+              "data": "2f746d702f763130"
+            }
+          },
+          "linesAdded": 26,
+          "linesRemoved": 0
+        },
+        "a1bcdd11a8e4c0db3ffed80a8e8625f2": {
+          "path": "/tmp/l10",
+          "preimage": {
+            "kind": "absent"
+          },
+          "postimage": {
+            "kind": "content",
+            "contentHash": "bcd76e6be6e92c66498639e22b4fe567c7dcc32f57fb4f58305da5524f854826",
+            "resolvedPath": "/tmp/l10",
+            "encodedPath": {
+              "encoding": "unix-bytes",
+              "data": "2f746d702f6c3130"
+            }
+          },
+          "linesAdded": 1,
+          "linesRemoved": 0
+        },
+        "91a518b458ce39ad41580700c138e1a5": {
+          "path": "/tmp/v11",
+          "preimage": {
+            "kind": "absent"
+          },
+          "postimage": {
+            "kind": "content",
+            "contentHash": "ebbdf4cf032f0a7ab9eb231b49d2254792e9304b9996fe7efadbbc65158c9a45",
+            "resolvedPath": "/tmp/v11",
+            "encodedPath": {
+              "encoding": "unix-bytes",
+              "data": "2f746d702f763131"
+            }
+          },
+          "linesAdded": 26,
+          "linesRemoved": 0
+        },
+        "231bbe2beb33220ef01c3b31a4da1914": {
+          "path": "/tmp/l11",
+          "preimage": {
+            "kind": "absent"
+          },
+          "postimage": {
+            "kind": "content",
+            "contentHash": "42ca9569df2515b8e8b2380259baabce003a06e098e397fdce452c3233bb5ae1",
+            "resolvedPath": "/tmp/l11",
+            "encodedPath": {
+              "encoding": "unix-bytes",
+              "data": "2f746d702f6c3131"
+            }
+          },
+          "linesAdded": 1,
+          "linesRemoved": 0
+        },
+        "2ab58c5336de5e215f591bd3c0cc65c1": {
+          "path": "/tmp/v12",
+          "preimage": {
+            "kind": "absent"
+          },
+          "postimage": {
+            "kind": "content",
+            "contentHash": "6dc94c36f56968e23e3eee212eacd9c8aad75324471011d039d6d965b46ad9dc",
+            "resolvedPath": "/tmp/v12",
+            "encodedPath": {
+              "encoding": "unix-bytes",
+              "data": "2f746d702f763132"
+            }
+          },
+          "linesAdded": 26,
+          "linesRemoved": 0
+        },
+        "3b7a528470d8346a6965faa44ebfe2f1": {
+          "path": "/tmp/l12",
+          "preimage": {
+            "kind": "absent"
+          },
+          "postimage": {
+            "kind": "content",
+            "contentHash": "34a79c835fcdfe9a0539c35f0308342dd420abf0df17756e96c5898718de94b4",
+            "resolvedPath": "/tmp/l12",
+            "encodedPath": {
+              "encoding": "unix-bytes",
+              "data": "2f746d702f6c3132"
+            }
+          },
+          "linesAdded": 1,
+          "linesRemoved": 0
+        },
+        "0517d53b3d76aeb855d39bff2f457927": {
+          "path": "/tmp/vf",
+          "preimage": {
+            "kind": "absent"
+          },
+          "postimage": {
+            "kind": "content",
+            "contentHash": "548a3b41704eb2d8dcfc687f4efdda7d7462f3862b87b0d3347f141efde6b350",
+            "resolvedPath": "/tmp/vf",
+            "encodedPath": {
+              "encoding": "unix-bytes",
+              "data": "2f746d702f7666"
+            }
+          },
+          "linesAdded": 61,
+          "linesRemoved": 0
+        },
+        "c212991c6ba1ad50417482737f1b4807": {
+          "path": "/tmp/lf",
+          "preimage": {
+            "kind": "absent"
+          },
+          "postimage": {
+            "kind": "content",
+            "contentHash": "cd79d104c81f2262a5d2320559077d1943e5c461b594d9f3a462f9bfb0c6db14",
+            "resolvedPath": "/tmp/lf",
+            "encodedPath": {
+              "encoding": "unix-bytes",
+              "data": "2f746d702f6c66"
+            }
+          },
+          "linesAdded": 1,
+          "linesRemoved": 0
+        }
+      },
+      "backupFiles": [],
+      "fileCount": 29,
+      "linesAdded": 998,
+      "linesRemoved": 0
+    }
+  ]
+}

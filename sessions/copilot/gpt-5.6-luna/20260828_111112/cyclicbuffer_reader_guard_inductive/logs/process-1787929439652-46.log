@@ -1,0 +1,21 @@
+2026-08-28T15:03:59.654Z [WARNING] Model "gpt-5.6-luna" is not in the built-in catalog. Using defaults for: prompt tokens (COPILOT_PROVIDER_MAX_PROMPT_TOKENS), output tokens (COPILOT_PROVIDER_MAX_OUTPUT_TOKENS). Run `copilot help providers` for configuration details.
+2026-08-28T15:03:59.654Z [INFO] Shell completions: no supported shell detected, skipping
+2026-08-28T15:03:59.658Z [INFO] Session indexing debug: SESSION_INDEXING=true, repository=undefined
+2026-08-28T15:03:59.661Z [INFO] [managedSettings] device MDM: no policy present on this device
+2026-08-28T15:03:59.661Z [INFO] [managedSettings] server policy fetch skipped: no authenticated GitHub host available
+2026-08-28T15:03:59.661Z [INFO] [managedSettings] effective policy resolved: source=none, bypassDisabled=false, serverFetchFailed=false
+2026-08-28T15:03:59.680Z [INFO] [managedSettings] applied: no bypass restriction in force (managed policy absent)
+2026-08-28T15:03:59.771Z [INFO] Workspace initialized: 6e8e0155-e356-4817-9c7a-a43fa1b7d452 (checkpoints: 0)
+2026-08-28T15:03:59.793Z [INFO] Starting Copilot CLI: 1.0.80
+2026-08-28T15:03:59.794Z [INFO] Node.js version: v24.18.1
+2026-08-28T15:04:00.015Z [INFO] Using custom provider: type=openai, baseUrl=http://localhost:11434/v1, wireApi=completions
+2026-08-28T15:04:00.016Z [INFO]  
+2026-08-28T15:04:00.020Z [INFO] --- Start of group: Custom provider configured settings: ---
+2026-08-28T15:04:00.020Z [INFO] --- End of group ---
+2026-08-28T15:04:00.083Z [INFO] --- Start of group: Completion request configuration:  ---
+2026-08-28T15:04:00.085Z [INFO] --- End of group ---
+2026-08-28T15:04:59.485Z [WARNING] Package extraction took 5901ms
+2026-08-28T15:04:59.488Z [INFO] Successfully downloaded package, restart to update to version 1.0.81
+2026-08-28T15:04:59.489Z [INFO] Downloading updated linux-x64 binary...
+2026-08-28T15:06:08.372Z [WARNING] Failed to update binary: Error: EACCES: permission denied, mkdir '/usr/lib/node_modules/@github/copilot/node_modules/@github/copilot-linux-x64/.copilot-update-1787929568367'
+2026-08-28T15:12:06.849Z [INFO] System notification: Shell command "Compare original and verified files with Lynette" (shellId: 22) h...

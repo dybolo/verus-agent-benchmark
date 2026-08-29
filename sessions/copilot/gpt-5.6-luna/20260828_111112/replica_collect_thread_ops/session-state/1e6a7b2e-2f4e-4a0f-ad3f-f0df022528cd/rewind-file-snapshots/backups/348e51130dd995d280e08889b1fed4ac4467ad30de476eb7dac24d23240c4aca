@@ -1,0 +1,569 @@
+warning: use of deprecated method `vstd::cell::PCell::<V>::id`: use `vstd::cell::pcell::PCell` or `vstd::cell::pcell_maybe_uninit::PCell` instead
+   --> /workspace/task_env/replica_collect_thread_ops_verified.rs:108:95
+    |
+108 |         &&& self.batch_perm@@.pcell == replica.contexts[self.thread_id_spec() as int].batch.0.id()
+    |                                                                                               ^^
+    |
+    = note: `#[warn(deprecated)]` on by default
+
+warning: use of deprecated method `vstd::cell::PCell::<V>::id`: use `vstd::cell::pcell::PCell` or `vstd::cell::pcell_maybe_uninit::PCell` instead
+   --> /workspace/task_env/replica_collect_thread_ops_verified.rs:195:27
+    |
+195 |             res.0.batch.0.id() == res.1@@.pcell,
+    |                           ^^
+
+warning: use of deprecated associated function `vstd::cell::PCell::<V>::empty`: use `vstd::cell::pcell::PCell` or `vstd::cell::pcell_maybe_uninit::PCell` instead
+   --> /workspace/task_env/replica_collect_thread_ops_verified.rs:204:43
+    |
+204 |         let (batch, batch_perms) = PCell::empty();
+    |                                           ^^^^^
+
+warning: use of deprecated method `vstd::cell::PCell::<V>::id`: use `vstd::cell::pcell::PCell` or `vstd::cell::pcell_maybe_uninit::PCell` instead
+   --> /workspace/task_env/replica_collect_thread_ops_verified.rs:239:30
+    |
+239 |                 self.batch.0.id(),
+    |                              ^^
+
+warning: use of deprecated method `vstd::cell::PCell::<V>::id`: use `vstd::cell::pcell::PCell` or `vstd::cell::pcell_maybe_uninit::PCell` instead
+   --> /workspace/task_env/replica_collect_thread_ops_verified.rs:246:44
+    |
+246 |             res.1@.cell_id == self.batch.0.id(),
+    |                                            ^^
+
+warning: use of deprecated method `vstd::cell::PCell::<V>::put`: use `vstd::cell::pcell::PCell` or `vstd::cell::pcell_maybe_uninit::PCell` instead
+   --> /workspace/task_env/replica_collect_thread_ops_verified.rs:257:22
+    |
+257 |         self.batch.0.put(Tracked(&mut batch_perms), PendingOperation::new(op));
+    |                      ^^^
+
+warning: use of deprecated method `vstd::cell::PCell::<V>::id`: use `vstd::cell::pcell::PCell` or `vstd::cell::pcell_maybe_uninit::PCell` instead
+   --> /workspace/task_env/replica_collect_thread_ops_verified.rs:293:30
+    |
+293 |                 self.batch.0.id(),
+    |                              ^^
+
+warning: use of deprecated method `vstd::cell::PCell::<V>::take`: use `vstd::cell::pcell::PCell` or `vstd::cell::pcell_maybe_uninit::PCell` instead
+   --> /workspace/task_env/replica_collect_thread_ops_verified.rs:332:35
+    |
+332 |             let op = self.batch.0.take(Tracked(&mut batch_perms));
+    |                                   ^^^^
+
+warning: use of deprecated method `vstd::cell::PCell::<V>::id`: use `vstd::cell::pcell::PCell` or `vstd::cell::pcell_maybe_uninit::PCell` instead
+   --> /workspace/task_env/replica_collect_thread_ops_verified.rs:390:44
+    |
+390 |             &&& batch_perms@.pcell == cell.id()
+    |                                            ^^
+
+warning: use of deprecated method `vstd::cell::PCell::<V>::id`: use `vstd::cell::pcell::PCell` or `vstd::cell::pcell_maybe_uninit::PCell` instead
+   --> /workspace/task_env/replica_collect_thread_ops_verified.rs:407:44
+    |
+407 |             &&& batch_perms@.pcell == cell.id()
+    |                                            ^^
+
+warning: use of deprecated method `vstd::cell::PCell::<V>::id`: use `vstd::cell::pcell::PCell` or `vstd::cell::pcell_maybe_uninit::PCell` instead
+   --> /workspace/task_env/replica_collect_thread_ops_verified.rs:597:40
+    |
+597 |             &&& self.slog[i].log_entry.id() == (#[trigger]self.cyclic_buffer_instance@.cell_ids()[i])
+    |                                        ^^
+
+warning: use of deprecated method `vstd::cell::PCell::<V>::id`: use `vstd::cell::pcell::PCell` or `vstd::cell::pcell_maybe_uninit::PCell` instead
+   --> /workspace/task_env/replica_collect_thread_ops_verified.rs:708:58
+    |
+708 |                     #[trigger] slog_entries[i]).unwrap().id(),
+    |                                                          ^^
+
+warning: use of deprecated associated function `vstd::cell::PCell::<V>::new`: use `vstd::cell::pcell::PCell` or `vstd::cell::pcell_maybe_uninit::PCell` instead
+   --> /workspace/task_env/replica_collect_thread_ops_verified.rs:719:41
+    |
+719 |             let (pcell, token) = PCell::new(Option::None);
+    |                                         ^^^
+
+warning: use of deprecated method `vstd::cell::PCell::<V>::id`: use `vstd::cell::pcell::PCell` or `vstd::cell::pcell_maybe_uninit::PCell` instead
+   --> /workspace/task_env/replica_collect_thread_ops_verified.rs:721:48
+    |
+721 |                 cell_ids = cell_ids.push(pcell.id());
+    |                                                ^^
+
+warning: use of deprecated method `vstd::cell::PCell::<V>::id`: use `vstd::cell::pcell::PCell` or `vstd::cell::pcell_maybe_uninit::PCell` instead
+   --> /workspace/task_env/replica_collect_thread_ops_verified.rs:778:47
+    |
+778 |                         &&& slog[i].log_entry.id() == (#[trigger] cell_ids[i])
+    |                                               ^^
+
+warning: use of deprecated method `vstd::cell::PCell::<V>::id`: use `vstd::cell::pcell::PCell` or `vstd::cell::pcell_maybe_uninit::PCell` instead
+   --> /workspace/task_env/replica_collect_thread_ops_verified.rs:793:35
+    |
+793 |                         &&& entry.id() == cell_ids[i]
+    |                                   ^^
+
+warning: use of deprecated method `vstd::cell::PCell::<V>::replace`: use `vstd::cell::pcell::PCell` or `vstd::cell::pcell_maybe_uninit::PCell` instead
+    --> /workspace/task_env/replica_collect_thread_ops_verified.rs:1320:46
+     |
+1320 |                 self.slog[log_idx].log_entry.replace(
+     |                                              ^^^^^^^
+
+warning: use of deprecated method `vstd::cell::PCell::<V>::borrow`: use `vstd::cell::pcell::PCell` or `vstd::cell::pcell_maybe_uninit::PCell` instead
+    --> /workspace/task_env/replica_collect_thread_ops_verified.rs:1744:63
+     |
+1744 |             let log_entry = self.slog[phys_log_idx].log_entry.borrow(
+     |                                                               ^^^^^^
+
+warning: use of deprecated method `vstd::cell::PCell::<V>::id`: use `vstd::cell::pcell::PCell` or `vstd::cell::pcell_maybe_uninit::PCell` instead
+    --> /workspace/task_env/replica_collect_thread_ops_verified.rs:2357:77
+     |
+2357 | ...   &&& (g matches Some(g) ==> g.inv(flat_combiner_instance@, responses.id(), collected_operations.id(), collected_operations_pe...
+     |                                                                           ^^
+
+warning: use of deprecated method `vstd::cell::PCell::<V>::id`: use `vstd::cell::pcell::PCell` or `vstd::cell::pcell_maybe_uninit::PCell` instead
+    --> /workspace/task_env/replica_collect_thread_ops_verified.rs:2357:104
+     |
+2357 | ...   &&& (g matches Some(g) ==> g.inv(flat_combiner_instance@, responses.id(), collected_operations.id(), collected_operations_pe...
+     |                                                                                                      ^^
+
+warning: use of deprecated method `vstd::cell::PCell::<V>::id`: use `vstd::cell::pcell::PCell` or `vstd::cell::pcell_maybe_uninit::PCell` instead
+    --> /workspace/task_env/replica_collect_thread_ops_verified.rs:2357:142
+     |
+2357 | ...), collected_operations.id(), collected_operations_per_thread.id()))
+     |                                                                  ^^
+
+warning: use of deprecated associated function `vstd::cell::PCell::<V>::new`: use `vstd::cell::pcell::PCell` or `vstd::cell::pcell_maybe_uninit::PCell` instead
+    --> /workspace/task_env/replica_collect_thread_ops_verified.rs:2404:51
+     |
+2404 |         let (responses, responses_token) = PCell::new(Vec::with_capacity(num_threads));
+     |                                                   ^^^
+
+warning: use of deprecated associated function `vstd::cell::PCell::<V>::new`: use `vstd::cell::pcell::PCell` or `vstd::cell::pcell_maybe_uninit::PCell` instead
+    --> /workspace/task_env/replica_collect_thread_ops_verified.rs:2405:72
+     |
+2405 |         let (collected_operations, collected_operations_perm) = PCell::new(
+     |                                                                        ^^^
+
+warning: use of deprecated associated function `vstd::cell::PCell::<V>::new`: use `vstd::cell::pcell::PCell` or `vstd::cell::pcell_maybe_uninit::PCell` instead
+    --> /workspace/task_env/replica_collect_thread_ops_verified.rs:2408:94
+     |
+2408 |         let (collected_operations_per_thread, collected_operations_per_thread_perm) = PCell::new(
+     |                                                                                              ^^^
+
+warning: use of deprecated method `vstd::cell::PCell::<V>::id`: use `vstd::cell::pcell::PCell` or `vstd::cell::pcell_maybe_uninit::PCell` instead
+    --> /workspace/task_env/replica_collect_thread_ops_verified.rs:2472:88
+     |
+2472 |                         &&& thread_tokens[i].batch_perm@@.pcell == contexts[i].batch.0.id()
+     |                                                                                        ^^
+
+warning: use of deprecated method `vstd::cell::PCell::<V>::id`: use `vstd::cell::pcell::PCell` or `vstd::cell::pcell_maybe_uninit::PCell` instead
+    --> /workspace/task_env/replica_collect_thread_ops_verified.rs:2552:32
+     |
+2552 |                 self.responses.id(),
+     |                                ^^
+
+warning: use of deprecated method `vstd::cell::PCell::<V>::id`: use `vstd::cell::pcell::PCell` or `vstd::cell::pcell_maybe_uninit::PCell` instead
+    --> /workspace/task_env/replica_collect_thread_ops_verified.rs:2553:43
+     |
+2553 |                 self.collected_operations.id(),
+     |                                           ^^
+
+warning: use of deprecated method `vstd::cell::PCell::<V>::id`: use `vstd::cell::pcell::PCell` or `vstd::cell::pcell_maybe_uninit::PCell` instead
+    --> /workspace/task_env/replica_collect_thread_ops_verified.rs:2554:54
+     |
+2554 |                 self.collected_operations_per_thread.id(),
+     |                                                      ^^
+
+warning: use of deprecated method `vstd::cell::PCell::<V>::id`: use `vstd::cell::pcell::PCell` or `vstd::cell::pcell_maybe_uninit::PCell` instead
+    --> /workspace/task_env/replica_collect_thread_ops_verified.rs:2594:32
+     |
+2594 |                 self.responses.id(),
+     |                                ^^
+
+warning: use of deprecated method `vstd::cell::PCell::<V>::id`: use `vstd::cell::pcell::PCell` or `vstd::cell::pcell_maybe_uninit::PCell` instead
+    --> /workspace/task_env/replica_collect_thread_ops_verified.rs:2595:43
+     |
+2595 |                 self.collected_operations.id(),
+     |                                           ^^
+
+warning: use of deprecated method `vstd::cell::PCell::<V>::id`: use `vstd::cell::pcell::PCell` or `vstd::cell::pcell_maybe_uninit::PCell` instead
+    --> /workspace/task_env/replica_collect_thread_ops_verified.rs:2596:54
+     |
+2596 |                 self.collected_operations_per_thread.id(),
+     |                                                      ^^
+
+warning: use of deprecated method `vstd::cell::PCell::<V>::id`: use `vstd::cell::pcell::PCell` or `vstd::cell::pcell_maybe_uninit::PCell` instead
+    --> /workspace/task_env/replica_collect_thread_ops_verified.rs:2637:32
+     |
+2637 |                 self.responses.id(),
+     |                                ^^
+
+warning: use of deprecated method `vstd::cell::PCell::<V>::id`: use `vstd::cell::pcell::PCell` or `vstd::cell::pcell_maybe_uninit::PCell` instead
+    --> /workspace/task_env/replica_collect_thread_ops_verified.rs:2638:43
+     |
+2638 |                 self.collected_operations.id(),
+     |                                           ^^
+
+warning: use of deprecated method `vstd::cell::PCell::<V>::id`: use `vstd::cell::pcell::PCell` or `vstd::cell::pcell_maybe_uninit::PCell` instead
+    --> /workspace/task_env/replica_collect_thread_ops_verified.rs:2639:54
+     |
+2639 |                 self.collected_operations_per_thread.id(),
+     |                                                      ^^
+
+warning: use of deprecated method `vstd::cell::PCell::<V>::id`: use `vstd::cell::pcell::PCell` or `vstd::cell::pcell_maybe_uninit::PCell` instead
+    --> /workspace/task_env/replica_collect_thread_ops_verified.rs:2644:32
+     |
+2644 |                 self.responses.id(),
+     |                                ^^
+
+warning: use of deprecated method `vstd::cell::PCell::<V>::id`: use `vstd::cell::pcell::PCell` or `vstd::cell::pcell_maybe_uninit::PCell` instead
+    --> /workspace/task_env/replica_collect_thread_ops_verified.rs:2645:43
+     |
+2645 |                 self.collected_operations.id(),
+     |                                           ^^
+
+warning: use of deprecated method `vstd::cell::PCell::<V>::id`: use `vstd::cell::pcell::PCell` or `vstd::cell::pcell_maybe_uninit::PCell` instead
+    --> /workspace/task_env/replica_collect_thread_ops_verified.rs:2646:54
+     |
+2646 |                 self.collected_operations_per_thread.id(),
+     |                                                      ^^
+
+warning: use of deprecated method `vstd::cell::PCell::<V>::take`: use `vstd::cell::pcell::PCell` or `vstd::cell::pcell_maybe_uninit::PCell` instead
+    --> /workspace/task_env/replica_collect_thread_ops_verified.rs:2655:44
+     |
+2655 |         let mut responses = self.responses.take(Tracked(&mut responses_token));
+     |                                            ^^^^
+
+warning: use of deprecated method `vstd::cell::PCell::<V>::take`: use `vstd::cell::pcell::PCell` or `vstd::cell::pcell_maybe_uninit::PCell` instead
+    --> /workspace/task_env/replica_collect_thread_ops_verified.rs:2656:56
+     |
+2656 |         let mut operations = self.collected_operations.take(
+     |                                                        ^^^^
+
+warning: use of deprecated method `vstd::cell::PCell::<V>::take`: use `vstd::cell::pcell::PCell` or `vstd::cell::pcell_maybe_uninit::PCell` instead
+    --> /workspace/task_env/replica_collect_thread_ops_verified.rs:2659:75
+     |
+2659 |         let mut num_ops_per_thread = self.collected_operations_per_thread.take(
+     |                                                                           ^^^^
+
+warning: use of deprecated method `vstd::cell::PCell::<V>::put`: use `vstd::cell::pcell::PCell` or `vstd::cell::pcell_maybe_uninit::PCell` instead
+    --> /workspace/task_env/replica_collect_thread_ops_verified.rs:2728:24
+     |
+2728 |         self.responses.put(Tracked(&mut responses_token), responses);
+     |                        ^^^
+
+warning: use of deprecated method `vstd::cell::PCell::<V>::put`: use `vstd::cell::pcell::PCell` or `vstd::cell::pcell_maybe_uninit::PCell` instead
+    --> /workspace/task_env/replica_collect_thread_ops_verified.rs:2729:35
+     |
+2729 |         self.collected_operations.put(Tracked(&mut collected_operations_perm), operations);
+     |                                   ^^^
+
+warning: use of deprecated method `vstd::cell::PCell::<V>::put`: use `vstd::cell::pcell::PCell` or `vstd::cell::pcell_maybe_uninit::PCell` instead
+    --> /workspace/task_env/replica_collect_thread_ops_verified.rs:2730:46
+     |
+2730 |         self.collected_operations_per_thread.put(
+     |                                              ^^^
+
+warning: use of deprecated method `vstd::cell::PCell::<V>::id`: use `vstd::cell::pcell::PCell` or `vstd::cell::pcell_maybe_uninit::PCell` instead
+    --> /workspace/task_env/replica_collect_thread_ops_verified.rs:2794:93
+     |
+2794 |                         &&& cell_permissions[i]@.pcell === self.contexts@[i as int].batch.0.id()
+     |                                                                                             ^^
+
+error[E0308]: mismatched types
+    --> /workspace/task_env/replica_collect_thread_ops_verified.rs:2827:35
+     |
+2827 |                     self.contexts[thread_idx].thread_id_g@,
+     |                     --------------^^^^^^^^^^-
+     |                     |             |
+     |                     |             expected `int`, found `usize`
+     |                     arguments to this method are incorrect
+     |
+note: method defined here
+    --> vstd/std_specs/vec.rs:27:13
+     |
+  27 |     spec fn spec_index(&self, i: int) -> T
+     |             ^^^^^^^^^^
+
+error[E0308]: mismatched types
+    --> /workspace/task_env/replica_collect_thread_ops_verified.rs:2828:35
+     |
+2828 |                     self.contexts[thread_idx].batch.0,
+     |                     --------------^^^^^^^^^^-
+     |                     |             |
+     |                     |             expected `int`, found `usize`
+     |                     arguments to this method are incorrect
+     |
+note: method defined here
+    --> vstd/std_specs/vec.rs:27:13
+     |
+  27 |     spec fn spec_index(&self, i: int) -> T
+     |             ^^^^^^^^^^
+
+warning: use of deprecated method `vstd::cell::PCell::<V>::borrow`: use `vstd::cell::pcell::PCell` or `vstd::cell::pcell_maybe_uninit::PCell` instead
+    --> /workspace/task_env/replica_collect_thread_ops_verified.rs:2841:56
+     |
+2841 |                     &self.contexts[thread_idx].batch.0.borrow(Tracked(&batch_token_value)).op,
+     |                                                        ^^^^^^
+
+warning: use of deprecated method `vstd::cell::PCell::<V>::id`: use `vstd::cell::pcell::PCell` or `vstd::cell::pcell_maybe_uninit::PCell` instead
+    --> /workspace/task_env/replica_collect_thread_ops_verified.rs:2931:93
+     |
+2931 |                         &&& cell_permissions[i]@.pcell === self.contexts@[i as int].batch.0.id()
+     |                                                                                             ^^
+
+warning: use of deprecated method `vstd::cell::PCell::<V>::take`: use `vstd::cell::pcell::PCell` or `vstd::cell::pcell_maybe_uninit::PCell` instead
+    --> /workspace/task_env/replica_collect_thread_ops_verified.rs:2976:69
+     |
+2976 |                 let mut op_resp = self.contexts[thread_idx].batch.0.take(Tracked(&mut permission));
+     |                                                                     ^^^^
+
+warning: use of deprecated method `vstd::cell::PCell::<V>::put`: use `vstd::cell::pcell::PCell` or `vstd::cell::pcell_maybe_uninit::PCell` instead
+    --> /workspace/task_env/replica_collect_thread_ops_verified.rs:2979:51
+     |
+2979 |                 self.contexts[thread_idx].batch.0.put(Tracked(&mut permission), op_resp);
+     |                                                   ^^^
+
+warning: use of deprecated method `vstd::cell::PCell::<V>::id`: use `vstd::cell::pcell::PCell` or `vstd::cell::pcell_maybe_uninit::PCell` instead
+    --> /workspace/task_env/replica_collect_thread_ops_verified.rs:3036:90
+     |
+3036 |             tkn.batch_perm@@.pcell == self.contexts[tkn.thread_id_spec() as int].batch.0.id(),
+     |                                                                                          ^^
+
+warning: use of deprecated method `vstd::cell::PCell::<V>::id`: use `vstd::cell::pcell::PCell` or `vstd::cell::pcell_maybe_uninit::PCell` instead
+    --> /workspace/task_env/replica_collect_thread_ops_verified.rs:3044:76
+     |
+3044 |                 == self.contexts[result.1.thread_id_spec() as int].batch.0.id(),
+     |                                                                            ^^
+
+warning: use of deprecated method `vstd::cell::PCell::<V>::id`: use `vstd::cell::pcell::PCell` or `vstd::cell::pcell_maybe_uninit::PCell` instead
+    --> /workspace/task_env/replica_collect_thread_ops_verified.rs:3103:90
+     |
+3103 |             tkn.batch_perm@@.pcell == self.contexts[tkn.thread_id_spec() as int].batch.0.id(),
+     |                                                                                          ^^
+
+warning: use of deprecated method `vstd::cell::PCell::<V>::id`: use `vstd::cell::pcell::PCell` or `vstd::cell::pcell_maybe_uninit::PCell` instead
+    --> /workspace/task_env/replica_collect_thread_ops_verified.rs:3111:76
+     |
+3111 |                 == self.contexts[result.1.thread_id_spec() as int].batch.0.id(),
+     |                                                                            ^^
+
+warning: use of deprecated method `vstd::cell::PCell::<V>::id`: use `vstd::cell::pcell::PCell` or `vstd::cell::pcell_maybe_uninit::PCell` instead
+    --> /workspace/task_env/replica_collect_thread_ops_verified.rs:3119:79
+     |
+3119 |             cell_id: Ghost(self.contexts[tkn.thread_id_spec() as int].batch.0.id()),
+     |                                                                               ^^
+
+warning: use of deprecated method `vstd::cell::PCell::<V>::id`: use `vstd::cell::pcell::PCell` or `vstd::cell::pcell_maybe_uninit::PCell` instead
+    --> /workspace/task_env/replica_collect_thread_ops_verified.rs:3161:51
+     |
+3161 |                 self.contexts[tid as int].batch.0.id(),
+     |                                                   ^^
+
+warning: use of deprecated method `vstd::cell::PCell::<V>::id`: use `vstd::cell::pcell::PCell` or `vstd::cell::pcell_maybe_uninit::PCell` instead
+    --> /workspace/task_env/replica_collect_thread_ops_verified.rs:3187:51
+     |
+3187 |                 self.contexts[tid as int].batch.0.id(),
+     |                                                   ^^
+
+warning: use of deprecated method `vstd::cell::PCell::<V>::id`: use `vstd::cell::pcell::PCell` or `vstd::cell::pcell_maybe_uninit::PCell` instead
+    --> /workspace/task_env/replica_collect_thread_ops_verified.rs:3209:37
+     |
+3209 |                     context.batch.0.id(),
+     |                                     ^^
+
+warning: use of deprecated method `vstd::cell::PCell::<V>::id`: use `vstd::cell::pcell::PCell` or `vstd::cell::pcell_maybe_uninit::PCell` instead
+    --> /workspace/task_env/replica_collect_thread_ops_verified.rs:3319:97
+     |
+3319 |                     &&& self.cell_permissions@[i]@.pcell === replica_contexts[i as int].batch.0.id()
+     |                                                                                                 ^^
+
+warning: use of deprecated method `vstd::cell::PCell::<V>::id`: use `vstd::cell::pcell::PCell` or `vstd::cell::pcell_maybe_uninit::PCell` instead
+    --> /workspace/task_env/replica_collect_thread_ops_verified.rs:3460:43
+     |
+3460 |                 equal(v@.pcell, self.data.id()) && v.mem_contents().is_init()
+     |                                           ^^
+
+warning: use of deprecated method `vstd::cell::PCell::<V>::id`: use `vstd::cell::pcell::PCell` or `vstd::cell::pcell_maybe_uninit::PCell` instead
+    --> /workspace/task_env/replica_collect_thread_ops_verified.rs:3499:52
+     |
+3499 |         &&& read_handle.perms@@.pcell == self.data.id()
+     |                                                    ^^
+
+warning: use of deprecated method `vstd::cell::PCell::<V>::id`: use `vstd::cell::pcell::PCell` or `vstd::cell::pcell_maybe_uninit::PCell` instead
+    --> /workspace/task_env/replica_collect_thread_ops_verified.rs:3505:58
+     |
+3505 |         &&& write_handle.cell_perms@@.pcell == self.data.id()
+     |                                                          ^^
+
+warning: use of deprecated associated function `vstd::cell::PCell::<V>::new`: use `vstd::cell::pcell::PCell` or `vstd::cell::pcell_maybe_uninit::PCell` instead
+    --> /workspace/task_env/replica_collect_thread_ops_verified.rs:3520:61
+     |
+3520 |         let (pcell_data, Tracked(mut pcell_token)) = PCell::new(t);
+     |                                                             ^^^
+
+warning: use of deprecated method `vstd::cell::PCell::<V>::id`: use `vstd::cell::pcell::PCell` or `vstd::cell::pcell_maybe_uninit::PCell` instead
+    --> /workspace/task_env/replica_collect_thread_ops_verified.rs:3525:52
+     |
+3525 |                     &&& equal(s@.pcell, pcell_data.id())
+     |                                                    ^^
+
+warning: use of deprecated method `vstd::cell::PCell::<V>::take`: use `vstd::cell::pcell::PCell` or `vstd::cell::pcell_maybe_uninit::PCell` instead
+    --> /workspace/task_env/replica_collect_thread_ops_verified.rs:3703:27
+     |
+3703 |         let t = self.data.take(Tracked(&mut cell_perms));
+     |                           ^^^^
+
+warning: use of deprecated method `vstd::cell::PCell::<V>::borrow`: use `vstd::cell::pcell::PCell` or `vstd::cell::pcell_maybe_uninit::PCell` instead
+    --> /workspace/task_env/replica_collect_thread_ops_verified.rs:3800:19
+     |
+3800 |         self.data.borrow(Tracked(&perm))
+     |                   ^^^^^^
+
+warning: use of deprecated method `vstd::cell::PCell::<V>::put`: use `vstd::cell::pcell::PCell` or `vstd::cell::pcell_maybe_uninit::PCell` instead
+    --> /workspace/task_env/replica_collect_thread_ops_verified.rs:3811:19
+     |
+3811 |         self.data.put(Tracked(&mut cell_perms), val);
+     |                   ^^^
+
+warning: use of deprecated method `vstd::set::Set::<A>::finite`: Every Set is always finite, so this is always true.
+    --> /workspace/task_env/replica_collect_thread_ops_verified.rs:4253:29
+     |
+4253 |         seq_to_set_rec(seq).finite(),
+     |                             ^^^^^^
+
+warning: use of deprecated method `vstd::set::Set::<A>::finite`: Every Set is always finite, so this is always true.
+    --> /workspace/task_env/replica_collect_thread_ops_verified.rs:4294:37
+     |
+4294 |         map_new_rec(dom, val).dom().finite(),
+     |                                     ^^^^^^
+
+warning: use of deprecated method `vstd::set::Set::<A>::finite`: Every Set is always finite, so this is always true.
+    --> /workspace/task_env/replica_collect_thread_ops_verified.rs:4396:24
+     |
+4396 |     &&& r_points.dom().finite()
+     |                        ^^^^^^
+
+warning: use of deprecated method `vstd::set::Set::<A>::finite`: Every Set is always finite, so this is always true.
+    --> /workspace/task_env/replica_collect_thread_ops_verified.rs:4754:19
+     |
+4754 |     &&& the_reads.finite()
+     |                   ^^^^^^
+
+warning: use of deprecated method `vstd::set::Set::<A>::finite`: Every Set is always finite, so this is always true.
+    --> /workspace/task_env/replica_collect_thread_ops_verified.rs:4832:11
+     |
+4832 |         t.finite(),
+     |           ^^^^^^
+
+warning: use of deprecated method `vstd::set::Set::<A>::finite`: Every Set is always finite, so this is always true.
+    --> /workspace/task_env/replica_collect_thread_ops_verified.rs:4837:15
+     |
+4837 |         res.0.finite(),
+     |               ^^^^^^
+
+warning: use of deprecated method `vstd::set::Set::<A>::finite`: Every Set is always finite, so this is always true.
+    --> /workspace/task_env/replica_collect_thread_ops_verified.rs:4868:24
+     |
+4868 |         r_points.dom().finite(),
+     |                        ^^^^^^
+
+warning: use of deprecated method `vstd::set::Set::<A>::finite`: Every Set is always finite, so this is always true.
+    --> /workspace/task_env/replica_collect_thread_ops_verified.rs:5231:36
+     |
+5231 |         &&& self.local_reads.dom().finite()
+     |                                    ^^^^^^
+
+warning: use of deprecated method `vstd::set::Set::<A>::finite`: Every Set is always finite, so this is always true.
+    --> /workspace/task_env/replica_collect_thread_ops_verified.rs:5232:38
+     |
+5232 |         &&& self.local_updates.dom().finite()
+     |                                      ^^^^^^
+
+warning: use of deprecated method `vstd::set::Set::<A>::finite`: Every Set is always finite, so this is always true.
+    --> /workspace/task_env/replica_collect_thread_ops_verified.rs:5233:33
+     |
+5233 |         &&& self.combiner.dom().finite()
+     |                                 ^^^^^^
+
+warning: use of deprecated method `vstd::set::Set::<A>::finite`: Every Set is always finite, so this is always true.
+    --> /workspace/task_env/replica_collect_thread_ops_verified.rs:5648:27
+     |
+5648 |         assert(cmap.dom().finite()) by {
+     |                           ^^^^^^
+
+warning: use of deprecated method `vstd::set::Set::<A>::finite`: Every Set is always finite, so this is always true.
+    --> /workspace/task_env/replica_collect_thread_ops_verified.rs:5933:27
+     |
+5933 |     when (combiners.dom().finite() && combiners.dom().len() >= 0)
+     |                           ^^^^^^
+
+warning: use of deprecated method `vstd::set::Set::<A>::finite`: Every Set is always finite, so this is always true.
+    --> /workspace/task_env/replica_collect_thread_ops_verified.rs:5936:24
+     |
+5936 |     if combiners.dom().finite() {
+     |                        ^^^^^^
+
+warning: use of deprecated method `vstd::set::Set::<A>::finite`: Every Set is always finite, so this is always true.
+    --> /workspace/task_env/replica_collect_thread_ops_verified.rs:5951:24
+     |
+5951 |     if combiners.dom().finite() {
+     |                        ^^^^^^
+
+warning: use of deprecated method `vstd::set::Set::<A>::finite`: Every Set is always finite, so this is always true.
+    --> /workspace/task_env/replica_collect_thread_ops_verified.rs:5964:25
+     |
+5964 |         combiners.dom().finite(),
+     |                         ^^^^^^
+
+warning: use of deprecated method `vstd::set::Set::<A>::finite`: Every Set is always finite, so this is always true.
+    --> /workspace/task_env/replica_collect_thread_ops_verified.rs:5980:25
+     |
+5980 |         combiners.dom().finite(),
+     |                         ^^^^^^
+
+warning: use of deprecated method `vstd::set::Set::<A>::finite`: Every Set is always finite, so this is always true.
+    --> /workspace/task_env/replica_collect_thread_ops_verified.rs:5993:25
+     |
+5993 |         combiners.dom().finite(),
+     |                         ^^^^^^
+
+warning: use of deprecated method `vstd::set::Set::<A>::finite`: Every Set is always finite, so this is always true.
+    --> /workspace/task_env/replica_collect_thread_ops_verified.rs:5995:41
+     |
+5995 |         combiner_request_ids(combiners).finite(),
+     |                                         ^^^^^^
+
+warning: use of deprecated method `vstd::set::Set::<A>::finite`: Every Set is always finite, so this is always true.
+    --> /workspace/task_env/replica_collect_thread_ops_verified.rs:6003:14
+     |
+6003 |         reqs.finite() && combiner.dom().finite(),
+     |              ^^^^^^
+
+warning: use of deprecated method `vstd::set::Set::<A>::finite`: Every Set is always finite, so this is always true.
+    --> /workspace/task_env/replica_collect_thread_ops_verified.rs:6003:41
+     |
+6003 |         reqs.finite() && combiner.dom().finite(),
+     |                                         ^^^^^^
+
+warning: use of deprecated method `vstd::set::Set::<A>::finite`: Every Set is always finite, so this is always true.
+    --> /workspace/task_env/replica_collect_thread_ops_verified.rs:6011:11
+     |
+6011 |         s.finite(),
+     |           ^^^^^^
+
+warning: use of deprecated method `vstd::set::Set::<A>::finite`: Every Set is always finite, so this is always true.
+    --> /workspace/task_env/replica_collect_thread_ops_verified.rs:6022:11
+     |
+6022 |         s.finite(),
+     |           ^^^^^^
+
+warning: use of deprecated method `vstd::set::Set::<A>::finite`: Every Set is always finite, so this is always true.
+    --> /workspace/task_env/replica_collect_thread_ops_verified.rs:6032:14
+     |
+6032 |         reqs.finite(),
+     |              ^^^^^^
+
+warning: use of deprecated method `vstd::set::Set::<A>::finite`: Every Set is always finite, so this is always true.
+    --> /workspace/task_env/replica_collect_thread_ops_verified.rs:6033:24
+     |
+6033 |         combiner.dom().finite(),
+     |                        ^^^^^^
+
+error: aborting due to 2 previous errors; 89 warnings emitted
+
+For more information about this error, try `rustc --explain E0308`.

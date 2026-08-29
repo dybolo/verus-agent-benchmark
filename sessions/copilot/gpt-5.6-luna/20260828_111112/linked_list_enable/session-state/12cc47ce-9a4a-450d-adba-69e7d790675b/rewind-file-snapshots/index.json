@@ -1,0 +1,34 @@
+{
+  "schema": 1,
+  "snapshots": [
+    {
+      "snapshotId": "4910ee75-9825-4421-b561-48f7504adcf3",
+      "eventId": "b76333db-091f-4b9d-ae20-a7d4fbaecf42",
+      "userMessage": "The file /workspace/task_env/linked_list_enable.rs cannot be verified by Verus, a verification tool for Rust programs, yet. Please add proof annotations to /workspace/task_env/linked_list_enable.rs so that it can be successfully verified by Verus, and write the resulting code with proof into a new file with the name /workspace/task_env/linked_list_enable_verified.rs. The /workspace/vstd folder is a copy of Verus' vstd definitions and helper lemmas; please feel free to check it when needed. You should KEEP editing your proof annotations until Verus shows there is no error. Preserve all existing admits and unrelated proof holes; do not add new ones. You should NOT change existing functions' pre- conditions or post-conditions; you should NOT change any executable Rust code; and you should NEVER use admit(...) or assume(...) in your code. You are also NOT allowed to create unimplemented, external-body lemma functions for any new lemma functions you add, you should provide complete proof. You are NOT allowed to create new axiom functions or change the pre/post conditions of existing axiom functions, and you should NEVER add external_body tag to any existing non-external-body functions. I have installed Verus locally; you can just run verus. Before you are done, MAKE SURE to run lynette on both the original /workspace/task_env/linked_list_enable.rs and the generated verified file to double check whether you have made any illegal changes (fix those if you did).\n",
+      "timestamp": "2026-08-28T12:34:43.258Z",
+      "files": {
+        "b16e08aa34858b714fa2cb9962b9b08a": {
+          "path": "/workspace/task_env/linked_list_enable_verified.rs",
+          "preimage": {
+            "kind": "absent"
+          },
+          "postimage": {
+            "kind": "content",
+            "contentHash": "6be5b4bf51cebf96868c7060fe10f3475636718d134a24e892b6bbdbf2b93886",
+            "resolvedPath": "/workspace/task_env/linked_list_enable_verified.rs",
+            "encodedPath": {
+              "encoding": "unix-bytes",
+              "data": "2f776f726b73706163652f7461736b5f656e762f6c696e6b65645f6c6973745f656e61626c655f76657269666965642e7273"
+            }
+          },
+          "linesAdded": 17948,
+          "linesRemoved": 0
+        }
+      },
+      "backupFiles": [],
+      "fileCount": 1,
+      "linesAdded": 17948,
+      "linesRemoved": 0
+    }
+  ]
+}

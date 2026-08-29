@@ -1,0 +1,85 @@
+{
+  "schema": 1,
+  "snapshots": [
+    {
+      "snapshotId": "0290d98b-c641-49ea-90ae-aaec447d97ce",
+      "eventId": "1d775949-be96-419a-bba0-b3dad317ac0d",
+      "userMessage": "The file /workspace/task_env/cyclicbuffer_reader_guard_inductive.rs cannot be verified by Verus, a verification tool for Rust programs, yet. Please add proof annotations to /workspace/task_env/cyclicbuffer_reader_guard_inductive.rs so that it can be successfully verified by Verus, and write the resulting code with proof into a new file with the name /workspace/task_env/cyclicbuffer_reader_guard_inductive_verified.rs. The /workspace/vstd folder is a copy of Verus' vstd definitions and helper lemmas; please feel free to check it when needed. You should KEEP editing your proof annotations until Verus shows there is no error. Preserve all existing admits and unrelated proof holes; do not add new ones. You should NOT change existing functions' pre- conditions or post-conditions; you should NOT change any executable Rust code; and you should NEVER use admit(...) or assume(...) in your code. You are also NOT allowed to create unimplemented, external-body lemma functions for any new lemma functions you add, you should provide complete proof. You are NOT allowed to create new axiom functions or change the pre/post conditions of existing axiom functions, and you should NEVER add external_body tag to any existing non-external-body functions. I have installed Verus locally; you can just run verus. Before you are done, MAKE SURE to run lynette on both the original /workspace/task_env/cyclicbuffer_reader_guard_inductive.rs and the generated verified file to double check whether you have made any illegal changes (fix those if you did).\n",
+      "timestamp": "2026-08-28T15:12:13.421Z",
+      "files": {
+        "f9af50ac563370e7de73162cab144865": {
+          "path": "/workspace/task_env/cyclicbuffer_reader_guard_inductive_verified.rs",
+          "preimage": {
+            "kind": "absent"
+          },
+          "postimage": {
+            "kind": "content",
+            "contentHash": "a0c791ceaeda8ed303318d872f1380731e43ce0470d5660244a18448656a71b2",
+            "resolvedPath": "/workspace/task_env/cyclicbuffer_reader_guard_inductive_verified.rs",
+            "encodedPath": {
+              "encoding": "unix-bytes",
+              "data": "2f776f726b73706163652f7461736b5f656e762f6379636c69636275666665725f7265616465725f67756172645f696e647563746976655f76657269666965642e7273"
+            }
+          },
+          "linesAdded": 795,
+          "linesRemoved": 0
+        },
+        "3248a740412cd534ab5b08b9b73d89aa": {
+          "path": "/tmp/verus.out",
+          "preimage": {
+            "kind": "absent"
+          },
+          "postimage": {
+            "kind": "content",
+            "contentHash": "51fbc708b213dee9b631a83de869dfe994eb9465eb4fa9141751015a333444b9",
+            "resolvedPath": "/tmp/verus.out",
+            "encodedPath": {
+              "encoding": "unix-bytes",
+              "data": "2f746d702f76657275732e6f7574"
+            }
+          },
+          "linesAdded": 181,
+          "linesRemoved": 0
+        },
+        "04dcf332fce13ed8049a3f5b789b3ab1": {
+          "path": "/tmp/lynette_orig.out",
+          "preimage": {
+            "kind": "absent"
+          },
+          "postimage": {
+            "kind": "content",
+            "contentHash": "9f1ae6738b73f6c714278f20fabd7f8aab5f38215ec960e4d4ab0db945c4c376",
+            "resolvedPath": "/tmp/lynette_orig.out",
+            "encodedPath": {
+              "encoding": "unix-bytes",
+              "data": "2f746d702f6c796e657474655f6f7269672e6f7574"
+            }
+          },
+          "linesAdded": 2,
+          "linesRemoved": 0
+        },
+        "078beefd3e4ca886ea45ed0b76a7c802": {
+          "path": "/tmp/lynette_verified.out",
+          "preimage": {
+            "kind": "absent"
+          },
+          "postimage": {
+            "kind": "content",
+            "contentHash": "9f1ae6738b73f6c714278f20fabd7f8aab5f38215ec960e4d4ab0db945c4c376",
+            "resolvedPath": "/tmp/lynette_verified.out",
+            "encodedPath": {
+              "encoding": "unix-bytes",
+              "data": "2f746d702f6c796e657474655f76657269666965642e6f7574"
+            }
+          },
+          "linesAdded": 2,
+          "linesRemoved": 0
+        }
+      },
+      "backupFiles": [],
+      "fileCount": 4,
+      "linesAdded": 980,
+      "linesRemoved": 0
+    }
+  ]
+}

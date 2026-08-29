@@ -1,0 +1,8 @@
+id: d8828ff3-18fc-466d-98f7-c82cc16af0ae
+cwd: /workspace
+client_name: github/cli
+name: The file /workspace/task_env/rwlock_try_read.rs cannot be verified by Verus, a verification tool for Rust programs, yet. Please add proof annotations to /workspace/task_env/rwlock_try_read.rs so that it can be successfully verified by Verus, and write the resulting code with proof into a new file with the name /workspace/task_env/rwlock_try_read_verified.rs. The /workspace/vstd folder is a copy of Verus' vstd definitions and helper lemmas; please feel free to check it when needed. You should KEE...
+user_named: false
+summary_count: 0
+created_at: 2026-08-29T11:46:18.696Z
+updated_at: 2026-08-29T11:46:22.754Z

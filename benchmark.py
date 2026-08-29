@@ -415,6 +415,7 @@ def run_single_job(
 ) -> None:
     """Run a single agent on a single task and update its persisted state."""
     task = task_result.name
+    task_result.timed_out = False
     timestamp = run.timestamp
     task_base = task.removesuffix(".rs")
     solution_filename = f"{task_base}_verified.rs"

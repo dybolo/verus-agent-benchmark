@@ -66,9 +66,13 @@ export COPILOT_PROVIDER_BASE_URL="http://localhost:11434/v1"
 export COPILOT_MODEL=gpt-5.6-luna
 export COPILOT_HOME="$SESSION"
 export XDG_CACHE_HOME="$SESSION/cache"
+export COPILOT_OTEL_ENABLED=true
+export COPILOT_OTEL_EXPORTER_TYPE=file
+export COPILOT_OTEL_FILE_EXPORTER_PATH="$SESSION/otel.jsonl"
 mkdir -p "$XDG_CACHE_HOME"
 
 copilot --autopilot -p "$TASK_PROMPT" --allow-all-tools --allow-all-paths \
   --excluded-tools='web_search,web_fetch' \
   --deny-tool='shell(curl)' --deny-tool='shell(curl:*)' \
-  --deny-tool='shell(wget)' --deny-tool='shell(wget:*)' -s
+  --deny-tool='shell(wget)' --deny-tool='shell(wget:*)' \
+  --output-format json > "$SESSION/session.jsonl"

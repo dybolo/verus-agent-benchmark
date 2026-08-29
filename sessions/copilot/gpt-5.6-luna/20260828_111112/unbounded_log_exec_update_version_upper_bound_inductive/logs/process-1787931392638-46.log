@@ -1,0 +1,19 @@
+2026-08-28T15:36:32.641Z [WARNING] Model "gpt-5.6-luna" is not in the built-in catalog. Using defaults for: prompt tokens (COPILOT_PROVIDER_MAX_PROMPT_TOKENS), output tokens (COPILOT_PROVIDER_MAX_OUTPUT_TOKENS). Run `copilot help providers` for configuration details.
+2026-08-28T15:36:32.642Z [INFO] Shell completions: no supported shell detected, skipping
+2026-08-28T15:36:32.646Z [INFO] Session indexing debug: SESSION_INDEXING=true, repository=undefined
+2026-08-28T15:36:32.649Z [INFO] [managedSettings] device MDM: no policy present on this device
+2026-08-28T15:36:32.649Z [INFO] [managedSettings] server policy fetch skipped: no authenticated GitHub host available
+2026-08-28T15:36:32.649Z [INFO] [managedSettings] effective policy resolved: source=none, bypassDisabled=false, serverFetchFailed=false
+2026-08-28T15:36:32.674Z [INFO] [managedSettings] applied: no bypass restriction in force (managed policy absent)
+2026-08-28T15:36:32.759Z [INFO] Workspace initialized: bfafe3ba-a711-4de7-85b7-c9138a12fed4 (checkpoints: 0)
+2026-08-28T15:36:32.773Z [INFO] Starting Copilot CLI: 1.0.80
+2026-08-28T15:36:32.774Z [INFO] Node.js version: v24.18.1
+2026-08-28T15:36:32.946Z [INFO] Using custom provider: type=openai, baseUrl=http://localhost:11434/v1, wireApi=completions
+2026-08-28T15:36:32.947Z [INFO]  
+2026-08-28T15:36:32.950Z [INFO] --- Start of group: Custom provider configured settings: ---
+2026-08-28T15:36:32.950Z [INFO] --- End of group ---
+2026-08-28T15:36:32.998Z [INFO] --- Start of group: Completion request configuration:  ---
+2026-08-28T15:36:33.000Z [INFO] --- End of group ---
+2026-08-28T15:36:48.147Z [INFO] Successfully downloaded package, restart to update to version 1.0.81
+2026-08-28T15:36:48.148Z [INFO] Downloading updated linux-x64 binary...
+2026-08-28T15:37:01.672Z [WARNING] Failed to update binary: Error: EACCES: permission denied, mkdir '/usr/lib/node_modules/@github/copilot/node_modules/@github/copilot-linux-x64/.copilot-update-1787931421669'
