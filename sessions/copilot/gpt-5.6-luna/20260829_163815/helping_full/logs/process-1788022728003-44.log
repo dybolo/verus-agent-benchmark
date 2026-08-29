@@ -1,0 +1,46 @@
+2026-08-29T16:58:48.006Z [WARNING] Model "gpt-5.6-luna" is not in the built-in catalog. Using defaults for: prompt tokens (COPILOT_PROVIDER_MAX_PROMPT_TOKENS), output tokens (COPILOT_PROVIDER_MAX_OUTPUT_TOKENS). Run `copilot help providers` for configuration details.
+2026-08-29T16:58:48.007Z [INFO] Shell completions: no supported shell detected, skipping
+2026-08-29T16:58:48.011Z [INFO] [rust:otel] OpenTelemetry enabled: exporter=file, source=github.copilot
+2026-08-29T16:58:48.011Z [INFO] Session indexing debug: SESSION_INDEXING=true, repository=undefined
+2026-08-29T16:58:48.014Z [INFO] [managedSettings] device MDM: no policy present on this device
+2026-08-29T16:58:48.014Z [INFO] [managedSettings] server policy fetch skipped: no authenticated GitHub host available
+2026-08-29T16:58:48.014Z [INFO] [managedSettings] effective policy resolved: source=none, bypassDisabled=false, serverFetchFailed=false
+2026-08-29T16:58:48.014Z [INFO] [rust:otel] OpenTelemetry configured from managed settings: exporter=file, source=github.copilot
+2026-08-29T16:58:48.039Z [INFO] [managedSettings] applied: no bypass restriction in force (managed policy absent)
+2026-08-29T16:58:48.054Z [INFO] [rust:otel] OpenTelemetry SDK initialized successfully
+2026-08-29T16:58:48.054Z [INFO] [rust:otel] OpenTelemetry tracker created for session 6b720ace-84ae-46a8-831a-983850e64c46
+2026-08-29T16:58:48.830Z [INFO] Workspace initialized: 6b720ace-84ae-46a8-831a-983850e64c46 (checkpoints: 0)
+2026-08-29T16:58:48.861Z [INFO] Starting Copilot CLI: 1.0.80
+2026-08-29T16:58:48.861Z [INFO] Node.js version: v24.18.1
+2026-08-29T16:58:49.100Z [INFO] Using custom provider: type=openai, baseUrl=http://localhost:11434/v1, wireApi=completions
+2026-08-29T16:58:49.100Z [INFO]  
+2026-08-29T16:58:49.104Z [INFO] --- Start of group: Custom provider configured settings: ---
+2026-08-29T16:58:49.104Z [INFO] --- End of group ---
+2026-08-29T16:58:49.162Z [INFO] --- Start of group: Completion request configuration:  ---
+2026-08-29T16:58:49.164Z [INFO] --- End of group ---
+2026-08-29T16:59:30.218Z [INFO] Successfully downloaded package, restart to update to version 1.0.81
+2026-08-29T16:59:30.219Z [INFO] Downloading updated linux-x64 binary...
+2026-08-29T17:00:42.718Z [WARNING] Failed to update binary: Error: EACCES: permission denied, mkdir '/usr/lib/node_modules/@github/copilot/node_modules/@github/copilot-linux-x64/.copilot-update-1788022842715'
+2026-08-29T17:10:15.451Z [INFO] Using custom provider: type=openai, baseUrl=http://localhost:11434/v1, wireApi=completions
+2026-08-29T17:10:15.452Z [INFO]  
+2026-08-29T17:10:15.457Z [INFO] --- Start of group: Custom provider configured settings: ---
+2026-08-29T17:10:15.457Z [INFO] --- End of group ---
+2026-08-29T17:10:15.576Z [INFO] --- Start of group: Completion request configuration:  ---
+2026-08-29T17:10:15.578Z [INFO] --- End of group ---
+2026-08-29T17:10:25.661Z [INFO] SessionAgentExecutor.execute() called for "general-purpose" (toolCallId=call_XP1hY0WBqX6YT9ZcDnQJ1bSY)
+2026-08-29T17:10:25.661Z [WARNING] Allowed model policy requested without a cwd; no models will be allowed.
+2026-08-29T17:10:25.677Z [INFO] [managedSettings] applied: no bypass restriction in force (managed policy absent)
+2026-08-29T17:10:25.785Z [INFO] Using custom provider: type=openai, baseUrl=http://localhost:11434/v1, wireApi=completions
+2026-08-29T17:10:25.785Z [INFO]  
+2026-08-29T17:10:25.786Z [INFO] --- Start of group: Custom provider configured settings: ---
+2026-08-29T17:10:25.786Z [INFO] --- End of group ---
+2026-08-29T17:10:25.807Z [INFO] --- Start of group: Completion request configuration:  ---
+2026-08-29T17:10:25.808Z [INFO] --- End of group ---
+2026-08-29T17:10:45.695Z [INFO] SessionAgentExecutor.execute() called for "general-purpose" (toolCallId=call_UFskaKyGOrgneJnSmkqEumvw)
+2026-08-29T17:10:45.706Z [INFO] [managedSettings] applied: no bypass restriction in force (managed policy absent)
+2026-08-29T17:10:45.840Z [INFO] Using custom provider: type=openai, baseUrl=http://localhost:11434/v1, wireApi=completions
+2026-08-29T17:10:45.840Z [INFO]  
+2026-08-29T17:10:45.841Z [INFO] --- Start of group: Custom provider configured settings: ---
+2026-08-29T17:10:45.841Z [INFO] --- End of group ---
+2026-08-29T17:10:45.859Z [INFO] --- Start of group: Completion request configuration:  ---
+2026-08-29T17:10:45.860Z [INFO] --- End of group ---

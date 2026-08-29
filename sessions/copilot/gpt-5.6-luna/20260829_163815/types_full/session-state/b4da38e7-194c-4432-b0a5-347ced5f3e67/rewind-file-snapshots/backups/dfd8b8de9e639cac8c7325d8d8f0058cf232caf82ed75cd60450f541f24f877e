@@ -1,0 +1,1188 @@
+error: precondition not satisfied
+    --> /workspace/task_env/types_full_verified.rs:2298:36
+     |
+2298 |                 let tracked heap = g_opt.tracked_unwrap();
+     |                                    ^^^^^^^^^^^^^^^^^^^^^^
+     |
+    ::: vstd/std_specs/option.rs:31:13
+     |
+  31 |             self.is_Some(),
+     |             -------------- failed precondition
+
+error: postcondition not satisfied
+    --> /workspace/task_env/types_full_verified.rs:3898:17
+     |
+3898 |           ensures heap.wf(), heap.is_in(*local),
+     |                   ^^^^^^^^^ failed this postcondition
+...
+3906 | /         HeapPtr {
+3907 | |             heap_ptr: h,
+3908 | |             heap_id: Ghost(local.heap_id),
+3909 | |         }
+     | |_________- at the end of the function body
+
+note: automatically chose triggers for this expression:
+    --> /workspace/task_env/types_full_verified.rs:6576:9
+     |
+6576 | /         forall |pid: PageId|
+6577 | |             self.pages.dom().contains(pid) && pid.idx == SLICES_PER_SEGMENT ==>
+6578 | |               !self.pages[pid].is_used
+6579 | |               && self.pages[pid].offset.is_none()
+     | |_________________________________________________^
+
+note:   trigger 1 of 1:
+    --> /workspace/task_env/types_full_verified.rs:6577:13
+     |
+6577 |             self.pages.dom().contains(pid) && pid.idx == SLICES_PER_SEGMENT ==>
+     |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+note: automatically chose triggers for this expression:
+    --> /workspace/task_env/types_full_verified.rs:6735:9
+     |
+6735 |         forall |i| 0 <= i < self.unused_lists.len() ==> valid_ll(self.pages, self.unused_dlist_headers[i], self.unused_lists[i])
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+note:   trigger 1 of 2:
+    --> /workspace/task_env/types_full_verified.rs:6735:78
+     |
+6735 |         forall |i| 0 <= i < self.unused_lists.len() ==> valid_ll(self.pages, self.unused_dlist_headers[i], self.unused_lists[i])
+     |                                                                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+note:   trigger 2 of 2:
+    --> /workspace/task_env/types_full_verified.rs:6735:108
+     |
+6735 |         forall |i| 0 <= i < self.unused_lists.len() ==> valid_ll(self.pages, self.unused_dlist_headers[i], self.unused_lists[i])
+     |                                                                                                            ^^^^^^^^^^^^^^^^^^^^
+
+note: automatically chose triggers for this expression:
+    --> /workspace/task_env/types_full_verified.rs:6752:9
+     |
+6752 |         forall |i| 0 <= i < self.used_lists.len() ==> valid_ll(self.pages, self.used_dlist_headers[i], self.used_lists[i])
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+note:   trigger 1 of 2:
+    --> /workspace/task_env/types_full_verified.rs:6752:76
+     |
+6752 |         forall |i| 0 <= i < self.used_lists.len() ==> valid_ll(self.pages, self.used_dlist_headers[i], self.used_lists[i])
+     |                                                                            ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+note:   trigger 2 of 2:
+    --> /workspace/task_env/types_full_verified.rs:6752:104
+     |
+6752 |         forall |i| 0 <= i < self.used_lists.len() ==> valid_ll(self.pages, self.used_dlist_headers[i], self.used_lists[i])
+     |                                                                                                        ^^^^^^^^^^^^^^^^^^
+
+note: automatically chose triggers for this expression:
+    --> /workspace/task_env/types_full_verified.rs:7569:20
+     |
+7569 |               assert (forall |pid: PageId| pid.segment_id == page_id.segment_id &&
+     |  ____________________^
+7570 | |                     page_id.idx <= pid.idx < page_id.idx + count
+7571 | |                     ==> pre.pages.dom().contains(pid)
+7572 | |                 );
+     | |_________________^
+
+note:   trigger 1 of 1:
+    --> /workspace/task_env/types_full_verified.rs:7571:25
+     |
+7571 |                     ==> pre.pages.dom().contains(pid)
+     |                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+note: automatically chose triggers for this expression:
+    --> /workspace/task_env/types_full_verified.rs:7573:20
+     |
+7573 |               assert (forall |pid: PageId| pid.segment_id == page_id.segment_id &&
+     |  ____________________^
+7574 | |                     page_id.idx <= pid.idx < page_id.idx + count
+7575 | |                     ==> !pre.pages[pid].is_used
+7576 | |                 );
+     | |_________________^
+
+note:   trigger 1 of 1:
+    --> /workspace/task_env/types_full_verified.rs:7575:26
+     |
+7575 |                     ==> !pre.pages[pid].is_used
+     |                          ^^^^^^^^^^^^^^
+
+note: automatically chose triggers for this expression:
+    --> /workspace/task_env/types_full_verified.rs:7612:20
+     |
+7612 |               assert (forall |pid: PageId| pid.segment_id == segment_id &&
+     |  ____________________^
+7613 | |                     0 <= pid.idx < count
+7614 | |                     ==> pre.pages.dom().contains(pid)
+7615 | |                 );
+     | |_________________^
+
+note:   trigger 1 of 1:
+    --> /workspace/task_env/types_full_verified.rs:7614:25
+     |
+7614 |                     ==> pre.pages.dom().contains(pid)
+     |                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+note: automatically chose triggers for this expression:
+    --> /workspace/task_env/types_full_verified.rs:7616:20
+     |
+7616 |               assert (forall |pid: PageId| pid.segment_id == segment_id &&
+     |  ____________________^
+7617 | |                     0 <= pid.idx < count
+7618 | |                     ==> !pre.pages[pid].is_used
+7619 | |                 );
+     | |_________________^
+
+note:   trigger 1 of 1:
+    --> /workspace/task_env/types_full_verified.rs:7618:26
+     |
+7618 |                     ==> !pre.pages[pid].is_used
+     |                          ^^^^^^^^^^^^^^
+
+note: automatically chose triggers for this expression:
+    --> /workspace/task_env/types_full_verified.rs:7767:20
+     |
+7767 |               assert (forall |pid: PageId| pid.segment_id == page_id.segment_id &&
+     |  ____________________^
+7768 | |                     page_id.idx <= pid.idx < page_id.idx + count
+7769 | |                     ==> pre.pages.dom().contains(pid)
+7770 | |                 );
+     | |_________________^
+
+note:   trigger 1 of 1:
+    --> /workspace/task_env/types_full_verified.rs:7769:25
+     |
+7769 |                     ==> pre.pages.dom().contains(pid)
+     |                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+note: automatically chose triggers for this expression:
+    --> /workspace/task_env/types_full_verified.rs:7771:20
+     |
+7771 |               assert (forall |pid: PageId| pid.segment_id == page_id.segment_id &&
+     |  ____________________^
+7772 | |                     page_id.idx <= pid.idx < page_id.idx + count
+7773 | |                     ==> !pre.pages[pid].is_used
+7774 | |                 );
+     | |_________________^
+
+note:   trigger 1 of 1:
+    --> /workspace/task_env/types_full_verified.rs:7773:26
+     |
+7773 |                     ==> !pre.pages[pid].is_used
+     |                          ^^^^^^^^^^^^^^
+
+note: automatically chose triggers for this expression:
+    --> /workspace/task_env/types_full_verified.rs:7775:20
+     |
+7775 |               assert (forall |pid: PageId| pid.segment_id == page_id.segment_id &&
+     |  ____________________^
+7776 | |                     page_id.idx <= pid.idx < page_id.idx + count
+7777 | |                     ==> pre.pages[pid].offset.is_some()
+7778 | |                         && pre.pages[pid].offset.unwrap() == pid.idx - page_id.idx
+7779 | |                 );
+     | |_________________^
+
+note:   trigger 1 of 1:
+    --> /workspace/task_env/types_full_verified.rs:7777:25
+     |
+7777 |                     ==> pre.pages[pid].offset.is_some()
+     |                         ^^^^^^^^^^^^^^
+
+note: automatically chose triggers for this expression:
+    --> /workspace/task_env/types_full_verified.rs:7808:20
+     |
+7808 |               assert (forall |pid: PageId| pid.segment_id == page_id.segment_id &&
+     |  ____________________^
+7809 | |                     page_id.idx <= pid.idx < page_id.idx + count
+7810 | |                     ==> pre.pages.dom().contains(pid)
+7811 | |                 );
+     | |_________________^
+
+note:   trigger 1 of 1:
+    --> /workspace/task_env/types_full_verified.rs:7810:25
+     |
+7810 |                     ==> pre.pages.dom().contains(pid)
+     |                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+note: automatically chose triggers for this expression:
+    --> /workspace/task_env/types_full_verified.rs:7812:20
+     |
+7812 |               assert (forall |pid: PageId| pid.segment_id == page_id.segment_id &&
+     |  ____________________^
+7813 | |                     page_id.idx <= pid.idx < page_id.idx + count
+7814 | |                     ==> pre.pages[pid].is_used
+7815 | |                 );
+     | |_________________^
+
+note:   trigger 1 of 1:
+    --> /workspace/task_env/types_full_verified.rs:7814:25
+     |
+7814 |                     ==> pre.pages[pid].is_used
+     |                         ^^^^^^^^^^^^^^
+
+note: automatically chose triggers for this expression:
+    --> /workspace/task_env/types_full_verified.rs:7816:20
+     |
+7816 |               assert (forall |pid: PageId| pid.segment_id == page_id.segment_id &&
+     |  ____________________^
+7817 | |                     page_id.idx <= pid.idx < page_id.idx + count
+7818 | |                     ==> pre.pages[pid].offset.is_some()
+7819 | |                         && pre.pages[pid].offset.unwrap() == pid.idx - page_id.idx
+7820 | |                 );
+     | |_________________^
+
+note:   trigger 1 of 1:
+    --> /workspace/task_env/types_full_verified.rs:7818:25
+     |
+7818 |                     ==> pre.pages[pid].offset.is_some()
+     |                         ^^^^^^^^^^^^^^
+
+note: automatically chose triggers for this expression:
+   --> /workspace/task_env/types_full_verified.rs:691:13
+    |
+691 |     ensures forall |id: SegmentId| s.contains(id) ==> id.uniq < segment_u_max(s) + 1,
+    |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+note:   trigger 1 of 1:
+   --> /workspace/task_env/types_full_verified.rs:691:36
+    |
+691 |     ensures forall |id: SegmentId| s.contains(id) ==> id.uniq < segment_u_max(s) + 1,
+    |                                    ^^^^^^^^^^^^^^
+
+note: automatically chose triggers for this expression:
+   --> /workspace/task_env/types_full_verified.rs:703:13
+    |
+703 |     ensures forall |id: SegmentId| s.contains(id) ==> id.uniq != segment_get_unused_uniq_field(s)
+    |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+note:   trigger 1 of 1:
+   --> /workspace/task_env/types_full_verified.rs:703:36
+    |
+703 |     ensures forall |id: SegmentId| s.contains(id) ==> id.uniq != segment_get_unused_uniq_field(s)
+    |                                    ^^^^^^^^^^^^^^
+
+note: automatically chose triggers for this expression:
+   --> /workspace/task_env/types_full_verified.rs:721:13
+    |
+721 |     ensures forall |id: HeapId| s.contains(id) ==> id.uniq < heap_u_max(s) + 1,
+    |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+note:   trigger 1 of 1:
+   --> /workspace/task_env/types_full_verified.rs:721:33
+    |
+721 |     ensures forall |id: HeapId| s.contains(id) ==> id.uniq < heap_u_max(s) + 1,
+    |                                 ^^^^^^^^^^^^^^
+
+note: automatically chose triggers for this expression:
+   --> /workspace/task_env/types_full_verified.rs:733:13
+    |
+733 |     ensures forall |id: HeapId| s.contains(id) ==> id.uniq != heap_get_unused_uniq_field(s)
+    |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+note:   trigger 1 of 1:
+   --> /workspace/task_env/types_full_verified.rs:733:33
+    |
+733 |     ensures forall |id: HeapId| s.contains(id) ==> id.uniq != heap_get_unused_uniq_field(s)
+    |                                 ^^^^^^^^^^^^^^
+
+note: automatically chose triggers for this expression:
+    --> /workspace/task_env/types_full_verified.rs:1214:20
+     |
+1214 |               require(forall |pid: PageId| page_map.dom().contains(pid)
+     |  ____________________^
+1215 | |               <==> (pid.segment_id == page_id.segment_id
+1216 | |                   && page_id.idx <= pid.idx < page_id.idx + n_slices));
+     | |______________________________________________________________________^
+
+note:   trigger 1 of 1:
+    --> /workspace/task_env/types_full_verified.rs:1214:42
+     |
+1214 |             require(forall |pid: PageId| page_map.dom().contains(pid)
+     |                                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+note: automatically chose triggers for this expression:
+    --> /workspace/task_env/types_full_verified.rs:1217:20
+     |
+1217 |               require(forall |pid: PageId| page_map.dom().contains(pid) ==>
+     |  ____________________^
+1218 | |                 page_map[pid].offset + page_id.idx == pid.idx);
+     | |______________________________________________________________^
+
+note:   trigger 1 of 1:
+    --> /workspace/task_env/types_full_verified.rs:1217:42
+     |
+1217 |             require(forall |pid: PageId| page_map.dom().contains(pid) ==>
+     |                                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+note: automatically chose triggers for this expression:
+    --> /workspace/task_env/types_full_verified.rs:1219:20
+     |
+1219 |               require(forall |pid: PageId| page_map.dom().contains(pid) ==>
+     |  ____________________^
+1220 | |                 !page_map[pid].is_enabled);
+     | |__________________________________________^
+
+note:   trigger 1 of 1:
+    --> /workspace/task_env/types_full_verified.rs:1219:42
+     |
+1219 |             require(forall |pid: PageId| page_map.dom().contains(pid) ==>
+     |                                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+note: automatically chose triggers for this expression:
+    --> /workspace/task_env/types_full_verified.rs:1221:20
+     |
+1221 |               require(forall |pid: PageId| page_map.dom().contains(pid) ==>
+     |  ____________________^
+1222 | |                 page_map[pid].num_blocks == 0);
+     | |______________________________________________^
+
+note:   trigger 1 of 1:
+    --> /workspace/task_env/types_full_verified.rs:1221:42
+     |
+1221 |             require(forall |pid: PageId| page_map.dom().contains(pid) ==>
+     |                                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+note: automatically chose triggers for this expression:
+    --> /workspace/task_env/types_full_verified.rs:1267:20
+     |
+1267 |               require(forall |pid: PageId| page_map.dom().contains(pid)
+     |  ____________________^
+1268 | |               <==> (pid.segment_id == page_id.segment_id
+1269 | |                   && page_id.idx <= pid.idx < page_id.idx + n_slices));
+     | |______________________________________________________________________^
+
+note:   trigger 1 of 1:
+    --> /workspace/task_env/types_full_verified.rs:1267:42
+     |
+1267 |             require(forall |pid: PageId| page_map.dom().contains(pid)
+     |                                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+note: automatically chose triggers for this expression:
+    --> /workspace/task_env/types_full_verified.rs:1271:20
+     |
+1271 |               require(forall |pid: PageId| page_map.dom().contains(pid) ==>
+     |  ____________________^
+1272 | |                 psa_map[pid] == page_map[pid].shared_access);
+     | |____________________________________________________________^
+
+note:   trigger 1 of 1:
+    --> /workspace/task_env/types_full_verified.rs:1272:17
+     |
+1272 |                 psa_map[pid] == page_map[pid].shared_access);
+     |                 ^^^^^^^^^^^^
+
+note: automatically chose triggers for this expression:
+    --> /workspace/task_env/types_full_verified.rs:1273:20
+     |
+1273 |               require(forall |pid: PageId| page_map.dom().contains(pid) ==>
+     |  ____________________^
+1274 | |                 page_map[pid].offset + page_id.idx == pid.idx);
+     | |______________________________________________________________^
+
+note:   trigger 1 of 1:
+    --> /workspace/task_env/types_full_verified.rs:1273:42
+     |
+1273 |             require(forall |pid: PageId| page_map.dom().contains(pid) ==>
+     |                                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+note: automatically chose triggers for this expression:
+    --> /workspace/task_env/types_full_verified.rs:1276:20
+     |
+1276 |               require(forall |pid: PageId| page_map.dom().contains(pid) ==>
+     |  ____________________^
+1277 | |                 ts.pages.dom().contains(pid) && !ts.pages[pid].is_enabled);
+     | |__________________________________________________________________________^
+
+note:   trigger 1 of 1:
+    --> /workspace/task_env/types_full_verified.rs:1276:42
+     |
+1276 |             require(forall |pid: PageId| page_map.dom().contains(pid) ==>
+     |                                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+note: automatically chose triggers for this expression:
+    --> /workspace/task_env/types_full_verified.rs:1279:20
+     |
+1279 |               require(forall |pid: PageId| page_map.dom().contains(pid) ==>
+     |  ____________________^
+1280 | |                 page_map[pid] == PageState {
+1281 | |                     is_enabled: true,
+1282 | |                     shared_access: psa_map[pid],
+1283 | |                     .. ts.pages[pid]
+1284 | |                 });
+     | |__________________^
+
+note:   trigger 1 of 1:
+    --> /workspace/task_env/types_full_verified.rs:1280:17
+     |
+1280 |                 page_map[pid] == PageState {
+     |                 ^^^^^^^^^^^^^
+
+note: automatically chose triggers for this expression:
+    --> /workspace/task_env/types_full_verified.rs:1375:21
+     |
+1375 |               require forall |block_id: BlockId| blocks.dom().contains(block_id) ==>
+     |  _____________________^
+1376 | |                 block_id.page_id == page_id;
+     | |___________________________________________^
+
+note:   trigger 1 of 1:
+    --> /workspace/task_env/types_full_verified.rs:1375:48
+     |
+1375 |             require forall |block_id: BlockId| blocks.dom().contains(block_id) ==>
+     |                                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+note: automatically chose triggers for this expression:
+    --> /workspace/task_env/types_full_verified.rs:1483:21
+     |
+1483 |               require forall |pid: PageId|
+     |  _____________________^
+1484 | |                   page_id.range_from(0, n_slices as int).contains(pid) ==>
+1485 | |                     !ts.pages[pid].is_enabled;
+     | |_____________________________________________^
+
+note:   trigger 1 of 1:
+    --> /workspace/task_env/types_full_verified.rs:1484:19
+     |
+1484 |                   page_id.range_from(0, n_slices as int).contains(pid) ==>
+     |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+note: automatically chose triggers for this expression:
+    --> /workspace/task_env/types_full_verified.rs:756:1
+     |
+ 756 | / tokenized_state_machine!{ Mim {
+ 757 | |     fields {
+...    |
+2098 | | }}
+     | |__^
+     |
+     = note: this note originates in the macro `tokenized_state_machine` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+note:   trigger 1 of 1:
+    --> /workspace/task_env/types_full_verified.rs:1488:19
+     |
+1488 |                   page_id.range_from(0, n_slices as int).contains(pid) ==>
+     |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+note: automatically chose triggers for this expression:
+    --> /workspace/task_env/types_full_verified.rs:1549:9
+     |
+1549 | ...   (forall |heap_id: HeapId| self.reserved_uniq.contains(heap_id) ==> heap_id.id == 0 && heap_id.provenance == Provenance::null())
+     |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+note:   trigger 1 of 1:
+    --> /workspace/task_env/types_full_verified.rs:1549:35
+     |
+1549 | ...   (forall |heap_id: HeapId| self.reserved_uniq.contains(heap_id) ==> heap_id.id == 0 && heap_id.provenance == Provenance::null())
+     |                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+note: automatically chose triggers for this expression:
+    --> /workspace/task_env/types_full_verified.rs:1554:9
+     |
+1554 | /         forall |hid1: HeapId, hid2: HeapId|
+1555 | |             self.reserved_uniq.contains(hid1)
+1556 | |             && self.heap_shared_access.dom().contains(hid2)
+1557 | |             ==> hid1.uniq != hid2.uniq
+     | |______________________________________^
+
+note:   trigger 1 of 1:
+    --> /workspace/task_env/types_full_verified.rs:1555:13
+     |
+1555 |             self.reserved_uniq.contains(hid1)
+     |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+1556 |             && self.heap_shared_access.dom().contains(hid2)
+     |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+note: automatically chose triggers for this expression:
+    --> /workspace/task_env/types_full_verified.rs:1815:9
+     |
+1815 | /         forall |bid1: BlockId, bid2: BlockId|
+1816 | |             self.block.dom().contains(bid1)
+1817 | |             && self.block.dom().contains(bid2)
+1818 | |             && bid1.page_id == bid2.page_id
+1819 | |             && bid1.idx == bid2.idx
+1820 | |             ==> bid1 == bid2
+     | |____________________________^
+
+note:   trigger 1 of 1:
+    --> /workspace/task_env/types_full_verified.rs:1816:13
+     |
+1816 |             self.block.dom().contains(bid1)
+     |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+1817 |             && self.block.dom().contains(bid2)
+     |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+note: automatically chose triggers for this expression:
+    --> /workspace/task_env/types_full_verified.rs:1839:9
+     |
+1839 | /         forall |thread_id| self.thread_local_state.dom().contains(thread_id) ==>
+1840 | |             self.heap_shared_access.dom().contains(self.thread_local_state[thread_id].heap_id)
+1841 | |             && self.heap_shared_access[self.thread_local_state[thread_id].heap_id]
+1842 | |                   == self.thread_local_state[thread_id].heap.shared_access
+     | |__________________________________________________________________________^
+
+note:   trigger 1 of 1:
+    --> /workspace/task_env/types_full_verified.rs:1839:28
+     |
+1839 |         forall |thread_id| self.thread_local_state.dom().contains(thread_id) ==>
+     |                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+note: automatically chose triggers for this expression:
+    --> /workspace/task_env/types_full_verified.rs:3073:8
+     |
+3073 |       && (forall |segment_id: SegmentId| segments.dom().contains(segment_id) ==>
+     |  ________^
+3074 | |         org_segments[segment_id].used == segments[segment_id].main2.value().used)
+     | |_________________________________________________________________________________^
+
+note:   trigger 1 of 1:
+    --> /workspace/task_env/types_full_verified.rs:3073:40
+     |
+3073 |     && (forall |segment_id: SegmentId| segments.dom().contains(segment_id) ==>
+     |                                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+note: automatically chose triggers for this expression:
+     --> /workspace/task_env/types_full_verified.rs:10199:9
+      |
+10199 | /         forall |sid| local1.segments.dom().contains(sid) ==>
+10200 | |             local2.commit_mask(sid).bytes(sid) == local1.commit_mask(sid).bytes(sid),
+      | |____________________________________________________________________________________^
+
+note:   trigger 1 of 1:
+     --> /workspace/task_env/types_full_verified.rs:10199:22
+      |
+10199 |         forall |sid| local1.segments.dom().contains(sid) ==>
+      |                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+note: automatically chose triggers for this expression:
+     --> /workspace/task_env/types_full_verified.rs:10201:9
+      |
+10201 | /         forall |sid| local1.segments.dom().contains(sid) ==>
+10202 | |             local2.decommit_mask(sid).bytes(sid) == local1.decommit_mask(sid).bytes(sid),
+      | |________________________________________________________________________________________^
+
+note:   trigger 1 of 1:
+     --> /workspace/task_env/types_full_verified.rs:10201:22
+      |
+10201 |         forall |sid| local1.segments.dom().contains(sid) ==>
+      |                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+note: automatically chose triggers for this expression:
+     --> /workspace/task_env/types_full_verified.rs:10203:9
+      |
+10203 | /         forall |sid| local1.segments.dom().contains(sid) ==>
+10204 | |             local2.segments[sid].mem == local1.segments[sid].mem,
+      | |________________________________________________________________^
+
+note:   trigger 1 of 1:
+     --> /workspace/task_env/types_full_verified.rs:10203:22
+      |
+10203 |         forall |sid| local1.segments.dom().contains(sid) ==>
+      |                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+note: automatically chose triggers for this expression:
+     --> /workspace/task_env/types_full_verified.rs:10205:9
+      |
+10205 | /         forall |page_id| local1.is_used_primary(page_id) ==>
+10206 | |               local2.is_used_primary(page_id)
+10207 | |               && local1.page_capacity(page_id) <= local2.page_capacity(page_id)
+10208 | |               && local1.page_reserved(page_id) <= local2.page_reserved(page_id)
+10209 | |               && local1.page_count(page_id) == local2.page_count(page_id)
+10210 | |               && local1.block_size(page_id) == local2.block_size(page_id),
+      | |_________________________________________________________________________^
+
+note:   trigger 1 of 6:
+     --> /workspace/task_env/types_full_verified.rs:10205:26
+      |
+10205 |         forall |page_id| local1.is_used_primary(page_id) ==>
+      |                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+note:   trigger 2 of 6:
+     --> /workspace/task_env/types_full_verified.rs:10206:15
+      |
+10206 |               local2.is_used_primary(page_id)
+      |               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+note:   trigger 3 of 6:
+     --> /workspace/task_env/types_full_verified.rs:10209:18
+      |
+10209 |               && local1.page_count(page_id) == local2.page_count(page_id)
+      |                  ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+note:   trigger 4 of 6:
+     --> /workspace/task_env/types_full_verified.rs:10209:48
+      |
+10209 |               && local1.page_count(page_id) == local2.page_count(page_id)
+      |                                                ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+note:   trigger 5 of 6:
+     --> /workspace/task_env/types_full_verified.rs:10210:18
+      |
+10210 |               && local1.block_size(page_id) == local2.block_size(page_id),
+      |                  ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+note:   trigger 6 of 6:
+     --> /workspace/task_env/types_full_verified.rs:10210:48
+      |
+10210 |               && local1.block_size(page_id) == local2.block_size(page_id),
+      |                                                ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+note: automatically chose triggers for this expression:
+     --> /workspace/task_env/types_full_verified.rs:11333:13
+      |
+11333 |             (forall |i: int| cap <= i < cap + extend ==> old(tokens).index(i).instance_id() == old(self).instance().id()),
+      |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+note:   trigger 1 of 1:
+     --> /workspace/task_env/types_full_verified.rs:11333:58
+      |
+11333 |             (forall |i: int| cap <= i < cap + extend ==> old(tokens).index(i).instance_id() == old(self).instance().id()),
+      |                                                          ^^^^^^^^^^^^^^^^^^^^
+
+note: automatically chose triggers for this expression:
+     --> /workspace/task_env/types_full_verified.rs:11334:13
+      |
+11334 |             (forall |i: int| cap <= i < cap + extend ==> old(tokens).index(i).key().page_id == old(self).page_id()),
+      |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+note:   trigger 1 of 1:
+     --> /workspace/task_env/types_full_verified.rs:11334:58
+      |
+11334 |             (forall |i: int| cap <= i < cap + extend ==> old(tokens).index(i).key().page_id == old(self).page_id()),
+      |                                                          ^^^^^^^^^^^^^^^^^^^^
+
+note: automatically chose triggers for this expression:
+     --> /workspace/task_env/types_full_verified.rs:11335:13
+      |
+11335 |             (forall |i: int| cap <= i < cap + extend ==> old(tokens).index(i).key().idx == i),
+      |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+note:   trigger 1 of 1:
+     --> /workspace/task_env/types_full_verified.rs:11335:58
+      |
+11335 |             (forall |i: int| cap <= i < cap + extend ==> old(tokens).index(i).key().idx == i),
+      |                                                          ^^^^^^^^^^^^^^^^^^^^
+
+note: automatically chose triggers for this expression:
+     --> /workspace/task_env/types_full_verified.rs:11336:13
+      |
+11336 |             (forall |i: int| cap <= i < cap + extend ==> old(tokens).index(i).key().block_size == bsize),
+      |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+note:   trigger 1 of 1:
+     --> /workspace/task_env/types_full_verified.rs:11336:58
+      |
+11336 |             (forall |i: int| cap <= i < cap + extend ==> old(tokens).index(i).key().block_size == bsize),
+      |                                                          ^^^^^^^^^^^^^^^^^^^^
+
+note: automatically chose triggers for this expression:
+     --> /workspace/task_env/types_full_verified.rs:11337:13
+      |
+11337 | /             (forall |i: int| cap <= i < cap + extend ==> is_block_ptr1(
+11338 | |                 block_start(old(tokens).index(i).key()),
+11339 | |                 old(tokens).index(i).key())
+11340 | |             )
+      | |_____________^
+
+note:   trigger 1 of 1:
+     --> /workspace/task_env/types_full_verified.rs:11338:29
+      |
+11338 |                 block_start(old(tokens).index(i).key()),
+      |                             ^^^^^^^^^^^^^^^^^^^^
+
+note: automatically chose triggers for this expression:
+     --> /workspace/task_env/types_full_verified.rs:14538:9
+      |
+14538 |         assert forall |i: int| cap_nat <= i < cap_nat + extend_nat
+      |         ^^^^^^
+
+note:   trigger 1 of 1:
+     --> /workspace/task_env/types_full_verified.rs:14540:29
+      |
+14540 |                 block_start(block_tokens.index(i).key()),
+      |                             ^^^^^^^^^^^^^^^^^^^^^
+
+note: automatically chose triggers for this expression:
+     --> /workspace/task_env/types_full_verified.rs:11872:5
+      |
+11872 |     exists |p: nat| map.dom().contains(p) && map[p].1.key().idx == i
+      |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+note:   trigger 1 of 1:
+     --> /workspace/task_env/types_full_verified.rs:11872:21
+      |
+11872 |     exists |p: nat| map.dom().contains(p) && map[p].1.key().idx == i
+      |                     ^^^^^^^^^^^^^^^^^^^^^
+
+note: automatically chose triggers for this expression:
+     --> /workspace/task_env/types_full_verified.rs:11244:13
+      |
+11244 |             assert forall|j| key_map.dom().contains(j) implies other_map.dom().contains(key_map.index(j))
+      |             ^^^^^^
+
+note:   trigger 1 of 1:
+     --> /workspace/task_env/types_full_verified.rs:11244:30
+      |
+11244 |             assert forall|j| key_map.dom().contains(j) implies other_map.dom().contains(key_map.index(j))
+      |                              ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+note: automatically chose triggers for this expression:
+     --> /workspace/task_env/types_full_verified.rs:11825:17
+      |
+11825 |               &&& (forall |block_id| map.dom().contains(block_id) ==>
+      |  _________________^
+11826 | |                     block_id.page_id == page_id)
+      | |________________________________________________^
+
+note:   trigger 1 of 1:
+     --> /workspace/task_env/types_full_verified.rs:11825:36
+      |
+11825 |             &&& (forall |block_id| map.dom().contains(block_id) ==>
+      |                                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+note: automatically chose triggers for this expression:
+     --> /workspace/task_env/types_full_verified.rs:11827:17
+      |
+11827 |               &&& (forall |block_id| map.dom().contains(block_id) ==>
+      |  _________________^
+11828 | |                     map[block_id].key() == block_id)
+      | |____________________________________________________^
+
+note:   trigger 1 of 1:
+     --> /workspace/task_env/types_full_verified.rs:11827:36
+      |
+11827 |             &&& (forall |block_id| map.dom().contains(block_id) ==>
+      |                                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+note: automatically chose triggers for this expression:
+     --> /workspace/task_env/types_full_verified.rs:11829:17
+      |
+11829 |               &&& (forall |block_id| map.dom().contains(block_id) ==>
+      |  _________________^
+11830 | |                     map[block_id].instance_id() == instance.id())
+      | |_________________________________________________________________^
+
+note:   trigger 1 of 1:
+     --> /workspace/task_env/types_full_verified.rs:11829:36
+      |
+11829 |             &&& (forall |block_id| map.dom().contains(block_id) ==>
+      |                                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+note: automatically chose triggers for this expression:
+     --> /workspace/task_env/types_full_verified.rs:11843:21
+      |
+11843 |             let i = choose |i: nat| m.dom().contains(i) && m[i].1.key().idx == j;
+      |                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+note:   trigger 1 of 1:
+     --> /workspace/task_env/types_full_verified.rs:11843:37
+      |
+11843 |             let i = choose |i: nat| m.dom().contains(i) && m[i].1.key().idx == j;
+      |                                     ^^^^^^^^^^^^^^^^^^^
+
+note: automatically chose triggers for this expression:
+     --> /workspace/task_env/types_full_verified.rs:11849:25
+      |
+11849 |                 let p = choose |p: nat| old_m.dom().contains(p) && old_m[p].1.key().idx == k;
+      |                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+note:   trigger 1 of 1:
+     --> /workspace/task_env/types_full_verified.rs:11849:41
+      |
+11849 |                 let p = choose |p: nat| old_m.dom().contains(p) && old_m[p].1.key().idx == k;
+      |                                         ^^^^^^^^^^^^^^^^^^^^^^^
+
+note: automatically chose triggers for this expression:
+     --> /workspace/task_env/types_full_verified.rs:11742:17
+      |
+11742 |               &&& (forall |block_id| map.dom().contains(block_id) ==>
+      |  _________________^
+11743 | |                     block_id.page_id == llgstr1.page_id)
+      | |________________________________________________________^
+
+note:   trigger 1 of 1:
+     --> /workspace/task_env/types_full_verified.rs:11742:36
+      |
+11742 |             &&& (forall |block_id| map.dom().contains(block_id) ==>
+      |                                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+note: automatically chose triggers for this expression:
+     --> /workspace/task_env/types_full_verified.rs:11744:17
+      |
+11744 |               &&& (forall |block_id| map.dom().contains(block_id) ==>
+      |  _________________^
+11745 | |                     map[block_id].key() == block_id)
+      | |____________________________________________________^
+
+note:   trigger 1 of 1:
+     --> /workspace/task_env/types_full_verified.rs:11744:36
+      |
+11744 |             &&& (forall |block_id| map.dom().contains(block_id) ==>
+      |                                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+note: automatically chose triggers for this expression:
+     --> /workspace/task_env/types_full_verified.rs:11746:17
+      |
+11746 |               &&& (forall |block_id| map.dom().contains(block_id) ==>
+      |  _________________^
+11747 | |                     map[block_id].instance_id() == inst.id())
+      | |_____________________________________________________________^
+
+note:   trigger 1 of 1:
+     --> /workspace/task_env/types_full_verified.rs:11746:36
+      |
+11746 |             &&& (forall |block_id| map.dom().contains(block_id) ==>
+      |                                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+note: automatically chose triggers for this expression:
+     --> /workspace/task_env/types_full_verified.rs:12107:16
+      |
+12107 |           assert(forall |i: nat| ll.valid_node(i, ll.next_ptr(i))
+      |  ________________^
+12108 | |             ==> new_ll.valid_node(i, new_ll.next_ptr(i)));
+      | |________________________________________________________^
+
+note:   trigger 1 of 2:
+     --> /workspace/task_env/types_full_verified.rs:12107:49
+      |
+12107 |         assert(forall |i: nat| ll.valid_node(i, ll.next_ptr(i))
+      |                                                 ^^^^^^^^^^^^^^
+
+note:   trigger 2 of 2:
+     --> /workspace/task_env/types_full_verified.rs:12108:38
+      |
+12108 |             ==> new_ll.valid_node(i, new_ll.next_ptr(i)));
+      |                                      ^^^^^^^^^^^^^^^^^^
+
+note: automatically chose triggers for this expression:
+     --> /workspace/task_env/types_full_verified.rs:10250:9
+      |
+10250 |         forall |pid: PageId| pid.segment_id == sid ==> !local1.is_used_primary(pid),
+      |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+note:   trigger 1 of 1:
+     --> /workspace/task_env/types_full_verified.rs:10250:57
+      |
+10250 |         forall |pid: PageId| pid.segment_id == sid ==> !local1.is_used_primary(pid),
+      |                                                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+note: automatically chose triggers for this expression:
+     --> /workspace/task_env/types_full_verified.rs:10455:9
+      |
+10455 | /         forall |sid| local1.segments.dom().contains(sid) ==>
+10456 | |             local2.commit_mask(sid).bytes(sid) == local1.commit_mask(sid).bytes(sid),
+      | |____________________________________________________________________________________^
+
+note:   trigger 1 of 1:
+     --> /workspace/task_env/types_full_verified.rs:10455:22
+      |
+10455 |         forall |sid| local1.segments.dom().contains(sid) ==>
+      |                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+note: automatically chose triggers for this expression:
+     --> /workspace/task_env/types_full_verified.rs:10457:9
+      |
+10457 | /         forall |sid| local1.segments.dom().contains(sid) ==>
+10458 | |             local2.decommit_mask(sid).bytes(sid) == local1.decommit_mask(sid).bytes(sid),
+      | |________________________________________________________________________________________^
+
+note:   trigger 1 of 1:
+     --> /workspace/task_env/types_full_verified.rs:10457:22
+      |
+10457 |         forall |sid| local1.segments.dom().contains(sid) ==>
+      |                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+note: automatically chose triggers for this expression:
+     --> /workspace/task_env/types_full_verified.rs:10459:9
+      |
+10459 | /         forall |sid| local1.segments.dom().contains(sid) ==>
+10460 | |             local2.segments[sid].mem == local1.segments[sid].mem,
+      | |________________________________________________________________^
+
+note:   trigger 1 of 1:
+     --> /workspace/task_env/types_full_verified.rs:10459:22
+      |
+10459 |         forall |sid| local1.segments.dom().contains(sid) ==>
+      |                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+note: automatically chose triggers for this expression:
+     --> /workspace/task_env/types_full_verified.rs:10461:9
+      |
+10461 | /         forall |pid| local1.is_used_primary(pid) ==>
+10462 | |               local2.is_used_primary(pid)
+10463 | |               && local1.page_capacity(pid) <= local2.page_capacity(pid)
+10464 | |               && local1.page_reserved(pid) <= local2.page_reserved(pid)
+10465 | |               && local1.page_count(pid) == local2.page_count(pid)
+10466 | |               && local1.block_size(pid) == local2.block_size(pid),
+      | |_________________________________________________________________^
+
+note:   trigger 1 of 6:
+     --> /workspace/task_env/types_full_verified.rs:10461:22
+      |
+10461 |         forall |pid| local1.is_used_primary(pid) ==>
+      |                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+note:   trigger 2 of 6:
+     --> /workspace/task_env/types_full_verified.rs:10462:15
+      |
+10462 |               local2.is_used_primary(pid)
+      |               ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+note:   trigger 3 of 6:
+     --> /workspace/task_env/types_full_verified.rs:10465:18
+      |
+10465 |               && local1.page_count(pid) == local2.page_count(pid)
+      |                  ^^^^^^^^^^^^^^^^^^^^^^
+
+note:   trigger 4 of 6:
+     --> /workspace/task_env/types_full_verified.rs:10465:44
+      |
+10465 |               && local1.page_count(pid) == local2.page_count(pid)
+      |                                            ^^^^^^^^^^^^^^^^^^^^^^
+
+note:   trigger 5 of 6:
+     --> /workspace/task_env/types_full_verified.rs:10466:18
+      |
+10466 |               && local1.block_size(pid) == local2.block_size(pid),
+      |                  ^^^^^^^^^^^^^^^^^^^^^^
+
+note:   trigger 6 of 6:
+     --> /workspace/task_env/types_full_verified.rs:10466:44
+      |
+10466 |               && local1.block_size(pid) == local2.block_size(pid),
+      |                                            ^^^^^^^^^^^^^^^^^^^^^^
+
+note: automatically chose triggers for this expression:
+    --> /workspace/task_env/types_full_verified.rs:9629:11
+     |
+9629 | /           forall |page_id: PageId|
+9630 | |             pre.pages.dom().contains(page_id)
+9631 | |               && pre.pages[page_id].is_used
+9632 | |               ==> post.pages.dom().contains(page_id)
+9633 | |                 && post.pages[page_id].dlist_entry == pre.pages[page_id].dlist_entry
+     | |____________________________________________________________________________________^
+
+note:   trigger 1 of 2:
+    --> /workspace/task_env/types_full_verified.rs:9630:13
+     |
+9630 |             pre.pages.dom().contains(page_id)
+     |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+note:   trigger 2 of 2:
+    --> /workspace/task_env/types_full_verified.rs:9632:19
+     |
+9632 |               ==> post.pages.dom().contains(page_id)
+     |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+note: automatically chose triggers for this expression:
+    --> /workspace/task_env/types_full_verified.rs:6529:1
+     |
+6529 | / state_machine!{ PageOrg {
+6530 | |     fields {
+6531 | |         // Roughly corresponds to physical state
+6532 | |         pub unused_dlist_headers: Seq<DlistHeader>,     // indices are sbin
+...    |
+9779 | | }}
+     | |__^
+
+note: automatically chose triggers for this expression:
+    --> /workspace/task_env/types_full_verified.rs:9442:11
+     |
+9442 | /           forall |pid: PageId| pid.segment_id == sid ==>
+9443 | |               !self.does_count(pid)
+     | |___________________________________^
+
+note:   trigger 1 of 1:
+    --> /workspace/task_env/types_full_verified.rs:9443:16
+     |
+9443 |               !self.does_count(pid)
+     |                ^^^^^^^^^^^^^^^^^^^^
+
+note: automatically chose triggers for this expression:
+    --> /workspace/task_env/types_full_verified.rs:9454:13
+     |
+9454 |             forall |pid: PageId| pid.segment_id == sid ==> !self.does_count(pid)
+     |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+note:   trigger 1 of 1:
+    --> /workspace/task_env/types_full_verified.rs:9454:61
+     |
+9454 |             forall |pid: PageId| pid.segment_id == sid ==> !self.does_count(pid)
+     |                                                             ^^^^^^^^^^^^^^^^^^^^
+
+note: automatically chose triggers for this expression:
+    --> /workspace/task_env/types_full_verified.rs:9490:11
+     |
+9490 | /           forall |pid: PageId| pid.segment_id != esid ==>
+9491 | |             (pre.pages.dom().contains(pid) <==> post.pages.dom().contains(pid))
+9492 | |             && (pre.pages.dom().contains(pid) ==> {
+9493 | |                 &&& pre.pages[pid].count == post.pages[pid].count
+...    |
+9498 | |                 &&& pre.pages[pid].page_header_kind == post.pages[pid].page_header_kind
+9499 | |               }),
+     | |________________^
+
+note:   trigger 1 of 2:
+    --> /workspace/task_env/types_full_verified.rs:9491:14
+     |
+9491 |             (pre.pages.dom().contains(pid) <==> post.pages.dom().contains(pid))
+     |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+note:   trigger 2 of 2:
+    --> /workspace/task_env/types_full_verified.rs:9491:49
+     |
+9491 |             (pre.pages.dom().contains(pid) <==> post.pages.dom().contains(pid))
+     |                                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+note: automatically chose triggers for this expression:
+    --> /workspace/task_env/types_full_verified.rs:9645:11
+     |
+9645 | /           forall |page_id: PageId|
+9646 | |             pre.pages.dom().contains(page_id)
+9647 | |               && !pre.pages[page_id].is_used
+9648 | |               ==> post.pages.dom().contains(page_id)
+9649 | |                 && post.pages[page_id].dlist_entry == pre.pages[page_id].dlist_entry
+     | |____________________________________________________________________________________^
+
+note:   trigger 1 of 2:
+    --> /workspace/task_env/types_full_verified.rs:9646:13
+     |
+9646 |             pre.pages.dom().contains(page_id)
+     |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+note:   trigger 2 of 2:
+    --> /workspace/task_env/types_full_verified.rs:9648:19
+     |
+9648 |               ==> post.pages.dom().contains(page_id)
+     |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+note: automatically chose triggers for this expression:
+    --> /workspace/task_env/types_full_verified.rs:8813:9
+     |
+8813 |         assert forall |i| 0 <= i < post.unused_lists.len()
+     |         ^^^^^^
+
+note:   trigger 1 of 2:
+    --> /workspace/task_env/types_full_verified.rs:8814:42
+     |
+8814 |             implies valid_ll(post.pages, post.unused_dlist_headers[i], post.unused_lists[i])
+     |                                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+note:   trigger 2 of 2:
+    --> /workspace/task_env/types_full_verified.rs:8814:72
+     |
+8814 |             implies valid_ll(post.pages, post.unused_dlist_headers[i], post.unused_lists[i])
+     |                                                                        ^^^^^^^^^^^^^^^^^^^^
+
+note: automatically chose triggers for this expression:
+    --> /workspace/task_env/types_full_verified.rs:1959:9
+     |
+1959 | /         exists |block_id| blocks.dom().contains(block_id) && block_id.page_id == page_id
+1960 | |             && block_id.idx == i
+     | |________________________________^
+
+note:   trigger 1 of 1:
+    --> /workspace/task_env/types_full_verified.rs:1959:27
+     |
+1959 |         exists |block_id| blocks.dom().contains(block_id) && block_id.page_id == page_id
+     |                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+note: automatically chose triggers for this expression:
+    --> /workspace/task_env/types_full_verified.rs:1944:13
+     |
+1944 | /             forall |block_id: BlockId| blocks.dom().contains(block_id) ==>
+1945 | |                 block_id.page_id == page_id && 0 <= block_id.idx < len,
+     | |______________________________________________________________________^
+
+note:   trigger 1 of 1:
+    --> /workspace/task_env/types_full_verified.rs:1944:40
+     |
+1944 |             forall |block_id: BlockId| blocks.dom().contains(block_id) ==>
+     |                                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+note: automatically chose triggers for this expression:
+    --> /workspace/task_env/types_full_verified.rs:1946:13
+     |
+1946 | /             forall |bid1: BlockId, bid2: BlockId|
+1947 | |                 blocks.dom().contains(bid1) && blocks.dom().contains(bid2)
+1948 | |                 && bid1.page_id == bid2.page_id && bid1.idx == bid2.idx
+1949 | |                 ==> bid1 == bid2
+     | |________________________________^
+
+note:   trigger 1 of 1:
+    --> /workspace/task_env/types_full_verified.rs:1947:17
+     |
+1947 |                 blocks.dom().contains(bid1) && blocks.dom().contains(bid2)
+     |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^    ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+note: automatically chose triggers for this expression:
+    --> /workspace/task_env/types_full_verified.rs:2083:9
+     |
+2083 |         assert forall |hid1: HeapId, hid2: HeapId|
+     |         ^^^^^^
+
+note:   trigger 1 of 1:
+    --> /workspace/task_env/types_full_verified.rs:2084:13
+     |
+2084 |             post.reserved_uniq.contains(hid1)
+     |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2085 |             && post.heap_shared_access.dom().contains(hid2)
+     |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+note: automatically chose triggers for this expression:
+    --> /workspace/task_env/types_full_verified.rs:1966:16
+     |
+1966 |           assert(forall |block_id: BlockId| blocks.dom().contains(block_id) ==>
+     |  ________________^
+1967 | |             pre.block.dom().contains(block_id));
+     | |______________________________________________^
+
+note:   trigger 1 of 1:
+    --> /workspace/task_env/types_full_verified.rs:1966:43
+     |
+1966 |         assert(forall |block_id: BlockId| blocks.dom().contains(block_id) ==>
+     |                                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+note: automatically chose triggers for this expression:
+    --> /workspace/task_env/types_full_verified.rs:1455:17
+     |
+1455 |                 assert forall |pid: PageId| #![all_triggers]
+     |                 ^^^^^^
+
+note:   trigger 1 of 1:
+    --> /workspace/task_env/types_full_verified.rs:1458:28
+     |
+1458 |                         && psa_map[pid] == pre.page_shared_access[pid]
+     |                            ^^^^^^^^^^^^
+
+note: automatically chose triggers for this expression:
+     --> /workspace/task_env/types_full_verified.rs:18757:5
+      |
+18757 |     assert forall |pid| range.contains(pid) implies local.unused_pages.dom().contains(pid) by {
+      |     ^^^^^^
+
+note:   trigger 1 of 1:
+     --> /workspace/task_env/types_full_verified.rs:18757:25
+      |
+18757 |     assert forall |pid| range.contains(pid) implies local.unused_pages.dom().contains(pid) by {
+      |                         ^^^^^^^^^^^^^^^^^^^
+
+note: Verus printed one or more automatically chosen quantifier triggers
+      because it had low confidence in the chosen triggers.
+      To suppress these messages, do one of the following:
+        (1) manually annotate a single desired trigger using #[trigger]
+            (example: forall|i: int, j: int| f(i) && #[trigger] g(i) && #[trigger] h(j)),
+        (2) manually annotate multiple desired triggers using #![trigger ...]
+            (example: forall|i: int| #![trigger f(i)] #![trigger g(i)] f(i) && g(i)),
+        (3) accept the automatically chosen trigger using #![auto]
+            (example: forall|i: int, j: int| #![auto] f(i) && g(i) && h(j))
+        (4) use the --triggers-mode silent command-line option to suppress all printing of triggers.
+      (Note: triggers are used by the underlying SMT theorem prover to instantiate quantifiers;
+      the theorem prover instantiates a quantifier whenever some expression matches the
+      pattern specified by one of the quantifier's triggers.)
+     --> /workspace/task_env/types_full_verified.rs:11746:17
+      |
+11746 |               &&& (forall |block_id| map.dom().contains(block_id) ==>
+      |  _________________^
+11747 | |                     map[block_id].instance_id() == inst.id())
+      | |_____________________________________________________________^
+
+verification results:: 469 verified, 2 errors
+error: aborting due to 2 previous errors
+

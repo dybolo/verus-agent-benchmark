@@ -1,0 +1,34 @@
+{
+  "schema": 1,
+  "snapshots": [
+    {
+      "snapshotId": "8350a643-251d-4767-ab2c-fb5e329439ee",
+      "eventId": "65e72b32-0e5d-409e-8ccb-378f56bb6685",
+      "userMessage": "The file /workspace/task_env/flat_combine_full.rs cannot be verified by Verus, a verification tool for Rust programs, yet. Please add proof annotations to /workspace/task_env/flat_combine_full.rs so that it can be successfully verified by Verus, and write the resulting code with proof into a new file with the name /workspace/task_env/flat_combine_full_verified.rs. The /workspace/vstd folder is a copy of Verus' vstd definitions and helper lemmas; please feel free to check it when needed. You should KEEP editing your proof annotations until Verus shows there is no error. Preserve all existing admits and unrelated proof holes; do not add new ones. You should NOT change existing functions' pre- conditions or post-conditions; you should NOT change any executable Rust code; and you should NEVER use admit(...) or assume(...) in your code. You are also NOT allowed to create unimplemented, external-body lemma functions for any new lemma functions you add, you should provide complete proof. You are NOT allowed to create new axiom functions or change the pre/post conditions of existing axiom functions, and you should NEVER add external_body tag to any existing non-external-body functions. I have installed Verus locally; you can just run verus. Before you are done, MAKE SURE to run lynette on both the original /workspace/task_env/flat_combine_full.rs and the generated verified file to double check whether you have made any illegal changes (fix those if you did).\n",
+      "timestamp": "2026-08-29T17:07:11.491Z",
+      "files": {
+        "ceab65825e0f0e657c6b60661fa3b6b8": {
+          "path": "/workspace/task_env/flat_combine_full_verified.rs",
+          "preimage": {
+            "kind": "absent"
+          },
+          "postimage": {
+            "kind": "content",
+            "contentHash": "0c39a88b6c436532c7bd100bc1b1ad9078cdfcabe61754eb430fd409fdd0b7d2",
+            "resolvedPath": "/workspace/task_env/flat_combine_full_verified.rs",
+            "encodedPath": {
+              "encoding": "unix-bytes",
+              "data": "2f776f726b73706163652f7461736b5f656e762f666c61745f636f6d62696e655f66756c6c5f76657269666965642e7273"
+            }
+          },
+          "linesAdded": 451,
+          "linesRemoved": 0
+        }
+      },
+      "backupFiles": [],
+      "fileCount": 1,
+      "linesAdded": 451,
+      "linesRemoved": 0
+    }
+  ]
+}

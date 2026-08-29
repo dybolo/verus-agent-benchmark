@@ -1,6 +1,0 @@
-#!/bin/sh
-
-semantic_grep --repo-path "/workspace/task_env" --generation-model "openrouter/owl-alpha"
-
-EXTRA_PROMPT="please take a look at the /workspace/task_env/processed_chunks.json file."
-pi --model openrouter/owl-alpha --session-dir "$SESSION" -p "$TASK_PROMPT $EXTRA_PROMPT"

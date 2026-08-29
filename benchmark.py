@@ -141,16 +141,20 @@ class Run:
     stats_file: str
     agents: list[AgentSpec]
     task_names: list[str]
+    task_directory: str
     tasks_by_agent: dict[str, dict[str, Task]]
 
     @classmethod
-    def create(cls, agents: list[AgentSpec], task_names: list[str]) -> Run:
+    def create(
+        cls, agents: list[AgentSpec], task_names: list[str], task_directory: str
+    ) -> Run:
         timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
         return cls(
             timestamp=timestamp,
             stats_file=os.path.join("runs", f"{timestamp}.json"),
             agents=agents,
             task_names=task_names,
+            task_directory=task_directory,
             tasks_by_agent={
                 agent.name: {name: Task(name) for name in task_names}
                 for agent in agents
@@ -166,6 +170,7 @@ class Run:
             stats_file=stats_file,
             agents=agents,
             task_names=[str(name) for name in configuration["tasks"]],
+            task_directory=str(configuration.get("task_directory", "tasks")),
             tasks_by_agent={
                 agent_name: {
                     name: Task.from_dict(name, stats)
@@ -193,6 +198,7 @@ class Run:
             "configuration": {
                 "agents": [agent.to_dict() for agent in self.agents],
                 "tasks": self.task_names,
+                "task_directory": self.task_directory,
             },
             "agents": {
                 agent.name: {
@@ -421,7 +427,7 @@ def run_single_job(
     solution_filename = f"{task_base}_verified.rs"
 
     with tempfile.TemporaryDirectory(dir=staging_base) as staging_dir:
-        original_task_path = os.path.abspath(os.path.join("tasks", task))
+        original_task_path = os.path.abspath(os.path.join(run.task_directory, task))
         staged_task_path = os.path.join(staging_dir, task)
         shutil.copy2(original_task_path, staged_task_path)
 
@@ -609,11 +615,15 @@ def discover_agents(agent_filter=None, model_filter=None):
     return agents
 
 
-def start_new_run(agent_filter=None, model_filter=None):
+def start_new_run(agent_filter=None, model_filter=None, task_directory="tasks"):
     """Create a run file with every selected task marked pending."""
-    task_names = sorted(f for f in os.listdir("tasks") if f.endswith(".rs"))
+    if not os.path.isdir(task_directory):
+        raise ValueError(f"Task directory not found: {task_directory}/")
+    task_names = sorted(
+        f for f in os.listdir(task_directory) if f.endswith(".rs")
+    )
     agents = discover_agents(agent_filter, model_filter)
-    run = Run.create(agents, task_names)
+    run = Run.create(agents, task_names, task_directory)
     run.save()
     return run
 
@@ -655,12 +665,23 @@ def resume_run(run_id, agent_filter=None, model_filter=None):
     return run
 
 
-def run_tasks(max_workers, agent_filter=None, model_filter=None, resume_id=None):
+def run_tasks(
+    max_workers,
+    agent_filter=None,
+    model_filter=None,
+    resume_id=None,
+    full_tasks=False,
+):
     """Run a new benchmark or resume only the pending tasks from an existing run."""
     if resume_id:
         run = resume_run(resume_id, agent_filter, model_filter)
+        if full_tasks and run.task_directory != "full_tasks":
+            raise ValueError(
+                "--full-tasks cannot be used to resume a run created from tasks/"
+            )
     else:
-        run = start_new_run(agent_filter, model_filter)
+        task_directory = "full_tasks" if full_tasks else "tasks"
+        run = start_new_run(agent_filter, model_filter, task_directory)
 
     timestamp = run.timestamp
     agents = run.agents
@@ -670,7 +691,7 @@ def run_tasks(max_workers, agent_filter=None, model_filter=None, resume_id=None)
         print("Error: No agents found in agents/ directory")
         sys.exit(1)
     if not task_names:
-        print("Error: No tasks found in tasks/ directory")
+        print(f"Error: No tasks found in {run.task_directory}/ directory")
         sys.exit(1)
 
     print(f"Found {len(agents)} agent(s): {', '.join(a.name for a in agents)}")
@@ -774,6 +795,11 @@ def main():
         metavar="RUN_ID",
         help="Resume pending tasks from runs/<RUN_ID>.json",
     )
+    parser.add_argument(
+        "--full-tasks",
+        action="store_true",
+        help="Run tasks from full_tasks/ instead of tasks/",
+    )
     args = parser.parse_args()
     try:
         run_tasks(
@@ -781,6 +807,7 @@ def main():
             agent_filter=args.agent,
             model_filter=args.model,
             resume_id=args.resume,
+            full_tasks=args.full_tasks,
         )
     except ValueError as e:
         parser.error(str(e))

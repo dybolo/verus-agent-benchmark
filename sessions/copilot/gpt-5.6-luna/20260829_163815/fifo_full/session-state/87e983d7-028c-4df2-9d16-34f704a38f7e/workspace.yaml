@@ -1,0 +1,8 @@
+id: 87e983d7-028c-4df2-9d16-34f704a38f7e
+cwd: /workspace
+client_name: github/cli
+name: The file /workspace/task_env/fifo_full.rs cannot be verified by Verus, a verification tool for Rust programs, yet. Please add proof annotations to /workspace/task_env/fifo_full.rs so that it can be successfully verified by Verus, and write the resulting code with proof into a new file with the name /workspace/task_env/fifo_full_verified.rs. The /workspace/vstd folder is a copy of Verus' vstd definitions and helper lemmas; please feel free to check it when needed. You should KEEP editing your pro...
+user_named: false
+summary_count: 0
+created_at: 2026-08-29T16:58:46.092Z
+updated_at: 2026-08-29T16:58:48.425Z

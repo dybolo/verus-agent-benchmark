@@ -1,7 +1,0 @@
-#!/bin/sh
-
-cd /workspace/task_env
-
-semantic_grep --repo-path "/workspace/task_env" --generation-model bedrock/global.anthropic.claude-sonnet-4-6
-
-pi --model amazon-bedrock/global.anthropic.claude-sonnet-4-6 --session-dir "$SESSION" -p "$TASK_PROMPT"
