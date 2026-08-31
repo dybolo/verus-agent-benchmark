@@ -218,6 +218,31 @@ impl Flag {
             res = self.pending.compare_exchange(Tracked(&mut pend_perm), 1, 2);
 
             proof {
+                if res.is_ok() {
+                    let tracked au = maybe_au.tracked_take();
+                    let tracked other_au = proto.take_offer();
+
+                    assert(gv@ is Some);
+                    assert(gv@->0 == other_au);
+
+                    try_open_atomic_update!(au, mut token => {
+                        let ghost old_auth = auth@;
+                        auth.update(&mut token.value, !old_auth);
+                        Tracked(Commit(token))
+                    });
+
+                    try_open_atomic_update!(other_au.get(), mut token => {
+                        let ghost old_auth = auth@;
+                        auth.update(&mut token.value, !old_auth);
+                        Tracked(Commit(token))
+                    });
+
+                    assert(gv@ is Some);
+                    assert(gv@->0.resolves());
+                    proto = Accepted;
+                }
+
+                v = (value_perm, pend_perm, auth, gv, proto);
             }
         });
 
@@ -245,6 +270,15 @@ impl Flag {
             let tracked (mut value_perm, mut pend_perm, mut auth, mut gv, mut proto) = v;
             res = self.value.compare_exchange(Tracked(&mut value_perm), true, false);
             proof {
+                if res.is_ok() {
+                    let tracked au = maybe_au.tracked_take();
+                    try_open_atomic_update!(au, mut token => {
+                        let ghost old_auth = auth@;
+                        auth.update(&mut token.value, !old_auth);
+                        Tracked(Commit(token))
+                    });
+                }
+                v = (value_perm, pend_perm, auth, gv, proto);
             }
         });
 
@@ -258,6 +292,15 @@ impl Flag {
             let tracked (mut value_perm, mut pend_perm, mut auth, mut gv, mut proto) = v;
             res = self.value.compare_exchange(Tracked(&mut value_perm), false, true);
             proof {
+                if res.is_ok() {
+                    let tracked au = maybe_au.tracked_take();
+                    try_open_atomic_update!(au, mut token => {
+                        let ghost old_auth = auth@;
+                        auth.update(&mut token.value, !old_auth);
+                        Tracked(Commit(token))
+                    });
+                }
+                v = (value_perm, pend_perm, auth, gv, proto);
             }
         });
 
@@ -279,7 +322,8 @@ impl Flag {
             }
     {
         let tracked mut maybe_au = Some(au);
-        let tracked mut auth_au = None;
+        let ghost original_au = maybe_au@->0;
+        let tracked mut auth_au: Option<GhostVarAuth<Option<FlipAU>>> = None;
         let res;
 
         open_atomic_invariant!(self.inv.borrow() => v => {
@@ -287,12 +331,24 @@ impl Flag {
             res = self.pending.compare_exchange(Tracked(&mut pend_perm), 0, 1);
 
             proof {
+                if res.is_ok() {
+                    let tracked mut auth_au0 = proto.take_empty();
+                    let ghost au_for_gv = original_au;
+                    auth_au0.update(&mut gv, Some(au_for_gv));
+                    assert(auth_au0@ == Some(maybe_au@->0));
+                    auth_au = Some(auth_au0);
+                    proto = Offering(Tracked(maybe_au.tracked_take()));
+                }
+                v = (value_perm, pend_perm, auth, gv, proto);
             }
         });
 
         if res.is_err() {
             return Some(Tracked(maybe_au.tracked_take()));
         }
+
+        let ghost first_succeeded = res.is_ok();
+        assert(first_succeeded);
 
         assert(auth_au is Some);
 
@@ -303,6 +359,35 @@ impl Flag {
             res = self.pending.compare_exchange(Tracked(&mut pend_perm), 1, 0);
 
             proof {
+                if res.is_err() {
+                    let tracked mut auth_au0 = auth_au.tracked_take();
+                    auth_au0.agree(&gv);
+                    auth_au = Some(auth_au0);
+                    assert(res is Err);
+                    assert(res->Err_0 != 1);
+                    assert(res->Err_0 == pend_perm.value());
+                    assert(first_succeeded);
+                    assert(proto is Empty ==> gv@ is None);
+                    assert(gv@ is Some);
+                    assert(proto is Offering || proto is Accepted);
+                    assert(proto is Offering ==> pend_perm.value() == 1);
+                    assert(proto is Offering ==> res->Err_0 == 1);
+                    assert(proto is Accepted ==> pend_perm.value() == 2);
+                    assert(proto is Accepted);
+                    assert(auth_au0@ is Some);
+                    assert(auth_au0@->0 == original_au);
+                    assert(gv@->0 == auth_au0@->0);
+                    assert(gv@->0 == original_au);
+                    assert(original_au.resolves());
+                }
+                if res.is_ok() {
+                    let tracked offered = proto.take_offer();
+                    maybe_au = Some(offered.get());
+                    let tracked mut auth_au0 = auth_au.tracked_take();
+                    auth_au0.update(&mut gv, None);
+                    proto = Empty(auth_au0);
+                }
+                v = (value_perm, pend_perm, auth, gv, proto);
             }
         });
 
@@ -312,6 +397,17 @@ impl Flag {
                 self.pending.store(Tracked(&mut pend_perm), 0);
 
                 proof {
+                    let tracked mut auth_au0 = auth_au.tracked_take();
+                    auth_au0.agree(&gv);
+                    assert(auth_au0@ is Some);
+                    assert(gv@ is Some);
+                    if res.is_err() {
+                        assert(res is Err);
+                        assert(res->Err_0 != 1);
+                    }
+                    auth_au0.update(&mut gv, None);
+                    proto = Empty(auth_au0);
+                    v = (value_perm, pend_perm, auth, gv, proto);
                 }
             });
 

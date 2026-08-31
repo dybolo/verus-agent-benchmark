@@ -742,7 +742,7 @@ tokenized_state_machine! { CyclicBuffer<DT: Dispatch> {
     fn reader_guard_inductive(pre: Self, post: Self, node_id: NodeId) {
         assert(post.local_versions.contains_key(node_id));
         assert forall |i, j| post.combiner.contains_key(i) && post.combiner.contains_key(j) && i != j
-        implies post.combiner[i].no_overlap_with(post.combiner[j]) by {
+            implies post.combiner[i].no_overlap_with(post.combiner[j]) by {
             if (j == node_id && post.combiner[i].is_Appending()) {
                 let cur = post.combiner[j].get_Reading_0().get_Guard_cur();
                 assert(log_entry_is_alive(post.alive_bits, cur as int, post.buffer_size));
@@ -766,7 +766,7 @@ tokenized_state_machine! { CyclicBuffer<DT: Dispatch> {
             assert(forall |i| #[trigger] post.local_versions.contains_key(i) ==> min_local_versions_post <= post.local_versions[i]);
 
             log_entry_alive_wrap_around(post.alive_bits, post.buffer_size, min_local_versions_pre, min_local_versions_post);
-            log_entry_alive_wrap_around_helper(post.alive_bits, post.buffer_size, min_local_versions_pre, min_local_versions_post );
+            log_entry_alive_wrap_around_helper(post.alive_bits, post.buffer_size, min_local_versions_pre, min_local_versions_post);
         }
     }
 
