@@ -506,19 +506,29 @@
         "cyclicbuffer_full.rs": {
           "verus_passed": false,
           "cheat_checker_passed": true,
-          "timed_out": true,
-          "status": "pending",
+          "timed_out": false,
+          "status": "completed",
           "solution_file": "solutions/opencode/gpt-5.6-luna/20260829_163815/cyclicbuffer_full_verified.rs",
-          "session_error": "Detected error that invalidated the session. Check the session file."
+          "session_error": "Detected error that invalidated the session. Check the session file.",
+          "total_costs": 0.0719892,
+          "total_turns": 51,
+          "total_tool_calls": 61,
+          "duration_seconds": 483.867,
+          "session_file": "sessions/opencode/gpt-5.6-luna/20260829_163815/cyclicbuffer_full/session.jsonl"
         },
         "dist_rwlock_full.rs": {
-          "verus_passed": false,
-          "cheat_checker_passed": false,
+          "verus_passed": true,
+          "cheat_checker_passed": true,
           "timed_out": false,
-          "status": "pending",
-          "solution_file": null,
+          "status": "completed",
+          "solution_file": "solutions/opencode/gpt-5.6-luna/20260829_163815/dist_rwlock_full_verified.rs",
           "return_error": "\u001b[91m\u001b[1mError: \u001b[0mUnexpected error\n\ndatabase is locked\n",
-          "session_error": "Detected error that invalidated the session. Check the session file."
+          "session_error": "Detected error that invalidated the session. Check the session file.",
+          "total_costs": 0.04635224,
+          "total_turns": 30,
+          "total_tool_calls": 44,
+          "duration_seconds": 284.405,
+          "session_file": "sessions/opencode/gpt-5.6-luna/20260829_163815/dist_rwlock_full/session.jsonl"
         },
         "fifo_full.rs": {
           "verus_passed": true,
@@ -570,12 +580,17 @@
         },
         "linked_list_full.rs": {
           "verus_passed": false,
-          "cheat_checker_passed": false,
+          "cheat_checker_passed": true,
           "timed_out": false,
-          "status": "pending",
-          "solution_file": null,
+          "status": "completed",
+          "solution_file": "solutions/opencode/gpt-5.6-luna/20260829_163815/linked_list_full_verified.rs",
           "return_error": "\u001b[91m\u001b[1mError: \u001b[0mUnexpected error\n\ndatabase is locked\n",
-          "session_error": "Detected error that invalidated the session. Check the session file."
+          "session_error": "Detected error that invalidated the session. Check the session file.",
+          "total_costs": 0.06893928,
+          "total_turns": 35,
+          "total_tool_calls": 48,
+          "duration_seconds": 329.877,
+          "session_file": "sessions/opencode/gpt-5.6-luna/20260829_163815/linked_list_full/session.jsonl"
         },
         "log_full.rs": {
           "verus_passed": false,

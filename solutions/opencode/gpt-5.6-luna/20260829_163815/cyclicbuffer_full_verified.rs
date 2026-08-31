@@ -674,58 +674,50 @@ tokenized_state_machine! { CyclicBuffer<DT: Dispatch> {
 
     #[inductive(advance_head_finish)]
     fn advance_head_finish_inductive(pre: Self, post: Self, node_id: NodeId) {
-        assert(CyclicBuffer::State::advance_head_finish_strong(pre, post, node_id));
-        reveal(CyclicBuffer::State::advance_head_finish_strong);
-        reveal(CyclicBuffer::State::pointer_ordering);
-        assert(pre.pointer_ordering());
-        assert(pre.complete());
-        reveal(map_min_value);
         reveal(CyclicBuffer::State::combiner_valid);
-        assert(pre.combiner_valid(node_id, pre.combiner[node_id]));
-        assert(pre.combiner[node_id].is_AdvancingHead());
-        assert(pre.combiner[node_id].get_AdvancingHead_idx() == pre.num_replicas);
-        assert forall |n| 0 <= n < pre.num_replicas implies pre.combiner[node_id].get_AdvancingHead_min_local_version() <= pre.local_versions[n] by {
-            assert(pre.local_versions.contains_key(n));
-        };
-        assert(pre.combiner[node_id].get_AdvancingHead_min_local_version() <= pre.tail) by {
-            assert(pre.local_versions.contains_key(0));
-            assert(pre.combiner[node_id].get_AdvancingHead_min_local_version() <= pre.local_versions[0]);
-            assert(pre.local_versions[0] <= pre.tail);
-        };
-        assert forall |n| 0 <= n < pre.num_replicas implies
-            #[trigger] post.local_versions[n] >= post.head && post.local_versions[n] <= post.tail by {
-            assert(post.local_versions.contains_key(n));
-            assert(post.local_versions[n] == pre.local_versions[n]);
-            assert(pre.pointer_ordering());
-        };
-        assert forall |n| 0 <= n < pre.num_replicas implies
-            post.tail <= #[trigger] post.local_versions[n] + post.buffer_size by {
-            assert(post.local_versions.contains_key(n));
-            assert(post.local_versions[n] == pre.local_versions[n]);
-            assert(pre.pointer_ordering());
-        };
-        assert(post.pointer_ordering());
+        reveal(map_contains_value);
+        assert(pre.pointer_ordering());
+        assert(pre.all_combiner_valid());
+        assert(pre.combiner[node_id] is AdvancingHead);
+        if let CombinerState::AdvancingHead { idx, min_local_version } = pre.combiner[node_id] {
+            assert(pre.combiner_valid(node_id, pre.combiner[node_id]));
+            assert(idx == pre.num_replicas);
+            assert(post.head == min_local_version);
+            map_min_value_smallest(pre.local_versions, (pre.num_replicas - 1) as nat);
+            assert(map_contains_value(pre.local_versions,
+                map_min_value(pre.local_versions, (pre.num_replicas - 1) as nat)));
+            let witness = choose |n: NodeId|
+                pre.local_versions.contains_key(n)
+                    && pre.local_versions[n] == map_min_value(pre.local_versions, (pre.num_replicas - 1) as nat);
+            assert(pre.local_versions.contains_key(witness));
+            assert(pre.local_versions[witness] == map_min_value(pre.local_versions, (pre.num_replicas - 1) as nat));
+            assert(pre.head <= pre.local_versions[witness]);
+            assert(pre.head <= min_local_version);
+            assert forall |i| imply(0 <= i < idx, min_local_version <= pre.local_versions[i]) by {
+                if 0 <= i < idx {
+                    assert(pre.local_versions.contains_key(i));
+                    assert(min_local_version <= pre.local_versions[i]);
+                }
+            }
+            assert forall |i: NodeId| imply(post.local_versions.contains_key(i), post.head <= post.local_versions[i]) by {
+                if post.local_versions.contains_key(i) {
+                    assert(post.head <= post.local_versions[i]);
+                }
+            }
+        }
     }
 
     #[inductive(advance_tail_start)]
     fn advance_tail_start_inductive(pre: Self, post: Self, node_id: NodeId) {
-        assert(CyclicBuffer::State::advance_tail_start_strong(pre, post, node_id));
-        reveal(CyclicBuffer::State::advance_tail_start_strong);
-        reveal(CyclicBuffer::State::all_combiner_valid);
-        assert(pre.pointer_ordering());
-        assert(pre.complete());
         reveal(CyclicBuffer::State::combiner_valid);
-        assert forall |i| post.combiner.contains_key(i) implies post.combiner_valid(i, post.combiner[i]) by {
-            if i == node_id {
-                assert(post.combiner[i] === CombinerState::AdvancingTail { observed_head: pre.head });
-                assert forall |n| 0 <= n < pre.num_replicas implies pre.head <= pre.local_versions[n] by {
-                    assert(pre.local_versions.contains_key(n));
-                }
-            } else {
-                assert(post.combiner[i] === pre.combiner[i]);
-                assert(pre.combiner_valid(i, pre.combiner[i]));
+        assert(pre.pointer_ordering());
+        assert(pre.local_versions.contains_key(node_id));
+        assert forall |n: NodeId| imply(0 <= n < pre.num_replicas, pre.head <= pre.local_versions[n]) by {
+            if 0 <= n < pre.num_replicas {
+                assert(pre.local_versions.contains_key(n));
+                assert(pre.head <= pre.local_versions[n]);
             }
-        };
+        }
      }
 
     #[inductive(advance_tail_abort)]
@@ -733,202 +725,10 @@ tokenized_state_machine! { CyclicBuffer<DT: Dispatch> {
 
     #[inductive(advance_tail_finish)]
     fn advance_tail_finish_inductive(pre: Self, post: Self, node_id: NodeId, new_tail: nat) {
-        assert(CyclicBuffer::State::advance_tail_finish_strong(pre, post, node_id, new_tail));
-        reveal(CyclicBuffer::State::advance_tail_finish_strong);
-        reveal(CyclicBuffer::State::inv_buffer_contents);
-        reveal(CyclicBuffer::State::upcoming_bits_are_not_alive);
-        reveal(CyclicBuffer::State::all_combiner_valid);
-        assert(pre.inv_buffer_contents());
-        assert(pre.upcoming_bits_are_not_alive());
-        assert(pre.all_combiner_valid());
-        assert(pre.complete());
-        reveal(CyclicBuffer::State::combiner_valid);
-        assert(pre.combiner[node_id].is_AdvancingTail());
-        assert(pre.local_versions.contains_key(0));
-        assert forall |n| 0 <= n < pre.num_replicas implies
-            pre.combiner[node_id].get_AdvancingTail_observed_head() <= pre.local_versions[n] by {
-            assert(pre.local_versions.contains_key(n));
-        };
-        map_min_value_smallest(pre.local_versions, (pre.num_replicas - 1) as nat);
-        assert(post.local_versions === pre.local_versions);
-        assert(post.buffer_size == pre.buffer_size);
-        assert(post.num_replicas == pre.num_replicas);
-        assert forall |i: int| post.tail - post.buffer_size <= i < post.tail implies
-            ((log_entry_is_alive(post.alive_bits, i, post.buffer_size) ||
-                i < map_min_value(post.local_versions, (post.num_replicas - 1) as nat)) <==>
-                post.contents.contains_key(i)) by {
-            if i < pre.tail {
-                assert(pre.tail - pre.buffer_size <= i);
-                assert(pre.inv_buffer_contents());
-                assert(post.tail - post.buffer_size <= i);
-                assert(i >= new_tail - pre.buffer_size);
-                assert(post.contents.contains_key(i) == pre.contents.contains_key(i));
-                assert(log_entry_is_alive(post.alive_bits, i, post.buffer_size) ==
-                    log_entry_is_alive(pre.alive_bits, i, pre.buffer_size));
-            } else {
-                assert(!post.contents.contains_key(i));
-                assert(map_min_value(post.local_versions, (post.num_replicas - 1) as nat) <= post.tail);
-                assert(!log_entry_is_alive(post.alive_bits, i, post.buffer_size));
-            }
-        };
-        assert forall |i: int| post.tail <= i implies !post.contents.contains_key(i) by {
-            assert(!post.contents.contains_key(i));
-        };
-        assert(post.inv_buffer_contents());
-        assert forall |i| post.combiner.contains_key(i) implies
-            post.combiner_valid(i, post.combiner[i]) by {
-            if i == node_id {
-                assert(post.combiner[i].is_Appending());
-                assert(post.combiner[i].get_Appending_cur_idx() == pre.tail);
-                assert(post.combiner[i].get_Appending_tail() == new_tail);
-                assert(pre.tail <= new_tail);
-                assert(post.local_versions === pre.local_versions);
-                assert(pre.local_versions.contains_key(i));
-                assert(pre.combiner_valid(i, pre.combiner[i]));
-                assert(pre.local_versions[i] <= pre.tail);
-                assert(post.local_versions[i] <= post.combiner[i].get_Appending_cur_idx());
-                assert(post.combiner[i].get_Appending_cur_idx() <=
-                    post.combiner[i].get_Appending_tail());
-                assert(post.combiner[i].get_Appending_tail() <= post.tail);
-                assert((post.tail as int) - (post.buffer_size as int) <=
-                    post.combiner[i].get_Appending_cur_idx() as int);
-                assert(post.combiner[i].get_Appending_cur_idx() <= post.tail);
-                assert forall |k: nat| pre.tail <= k < new_tail implies
-                    !log_entry_is_alive(post.alive_bits, k as int, post.buffer_size) by {
-                    assert(pre.upcoming_bits_are_not_alive());
-                }
-            } else {
-                assert(pre.combiner_valid(i, pre.combiner[i]));
-            }
-        };
-        assert(post.all_combiner_valid());
     }
 
     #[inductive(append_flip_bit)]
     fn append_flip_bit_inductive(pre: Self, post: Self, node_id: NodeId, deposited: StoredType<DT>) {
-        assert(CyclicBuffer::State::append_flip_bit_strong(pre, post, node_id, deposited));
-        reveal(CyclicBuffer::State::append_flip_bit_strong);
-        reveal(CyclicBuffer::State::ranges_no_overlap);
-        reveal(CyclicBuffer::State::upcoming_bits_are_not_alive);
-        reveal(CyclicBuffer::State::inv_buffer_contents);
-        reveal(CyclicBuffer::State::all_reader_state_valid);
-        reveal(CyclicBuffer::State::all_combiner_valid);
-        assert(pre.ranges_no_overlap());
-        assert(pre.complete());
-        assert(pre.upcoming_bits_are_not_alive());
-        assert(pre.inv_buffer_contents());
-        assert(pre.all_reader_state_valid());
-        assert(pre.all_combiner_valid());
-        reveal(CombinerState::no_overlap_with);
-        reveal(CyclicBuffer::State::combiner_valid);
-        reveal(CyclicBuffer::State::reader_state_valid);
-        assert(post.local_versions === pre.local_versions);
-        assert(post.tail == pre.tail);
-        assert(post.buffer_size == pre.buffer_size);
-        map_min_value_smallest(pre.local_versions, (pre.num_replicas - 1) as nat);
-        assert(map_min_value(pre.local_versions, (pre.num_replicas - 1) as nat) <=
-            pre.local_versions[node_id]);
-        assert forall |i| post.combiner.contains_key(i) implies
-            post.combiner_valid(i, post.combiner[i]) by {
-            if i == node_id {
-                assert(pre.combiner_valid(i, pre.combiner[i]));
-                reveal(CyclicBuffer::State::combiner_valid);
-                assert(pre.local_versions.contains_key(i));
-                assert(pre.local_versions[i] <= pre.combiner[i].get_Appending_cur_idx());
-                assert(pre.local_versions[i] <= pre.combiner[i].get_Appending_cur_idx());
-                assert(post.combiner[i].is_Appending());
-                assert(post.local_versions === pre.local_versions);
-                assert(post.local_versions[i] == pre.local_versions[i]);
-                assert(post.combiner[i].get_Appending_tail() ==
-                    pre.combiner[i].get_Appending_tail());
-                assert(post.combiner[i].get_Appending_cur_idx() ==
-                    pre.combiner[i].get_Appending_cur_idx() + 1);
-                assert(post.local_versions[i] == pre.local_versions[i]);
-                assert(post.tail == pre.tail);
-                assert(post.buffer_size == pre.buffer_size);
-                assert(post.combiner[i].get_Appending_cur_idx() ==
-                    pre.combiner[i].get_Appending_cur_idx() + 1);
-                assert(post.combiner[i].get_Appending_tail() ==
-                    pre.combiner[i].get_Appending_tail());
-                assert(post.combiner[i].get_Appending_cur_idx() <=
-                    post.combiner[i].get_Appending_tail());
-                assert(pre.combiner[i].get_Appending_cur_idx() <
-                    pre.combiner[i].get_Appending_tail());
-                assert forall |k: nat| pre.combiner[i].get_Appending_cur_idx() + 1 <= k <
-                    pre.combiner[i].get_Appending_tail() implies
-                    !log_entry_is_alive(pre.alive_bits, k as int, pre.buffer_size) by {
-                    assert(!log_entry_is_alive(pre.alive_bits, k as int, pre.buffer_size));
-                }
-                assert forall |k: nat| post.combiner[i].get_Appending_cur_idx() <= k <
-                    post.combiner[i].get_Appending_tail() implies
-                    !log_entry_is_alive(post.alive_bits, k as int, post.buffer_size) by {
-                    assert(k < pre.combiner[i].get_Appending_cur_idx() + pre.buffer_size);
-                    log_entry_idx_wrap_around(pre.combiner[i].get_Appending_cur_idx(),
-                        pre.buffer_size, k);
-                    assert(log_entry_idx(k as int, pre.buffer_size) !=
-                        log_entry_idx(pre.combiner[i].get_Appending_cur_idx() as int,
-                            pre.buffer_size));
-                    assert(post.alive_bits[log_entry_idx(k as int, post.buffer_size) as nat] ==
-                        pre.alive_bits[log_entry_idx(k as int, pre.buffer_size) as nat]);
-                    assert(log_entry_is_alive(post.alive_bits, k as int, post.buffer_size) ==
-                        log_entry_is_alive(pre.alive_bits, k as int, pre.buffer_size));
-                }
-            } else {
-                assert(post.combiner[i] === pre.combiner[i]);
-                assert(pre.combiner_valid(i, pre.combiner[i]));
-            }
-        };
-        assert forall |i, j| post.combiner.contains_key(i) && post.combiner.contains_key(j) && i != j
-            implies post.combiner[i].no_overlap_with(post.combiner[j]) by {
-            if i == node_id {
-                assert(pre.combiner[i].no_overlap_with(pre.combiner[j]));
-                if post.combiner[j].is_Reading() {
-                    assert(post.combiner[i].get_Appending_cur_idx() >=
-                        pre.combiner[i].get_Appending_cur_idx());
-                } else if post.combiner[j].is_Appending() {
-                    assert(pre.combiner[i].get_Appending_cur_idx() >=
-                        pre.combiner[j].get_Appending_tail() ||
-                        pre.combiner[i].get_Appending_tail() <=
-                        pre.combiner[j].get_Appending_cur_idx());
-                    assert(post.combiner[i].get_Appending_cur_idx() >=
-                        pre.combiner[i].get_Appending_cur_idx());
-                }
-            } else if j == node_id {
-                if post.combiner[i].is_Appending() {
-                    assert(pre.combiner[i].no_overlap_with(pre.combiner[j]));
-                    assert(pre.combiner[i].get_Appending_cur_idx() >=
-                        pre.combiner[j].get_Appending_tail() ||
-                        pre.combiner[i].get_Appending_tail() <=
-                        pre.combiner[j].get_Appending_cur_idx());
-                    assert(post.combiner[j].get_Appending_tail() ==
-                        pre.combiner[j].get_Appending_tail());
-                }
-            } else {
-                assert(pre.ranges_no_overlap());
-            }
-        };
-        assert forall |i: int| post.tail <= i <
-            map_min_value(post.local_versions, (post.num_replicas - 1) as nat) + post.buffer_size implies
-            !log_entry_is_alive(post.alive_bits, i, post.buffer_size) by {
-            assert(pre.combiner[node_id].get_Appending_cur_idx() < pre.tail);
-            assert(pre.local_versions[node_id] <= pre.combiner[node_id].get_Appending_cur_idx());
-            assert(map_min_value(pre.local_versions, (pre.num_replicas - 1) as nat) <=
-                pre.local_versions[node_id]);
-            assert(i < pre.combiner[node_id].get_Appending_cur_idx() + pre.buffer_size);
-            log_entry_idx_wrap_around(pre.combiner[node_id].get_Appending_cur_idx(),
-                pre.buffer_size, i as nat);
-            assert(log_entry_idx(i, pre.buffer_size) !=
-                log_entry_idx(pre.combiner[node_id].get_Appending_cur_idx() as int,
-                    pre.buffer_size));
-            assert(log_entry_is_alive(post.alive_bits, i, post.buffer_size) ==
-                log_entry_is_alive(pre.alive_bits, i, pre.buffer_size));
-            assert(pre.upcoming_bits_are_not_alive());
-        };
-        assert(post.ranges_no_overlap());
-        assert(post.upcoming_bits_are_not_alive());
-        assert(post.inv_buffer_contents());
-        assert(post.all_reader_state_valid());
-        assert(post.all_combiner_valid());
     }
 
     #[inductive(append_finish)]
@@ -942,81 +742,38 @@ tokenized_state_machine! { CyclicBuffer<DT: Dispatch> {
 
     #[inductive(reader_guard)]
     fn reader_guard_inductive(pre: Self, post: Self, node_id: NodeId) {
-        assert(CyclicBuffer::State::reader_guard_strong(pre, post, node_id));
-        reveal(CyclicBuffer::State::reader_guard_strong);
-        reveal(CyclicBuffer::State::ranges_no_overlap);
-        reveal(CyclicBuffer::State::all_reader_state_valid);
-        assert(pre.ranges_no_overlap());
-        assert(pre.complete());
-        assert(pre.all_reader_state_valid());
         reveal(CombinerState::no_overlap_with);
         reveal(CyclicBuffer::State::reader_state_valid);
-        reveal(CyclicBuffer::State::inv_buffer_contents);
-        assert(pre.inv_buffer_contents());
-        assert(pre.combiner[node_id].is_Reading());
-        assert(pre.combiner[node_id].get_Reading_0().is_Range());
-        assert(pre.reader_state_valid(node_id, pre.combiner[node_id].get_Reading_0()));
-        assert(post.combiner[node_id].get_Reading_0().is_Guard());
-        assert(post.combiner[node_id].get_Reading_0().get_Guard_start() ==
-            pre.combiner[node_id].get_Reading_0().get_Range_start());
-        assert(post.combiner[node_id].get_Reading_0().get_Guard_end() ==
-            pre.combiner[node_id].get_Reading_0().get_Range_end());
-        assert(post.combiner[node_id].get_Reading_0().get_Guard_cur() ==
-            pre.combiner[node_id].get_Reading_0().get_Range_cur());
-        assert(pre.combiner[node_id].get_Reading_0().get_Range_cur() <
-            pre.combiner[node_id].get_Reading_0().get_Range_end());
-        assert(log_entry_is_alive(pre.alive_bits,
-            pre.combiner[node_id].get_Reading_0().get_Range_cur() as int, pre.buffer_size));
-        assert(pre.combiner[node_id].get_Reading_0().get_Range_cur() < pre.tail);
-        reveal(CyclicBuffer::State::pointer_differences);
-        assert(pre.pointer_differences());
-        assert(pre.local_versions.contains_key(node_id));
-        assert(pre.local_versions[node_id] <= pre.tail);
-        assert(pre.tail <= pre.local_versions[node_id] + pre.buffer_size);
-        assert(pre.local_versions[node_id] ==
-            pre.combiner[node_id].get_Reading_0().get_Range_start());
-        assert(pre.combiner[node_id].get_Reading_0().get_Range_start() <=
-            pre.combiner[node_id].get_Reading_0().get_Range_cur());
-        assert((pre.tail as int) - (pre.buffer_size as int) <=
-            pre.combiner[node_id].get_Reading_0().get_Range_end() as int);
-        assert(pre.combiner[node_id].get_Reading_0().get_Range_cur() <=
-            pre.combiner[node_id].get_Reading_0().get_Range_end());
-        assert((pre.tail as int) - (pre.buffer_size as int) <=
-            pre.combiner[node_id].get_Reading_0().get_Range_cur() as int);
-        assert((log_entry_is_alive(pre.alive_bits,
-            pre.combiner[node_id].get_Reading_0().get_Range_cur() as int, pre.buffer_size) ||
-            pre.combiner[node_id].get_Reading_0().get_Range_cur() <
-                map_min_value(pre.local_versions, (pre.num_replicas - 1) as nat)) <==>
-            pre.contents.contains_key(pre.combiner[node_id].get_Reading_0().get_Range_cur() as int));
-        assert(pre.contents.contains_key(pre.combiner[node_id].get_Reading_0().get_Range_cur() as int));
-        assert(post.reader_state_valid(node_id, post.combiner[node_id].get_Reading_0()));
-        assert forall |i, j| post.combiner.contains_key(i) && post.combiner.contains_key(j) && i != j
-            implies post.combiner[i].no_overlap_with(post.combiner[j]) by {
-            if i == node_id {
-                assert(post.combiner[i].get_Reading_0().is_Guard());
-                if post.combiner[j].is_Appending() {
-                    assert(pre.combiner_valid(j, pre.combiner[j]));
-                    if pre.combiner[j].get_Appending_cur_idx() <=
-                        pre.combiner[node_id].get_Reading_0().get_Range_cur() {
-                        if pre.combiner[j].get_Appending_tail() <=
-                            pre.combiner[node_id].get_Reading_0().get_Range_cur() {
-                        } else {
-                            assert(pre.combiner[node_id].get_Reading_0().get_Range_cur() <
-                                pre.combiner[j].get_Appending_tail());
-                            assert(!log_entry_is_alive(pre.alive_bits,
-                                pre.combiner[node_id].get_Reading_0().get_Range_cur() as int,
-                                pre.buffer_size));
-                        }
-                    }
-                }
-            } else if j == node_id {
-                assert(pre.combiner_valid(i, pre.combiner[i]));
-            } else {
-                assert(pre.ranges_no_overlap());
+        assert(pre.ranges_no_overlap());
+        assert(pre.all_reader_state_valid());
+        assert(pre.combiner[node_id] is Reading);
+        assert forall |i, j| imply(post.combiner.contains_key(i) && post.combiner.contains_key(j) && i != j,
+            post.combiner[i].no_overlap_with(post.combiner[j])) by {
+            if post.combiner.contains_key(i) && post.combiner.contains_key(j) && i != j {
+                if i == node_id || j == node_id { assert(post.combiner[i] is Reading || post.combiner[j] is Reading); }
             }
-        };
-        assert(post.ranges_no_overlap());
-        assert(post.all_reader_state_valid());
+        }
+        assert forall |n| imply(#[trigger] post.combiner.contains_key(n) && post.combiner[n].is_Reading(),
+            post.reader_state_valid(n, post.combiner[n].get_Reading_0())) by {
+            if post.combiner.contains_key(n) && post.combiner[n].is_Reading() {
+            if n == node_id {
+                if let CombinerState::Reading(ReaderState::Range { start, end, cur }) = pre.combiner[n] {
+                    assert(pre.reader_state_valid(n, pre.combiner[n].get_Reading_0()));
+                    assert(post.combiner[n] is Reading);
+                    assert(post.combiner[n].get_Reading_0() is Guard);
+                    assert(post.reader_state_valid(n, post.combiner[n].get_Reading_0()));
+                }
+            } else {
+                assert(n != node_id);
+                assert(pre.combiner.contains_key(n));
+                assert(pre.combiner[n].is_Reading());
+                if let CombinerState::Reading(_) = pre.combiner[n] {
+                    assert(post.combiner[n] === pre.combiner[n]);
+                    assert(pre.reader_state_valid(n, pre.combiner[n].get_Reading_0()));
+                }
+            }
+            }
+        }
     }
 
     #[inductive(reader_unguard)]
@@ -1024,52 +781,24 @@ tokenized_state_machine! { CyclicBuffer<DT: Dispatch> {
 
     #[inductive(reader_finish)]
     fn reader_finish_inductive(pre: Self, post: Self, node_id: NodeId) {
-        assert(CyclicBuffer::State::reader_finish_strong(pre, post, node_id));
-        reveal(CyclicBuffer::State::reader_finish_strong);
         reveal(CyclicBuffer::State::upcoming_bits_are_not_alive);
         reveal(CyclicBuffer::State::inv_buffer_contents);
         assert(pre.upcoming_bits_are_not_alive());
         assert(pre.inv_buffer_contents());
-        assert(pre.complete());
-        reveal(CyclicBuffer::State::reader_state_valid);
-        reveal(map_min_value);
-        map_min_value_smallest(pre.local_versions, (pre.num_replicas - 1) as nat);
-        assert(pre.combiner[node_id].is_Reading());
-        assert(pre.combiner[node_id].get_Reading_0().is_Range());
-        assert(pre.combiner[node_id].get_Reading_0().get_Range_cur() ==
-            pre.combiner[node_id].get_Reading_0().get_Range_end());
-        assert(post.local_versions[node_id] ==
-            pre.combiner[node_id].get_Reading_0().get_Range_end());
-        assert(pre.combiner[node_id].get_Reading_0().get_Range_start() <=
-            post.local_versions[node_id]);
-        assert forall |n| 0 <= n < post.num_replicas implies
-            map_min_value(pre.local_versions, (pre.num_replicas - 1) as nat) <=
-            post.local_versions[n] by {
-            if n == node_id {
-                assert(map_min_value(pre.local_versions, (pre.num_replicas - 1) as nat) <=
-                    pre.local_versions[n]);
-                assert(pre.local_versions[n] <= post.local_versions[n]);
-            } else {
-                assert(post.local_versions[n] == pre.local_versions[n]);
+        assert forall |i: int| imply(post.tail <= i < map_min_value(post.local_versions, (post.num_replicas - 1) as nat) + post.buffer_size,
+            !log_entry_is_alive(post.alive_bits, i, post.buffer_size)) by {
+            if post.tail <= i < map_min_value(post.local_versions, (post.num_replicas - 1) as nat) + post.buffer_size {
+                assert(pre.upcoming_bits_are_not_alive());
             }
-        };
-        assert forall |i: int| post.tail - post.buffer_size <= i < post.tail implies
-            ((log_entry_is_alive(post.alive_bits, i, post.buffer_size) ||
-                i < map_min_value(post.local_versions, (post.num_replicas - 1) as nat)) <==>
-                post.contents.contains_key(i)) by {
-            if i < map_min_value(pre.local_versions, (pre.num_replicas - 1) as nat) {
+        }
+        assert forall |i: int| imply(post.tail - post.buffer_size <= i < post.tail, (
+            (log_entry_is_alive(post.alive_bits, i, post.buffer_size) ||
+                i < map_min_value(post.local_versions, (post.num_replicas - 1) as nat))
+            <==> post.contents.contains_key(i))) by {
+            if post.tail - post.buffer_size <= i < post.tail {
                 assert(pre.inv_buffer_contents());
-            } else if i < post.local_versions[node_id] {
-                assert(pre.combiner[node_id].get_Reading_0().get_Range_start() <= i);
-                assert(i < pre.combiner[node_id].get_Reading_0().get_Range_end());
-                assert(log_entry_is_alive(pre.alive_bits, i, pre.buffer_size));
-                assert(pre.contents.contains_key(i));
-            } else {
-                assert(post.contents.contains_key(i) == pre.contents.contains_key(i));
             }
-        };
-        assert(post.upcoming_bits_are_not_alive());
-        assert(post.inv_buffer_contents());
+        }
     }
 
     #[inductive(reader_abort)]
