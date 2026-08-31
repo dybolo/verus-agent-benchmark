@@ -16,13 +16,11 @@ from streamlit_app.data import (
 from streamlit_app.paths import app_data_path, repository_root
 from streamlit_app.plots import (
     PlotResult,
-    agreement_matrix,
     caterpillar,
     csv_bytes,
-    disagreement_matrix,
+    exclusive_solves_matrix,
     figure_bytes,
-    harness_comparisons,
-    harness_model_interaction,
+    harness_resource_usage,
     outcome_composition,
     quality_cost,
 )
@@ -88,7 +86,8 @@ def main() -> None:
     repo_root = repository_root()
     runs, run_errors = load_runs(repo_root / "runs")
     metadata, metadata_errors = load_task_metadata(
-        app_data_path("task_metadata.csv"), repo_root / "tasks"
+        app_data_path("task_metadata.csv"),
+        [repo_root / "tasks", repo_root / "full_tasks"],
     )
     attempts = flatten_runs(runs, metadata)
 
@@ -182,7 +181,7 @@ def main() -> None:
     metric_columns[2].metric("Attempts", len(selected))
     metric_columns[3].metric("Valid repairs", int(selected["strict_success"].sum()))
 
-    question_one, question_two, question_three, question_four = st.tabs(
+    question_one, question_two, question_three, _question_four = st.tabs(
         [
             "1 · Overall performance",
             "2 · Difficult proof patterns",
@@ -210,39 +209,24 @@ def main() -> None:
             "hierarchical-caterpillar",
         )
 
-    comparisons = harness_comparisons(selected)
     with question_three:
         st.header("How does agent harness design affect proof-repair performance?")
         render_plot(
-            disagreement_matrix(comparisons, figure_width, figure_height),
-            "harness-disagreement-matrix",
+            exclusive_solves_matrix(selected, figure_width, figure_height),
+            "harness-exclusive-solves",
         )
         st.divider()
         render_plot(
-            agreement_matrix(comparisons, figure_width, figure_height),
-            "harness-agreement-matrix",
+            harness_resource_usage(selected, figure_width, figure_height),
+            "harness-resource-usage",
         )
 
-    with question_four:
-        st.header("How does model capability change harness performance?")
-        render_plot(
-            harness_model_interaction(selected, figure_width, figure_height),
-            "harness-model-interaction",
-        )
-
-    with st.expander("Selected attempts"):
-        display_columns = [
-            "run_id",
-            "harness",
-            "model",
-            "task_id",
-            "proof_style",
-            "source_module",
-            "outcome",
-            "cost_usd",
-            "duration_seconds",
-        ]
-        st.dataframe(selected[display_columns], hide_index=True, width="stretch")
+    # with question_four:
+    #     st.header("How does model capability change harness performance?")
+    #     render_plot(
+    #         harness_model_interaction(selected, figure_width, figure_height),
+    #         "harness-model-interaction",
+    #     )
 
 
 if __name__ == "__main__":

@@ -42,12 +42,6 @@ OUTCOME_COLORS = {
     OUTCOME_ORDER[2]: COLORS["orange"],
     OUTCOME_ORDER[3]: COLORS["red"],
 }
-OUTCOME_HATCHES = {
-    OUTCOME_ORDER[0]: "",
-    OUTCOME_ORDER[1]: "//",
-    OUTCOME_ORDER[2]: "..",
-    OUTCOME_ORDER[3]: "xx",
-}
 
 
 @dataclass
@@ -122,7 +116,6 @@ def outcome_composition(attempts: pd.DataFrame, width: float, height: float) -> 
                 values,
                 left=left,
                 color=OUTCOME_COLORS[outcome],
-                hatch=OUTCOME_HATCHES[outcome],
                 label=outcome,
                 edgecolor="white",
                 linewidth=0.6,
@@ -495,6 +488,270 @@ def agreement_matrix(
 ) -> PlotResult:
     """Render matching and non-matching same-model harness results."""
     return _matrix(comparison_data, "agreement", width, minimum_height)
+
+
+def exclusive_solves_matrix(
+    attempts: pd.DataFrame, width: float, minimum_height: float
+) -> PlotResult:
+    """Plot task outcomes and highlight solves unique to one same-model harness."""
+    comparable_models = [
+        model
+        for model, group in attempts.groupby("model", observed=True)
+        if group["harness"].nunique() >= 2
+    ]
+    records: list[dict[str, object]] = []
+    panels: list[tuple[str, pd.DataFrame, list[str]]] = []
+    for model in comparable_models:
+        model_attempts = attempts[attempts["model"] == model]
+        harnesses = sorted(model_attempts["harness"].unique())
+        success = model_attempts.pivot_table(
+            index="task_id",
+            columns="harness",
+            values="strict_success",
+            aggfunc="max",
+        ).reindex(columns=harnesses)
+        solver_counts = success.fillna(False).sum(axis=1).astype(int)
+        exclusive_solver = success.apply(
+            lambda row: str(row[row.fillna(False).astype(bool)].index[0])
+            if row.fillna(False).sum() == 1
+            else None,
+            axis=1,
+        )
+        ordering = pd.DataFrame(
+            {
+                "task_id": success.index,
+                "is_exclusive": solver_counts.eq(1).astype(int).to_numpy(),
+                "solver_count": solver_counts.to_numpy(),
+            }
+        ).sort_values(
+            ["is_exclusive", "solver_count", "task_id"],
+            ascending=[False, True, True],
+            kind="stable",
+        )
+        success = success.reindex(ordering["task_id"])
+        panels.append((str(model), success, harnesses))
+        for task_id, row in success.iterrows():
+            count = int(solver_counts.loc[task_id])
+            only = exclusive_solver.loc[task_id]
+            for harness in harnesses:
+                value = row[harness]
+                records.append(
+                    {
+                        "model": model,
+                        "task_id": task_id,
+                        "harness": harness,
+                        "success": value if pd.notna(value) else pd.NA,
+                        "solver_count": count,
+                        "exclusive_solver": only,
+                        "status": (
+                            "Missing"
+                            if pd.isna(value)
+                            else "Exclusive solve"
+                            if bool(value) and only == harness
+                            else "Shared solve"
+                            if bool(value)
+                            else "Failed"
+                        ),
+                    }
+                )
+
+    export = pd.DataFrame.from_records(
+        records,
+        columns=[
+            "model",
+            "task_id",
+            "harness",
+            "success",
+            "solver_count",
+            "exclusive_solver",
+            "status",
+        ],
+    )
+    if not panels:
+        with _style():
+            figure, axis = plt.subplots(figsize=(width, minimum_height))
+            axis.text(0.5, 0.5, "No same-model harness comparison is available", ha="center", va="center")
+            axis.axis("off")
+        return PlotResult(
+            figure,
+            export,
+            "Select at least two harnesses that evaluated the same model.",
+        )
+
+    total_rows = sum(len(panel) for _, panel, _ in panels)
+    figure_height = max(minimum_height, 1.8 + 0.25 * total_rows)
+    status_order = ["Failed", "Shared solve", "Exclusive solve", "Missing"]
+    status_colors = [COLORS["light_gray"], COLORS["green"], COLORS["blue"], COLORS["gray"]]
+    cmap = mcolors.ListedColormap(status_colors)
+    norm = mcolors.BoundaryNorm(np.arange(-0.5, len(status_order) + 0.5), cmap.N)
+
+    with _style():
+        figure, axes = plt.subplots(
+            len(panels),
+            1,
+            figsize=(width, figure_height),
+            constrained_layout=True,
+            squeeze=False,
+            gridspec_kw={"height_ratios": [len(panel) for _, panel, _ in panels]},
+        )
+        for axis, (model, success, harnesses) in zip(axes[:, 0], panels):
+            codes = np.full(success.shape, 3, dtype=float)
+            for row_index, task_id in enumerate(success.index):
+                for column_index, harness in enumerate(harnesses):
+                    value = success.loc[task_id, harness]
+                    if pd.isna(value):
+                        continue
+                    if not bool(value):
+                        codes[row_index, column_index] = 0
+                    elif int(success.loc[task_id].fillna(False).sum()) == 1:
+                        codes[row_index, column_index] = 2
+                    else:
+                        codes[row_index, column_index] = 1
+            axis.imshow(codes, cmap=cmap, norm=norm, aspect="auto", interpolation="none")
+            axis.set_xticks(np.arange(len(harnesses)), harnesses)
+            axis.set_yticks(np.arange(len(success.index)), success.index)
+            axis.set_xlabel("Harness")
+            axis.set_ylabel("Task")
+            axis.set_title(model, loc="left", fontweight="bold")
+            axis.set_xticks(np.arange(-0.5, len(harnesses), 1), minor=True)
+            axis.set_yticks(np.arange(-0.5, len(success.index), 1), minor=True)
+            axis.grid(which="minor", color="white", linewidth=0.8)
+            axis.tick_params(which="minor", bottom=False, left=False)
+            for row_index, task_id in enumerate(success.index):
+                for column_index, harness in enumerate(harnesses):
+                    code = int(codes[row_index, column_index])
+                    text = "★" if code == 2 else "●" if code == 1 else "×" if code == 3 else ""
+                    if text:
+                        axis.text(
+                            column_index,
+                            row_index,
+                            text,
+                            ha="center",
+                            va="center",
+                            fontsize=7,
+                            color="white" if code in (1, 2) else COLORS["dark"],
+                        )
+        figure.suptitle(
+            "Task-level proof-repair outcomes by harness",
+            fontweight="bold",
+        )
+        axes[-1, 0].legend(
+            handles=[
+                Patch(facecolor=color, label=status)
+                for color, status in zip(status_colors, status_order)
+            ],
+            frameon=False,
+            loc="upper center",
+            bbox_to_anchor=(0.5, -0.12),
+            ncol=4,
+        )
+    omitted_models = attempts["model"].nunique() - len(comparable_models)
+    warning = None
+    if omitted_models:
+        warning = (
+            f"{omitted_models} model(s) omitted because fewer than two harnesses "
+            "evaluated that model."
+        )
+    return PlotResult(figure=figure, data=export, warning=warning)
+
+
+def harness_resource_usage(
+    attempts: pd.DataFrame, width: float, height: float
+) -> PlotResult:
+    """Compare per-task duration, turns, and tool calls across conditions."""
+    metrics = [
+        ("duration_seconds", "Duration", "minutes", 1 / 60),
+        ("total_turns", "Turns", "turns", 1),
+        ("total_tool_calls", "Tool calls", "calls", 1),
+    ]
+    conditions = _ordered_conditions(attempts)
+    records: list[dict[str, object]] = []
+    for condition in conditions:
+        group = attempts[attempts["condition"] == condition]
+        for column, label, unit, scale in metrics:
+            metric_values = group[column]
+            if column == "duration_seconds":
+                metric_values = metric_values.where(~group["timed_out"], 20 * 60)
+            values = metric_values.dropna().astype(float)
+            records.append(
+                {
+                    "condition": condition,
+                    "harness": group["harness"].iloc[0],
+                    "model": group["model"].iloc[0],
+                    "metric": column,
+                    "metric_label": label,
+                    "unit": unit,
+                    "attempted_tasks": len(group),
+                    "timed_out_attempts": int(group["timed_out"].sum()),
+                    "observations": len(values),
+                    "total": values.sum() * scale if len(values) else np.nan,
+                    "median": values.median() * scale if len(values) else np.nan,
+                    "q1": values.quantile(0.25) * scale if len(values) else np.nan,
+                    "q3": values.quantile(0.75) * scale if len(values) else np.nan,
+                }
+            )
+    summary = pd.DataFrame.from_records(records)
+    y = np.arange(len(conditions))
+
+    with _style():
+        figure, axes = plt.subplots(
+            1,
+            3,
+            figsize=(width, max(height, 1.8 + 0.55 * len(conditions))),
+            constrained_layout=True,
+            sharey=True,
+        )
+        for axis, (column, label, unit, _) in zip(axes, metrics):
+            panel = summary[summary["metric"] == column].set_index("condition").reindex(conditions)
+            medians = panel["median"].to_numpy(dtype=float)
+            q1 = panel["q1"].to_numpy(dtype=float)
+            q3 = panel["q3"].to_numpy(dtype=float)
+            valid = ~np.isnan(medians)
+            axis.errorbar(
+                medians[valid],
+                y[valid],
+                xerr=np.vstack((medians[valid] - q1[valid], q3[valid] - medians[valid])),
+                fmt="o",
+                color=COLORS["blue"],
+                ecolor=COLORS["dark"],
+                elinewidth=1.2,
+                capsize=3,
+                markersize=6,
+                zorder=3,
+            )
+            for median, position in zip(medians[valid], y[valid]):
+                axis.annotate(
+                    f"{median:.1f}" if column == "duration_seconds" else f"{median:.0f}",
+                    (median, position),
+                    xytext=(6, 6),
+                    textcoords="offset points",
+                    fontsize=8,
+                    color=COLORS["dark"],
+                )
+            if column == "duration_seconds":
+                axis.set_xlim(0, 20)
+                axis.set_xticks(np.arange(0, 21, 5))
+            else:
+                axis.set_xlim(left=0)
+            axis.set_xlabel(f"Median per attempted task ({unit})")
+            panel_title = "Duration (timeouts = 20 min)" if column == "duration_seconds" else label
+            axis.set_title(panel_title, loc="left", fontweight="bold")
+            axis.grid(axis="x", color=COLORS["light_gray"], linewidth=0.7)
+            axis.set_axisbelow(True)
+        axes[0].set_yticks(y, conditions)
+        axes[0].invert_yaxis()
+        axes[0].set_ylabel("Harness / model")
+        figure.suptitle("Per-task resource usage (median and IQR)", fontweight="bold")
+
+    incomplete = summary[summary["observations"] < summary["attempted_tasks"]]
+    warning = None
+    if not incomplete.empty:
+        affected = incomplete[["condition", "metric_label"]].drop_duplicates()
+        warning = (
+            f"{len(affected)} condition–metric combination(s) have missing observations; "
+            "summaries use available attempts."
+        )
+    return PlotResult(figure=figure, data=summary, warning=warning)
 
 
 def _has_complete_two_by_two(summary: pd.DataFrame) -> bool:

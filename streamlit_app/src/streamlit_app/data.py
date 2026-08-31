@@ -91,9 +91,9 @@ def _numeric(value: Any) -> float:
 
 
 def load_task_metadata(
-    metadata_path: Path, tasks_dir: Path | None = None
+    metadata_path: Path, task_dirs: Path | Iterable[Path] | None = None
 ) -> tuple[pd.DataFrame, list[str]]:
-    """Load task taxonomy metadata and optionally check it against task files."""
+    """Load task taxonomy metadata and optionally check it against task directories."""
     required = {"task_id", "proof_style", "source_module"}
     errors: list[str] = []
     records: list[dict[str, str]] = []
@@ -131,8 +131,14 @@ def load_task_metadata(
         records, columns=["task_id", "proof_style", "source_module"]
     )
 
-    if tasks_dir is not None and tasks_dir.is_dir():
-        task_files = {path.stem for path in tasks_dir.glob("*.rs")}
+    if task_dirs is not None:
+        directories = [task_dirs] if isinstance(task_dirs, Path) else list(task_dirs)
+        task_files = {
+            path.stem
+            for directory in directories
+            if directory.is_dir()
+            for path in directory.glob("*.rs")
+        }
         metadata_ids = set(metadata["task_id"]) if not metadata.empty else set()
         for identifier in sorted(task_files - metadata_ids):
             errors.append(f"task metadata missing for {identifier}")
@@ -196,6 +202,8 @@ def flatten_runs(runs: Iterable[dict[str, Any]], metadata: pd.DataFrame) -> pd.D
                         "cheat_checker_passed": result.get("cheat_checker_passed") is True,
                         "cost_usd": _numeric(result.get("total_costs")),
                         "duration_seconds": _numeric(result.get("duration_seconds")),
+                        "total_turns": _numeric(result.get("total_turns")),
+                        "total_tool_calls": _numeric(result.get("total_tool_calls")),
                         "proof_style": task_metadata.get("proof_style"),
                         "source_module": task_metadata.get("source_module"),
                     }
@@ -204,7 +212,7 @@ def flatten_runs(runs: Iterable[dict[str, Any]], metadata: pd.DataFrame) -> pd.D
 
 
 def discover_cohorts(
-    attempts: pd.DataFrame, allowed_harnesses: Iterable[str] = ("opencode", "pi")
+    attempts: pd.DataFrame, allowed_harnesses: Iterable[str] = ("opencode", "pi", "codex", "copilot")
 ) -> list[Cohort]:
     """Group attempts with the same tasks and keep the latest run per condition."""
     if attempts.empty:

@@ -6,7 +6,6 @@ import unittest
 from pathlib import Path
 
 import pandas as pd
-
 from streamlit_app.data import (
     cohort_attempts,
     discover_cohorts,
@@ -31,6 +30,8 @@ class LoadingTests(unittest.TestCase):
                                 "verus_passed": True,
                                 "cheat_checker_passed": True,
                                 "timed_out": True,
+                                "total_turns": 12,
+                                "total_tool_calls": 9,
                             },
                             "timed-out.rs": {"timed_out": True},
                             "rejected.rs": {"verus_passed": True},
@@ -54,6 +55,8 @@ class LoadingTests(unittest.TestCase):
             },
         )
         self.assertTrue(attempts.set_index("task_id").loc["valid", "strict_success"])
+        self.assertEqual(attempts.set_index("task_id").loc["valid", "total_turns"], 12)
+        self.assertEqual(attempts.set_index("task_id").loc["valid", "total_tool_calls"], 9)
 
     def test_load_runs_reports_malformed_files(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
@@ -69,20 +72,26 @@ class LoadingTests(unittest.TestCase):
 
     def test_sidecar_covers_all_manifest_tasks(self) -> None:
         metadata, errors = load_task_metadata(
-            app_data_path("task_metadata.csv"), REPO_ROOT / "tasks"
+            app_data_path("task_metadata.csv"),
+            [REPO_ROOT / "tasks", REPO_ROOT / "full_tasks"],
         )
         self.assertEqual(errors, [])
-        self.assertEqual(len(metadata), 75)
-        self.assertEqual(metadata["task_id"].nunique(), 75)
+        self.assertEqual(len(metadata), 92)
+        self.assertEqual(metadata["task_id"].nunique(), 92)
         self.assertEqual(
             metadata["proof_style"].value_counts().to_dict(),
-            {"atomic-operation": 42, "tokenized_state_machine!": 33},
+            {
+                "atomic-operation": 42,
+                "tokenized_state_machine!": 33,
+                "full-file": 17,
+            },
         )
 
     def test_default_real_cohort_is_four_conditions_on_fifty_tasks(self) -> None:
         runs, run_errors = load_runs(REPO_ROOT / "runs")
         metadata, metadata_errors = load_task_metadata(
-            app_data_path("task_metadata.csv"), REPO_ROOT / "tasks"
+            app_data_path("task_metadata.csv"),
+            [REPO_ROOT / "tasks", REPO_ROOT / "full_tasks"],
         )
         self.assertEqual(run_errors, [])
         self.assertEqual(metadata_errors, [])

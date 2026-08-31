@@ -1,6 +1,7 @@
 # Verus Proof-Repair Task Manifest
 
-This document catalogues the 75 Verus proof-repair tasks. It describes the corpus snapshot and task definitions only;
+This document catalogues the 75 focused Verus proof-repair tasks and the 17
+full-file tasks. It describes the corpus snapshot and task definitions only;
 experimental outcomes, costs, and durations are recorded separately in
 [`runs/`](runs/).
 
@@ -8,7 +9,8 @@ experimental outcomes, costs, and durations are recorded separately in
 
 - Repository: [`dybolo/verus-agent-benchmark`](https://github.com/dybolo/verus-agent-benchmark)
 - Corpus snapshot: commit [`52efc533a234df3d534b53acdb3888cb60d765d1`](https://github.com/dybolo/verus-agent-benchmark/commit/52efc533a234df3d534b53acdb3888cb60d765d1)
-- Tasks: 75 standalone Rust files in [`tasks/`](tasks/)
+- Focused tasks: 75 standalone Rust files in [`tasks/`](tasks/)
+- Full-file tasks: 17 standalone Rust files in [`full_tasks/`](full_tasks/)
 - Reference proofs: the corresponding fully verified files in
   [`solutions/base/`](solutions/base/)
 
@@ -17,10 +19,14 @@ experimental outcomes, costs, and durations are recorded separately in
 [verified-node-replication]: https://github.com/verus-lang/verified-node-replication
 [verified-memory-allocator]: https://github.com/verus-lang/verified-memory-allocator
 
-Each task contains one designated incomplete proof obligation. The benchmark
-prompt requires a solver to add only proof annotations: it must preserve
-executable code and existing contracts, must not introduce `admit(...)` or
-`assume(...)`, and must preserve existing admits and unrelated proof holes.
+Each focused task contains one designated repair target (normally one proof
+obligation; the unified `wait` task covers the three queue operations). A
+full-file task instead removes the repair annotations for all selected proof
+obligations in one source module, so a solver must repair the module as a
+whole. The benchmark prompt requires a solver to add only proof annotations:
+it must preserve executable code and existing contracts, must not introduce
+`admit(...)` or `assume(...)`, and must preserve existing admits and unrelated
+proof holes.
 Successful solutions are checked with Verus and the Lynette change checker.
 
 Tasks are classified by the feature exercised by the **designated proof
@@ -37,6 +43,37 @@ proofs.
 | --- | ---: | --- | --- |
 | Atomic-operation proofs | 42 | Complete ghost reasoning around a concrete atomic operation, either with `atomic_with_ghost!` or by opening an invariant with `open_atomic_invariant!`. | Context, Count-to-Two, Cuckoo, FIFO, Helping, Log, Once, Replica, RwLock, statics, verified memory allocator, wait queue |
 | `tokenized_state_machine!` | 33 | Prove that a state-machine transition preserves its invariants. | Cuckoo, CyclicBuffer, distributed RwLock, FIFO, Flat Combining, Unbounded Log, verified memory allocator |
+| Full-file repairs | 17 | Repair all selected missing proof annotations in a self-contained source module; a file may combine both focused proof styles and auxiliary proof lemmas. | Context, Count-to-Two, Cuckoo, CyclicBuffer, distributed RwLock, FIFO, Flat Combining, Helping, Log, Once, Replica, RwLock, Unbounded Log, verified memory allocator |
+
+The focused and full-file groups are separate benchmark modes, not 92
+independent obligations. Run the focused corpus with `python3 benchmark.py`
+and the full-file corpus with `python3 benchmark.py --full-tasks`.
+
+## Full-file proof tasks (17)
+
+The `_full` suffix is part of each task ID. Unlike the focused files below,
+these tasks can contain multiple missing proof bodies or proof blocks. Their
+reference proof is the corresponding module in [`solutions/base/`](solutions/base/).
+
+| Task ID | Scope | Source project | Source module | Task file |
+| --- | --- | --- | --- | --- |
+| `context_full` | Repair the complete client context module. | [verified-node-replication] | [`context.rs`](solutions/base/context.rs) | [`context_full.rs`](full_tasks/context_full.rs) |
+| `count_to_two_full` | Repair the complete Count-to-Two logical-atomic example. | [Verus] | [`count_to_two.rs`](solutions/base/count_to_two.rs) | [`count_to_two_full.rs`](full_tasks/count_to_two_full.rs) |
+| `cuckoo_full` | Repair the complete Cuckoo hash-map module, including its state-machine and atomic proofs. | [Verus] | [`cuckoo.rs`](solutions/base/cuckoo.rs) | [`cuckoo_full.rs`](full_tasks/cuckoo_full.rs) |
+| `cyclicbuffer_full` | Repair all selected CyclicBuffer invariant-preservation proofs. | [verified-node-replication] | [`cyclicbuffer.rs`](solutions/base/cyclicbuffer.rs) | [`cyclicbuffer_full.rs`](full_tasks/cyclicbuffer_full.rs) |
+| `dist_rwlock_full` | Repair the complete distributed RwLock state-machine proof. | [Verus] | [`dist_rwlock.rs`](solutions/base/dist_rwlock.rs) | [`dist_rwlock_full.rs`](full_tasks/dist_rwlock_full.rs) |
+| `fifo_full` | Repair the complete FIFO module, including its state-machine and atomic proofs. | [Verus] | [`fifo.rs`](solutions/base/fifo.rs) | [`fifo_full.rs`](full_tasks/fifo_full.rs) |
+| `flat_combine_full` | Repair all selected Flat Combining invariant-preservation proofs. | [verified-node-replication] | [`flat_combine.rs`](solutions/base/flat_combine.rs) | [`flat_combine_full.rs`](full_tasks/flat_combine_full.rs) |
+| `free_full` | Repair the complete allocator free-path proof. | [verified-memory-allocator] | [`free.rs`](solutions/base/free.rs) | [`free_full.rs`](full_tasks/free_full.rs) |
+| `helping_full` | Repair the complete logical-atomic helping example. | [Verus] | [`helping.rs`](solutions/base/helping.rs) | [`helping_full.rs`](full_tasks/helping_full.rs) |
+| `linked_list_full` | Repair the complete allocator linked-list module. | [verified-memory-allocator] | [`linked_list.rs`](solutions/base/linked_list.rs) | [`linked_list_full.rs`](full_tasks/linked_list_full.rs) |
+| `log_full` | Repair the complete replicated-log module. | [verified-node-replication] | [`log.rs`](solutions/base/log.rs) | [`log_full.rs`](full_tasks/log_full.rs) |
+| `once_full` | Repair the complete one-time initialization module. | [vostd] | [`once.rs`](solutions/base/once.rs) | [`once_full.rs`](full_tasks/once_full.rs) |
+| `replica_full` | Repair the complete node-replica module. | [verified-node-replication] | [`replica.rs`](solutions/base/replica.rs) | [`replica_full.rs`](full_tasks/replica_full.rs) |
+| `rwlock_full` | Repair the complete concurrent RwLock module. | [vostd] | [`rwlock.rs`](solutions/base/rwlock.rs) | [`rwlock_full.rs`](full_tasks/rwlock_full.rs) |
+| `tokens_full` | Repair the complete allocator token state-machine module. | [verified-memory-allocator] | [`tokens.rs`](solutions/base/tokens.rs) | [`tokens_full.rs`](full_tasks/tokens_full.rs) |
+| `types_full` | Repair the selected auxiliary allocator type proofs. | [verified-memory-allocator] | [`types.rs`](solutions/base/types.rs) | [`types_full.rs`](full_tasks/types_full.rs) |
+| `unbounded_log_full` | Repair all selected Unbounded Log invariant-preservation proofs. | [verified-node-replication] | [`unbounded_log.rs`](solutions/base/unbounded_log.rs) | [`unbounded_log_full.rs`](full_tasks/unbounded_log_full.rs) |
 
 ## Atomic-operation proof tasks (42)
 
@@ -57,9 +94,7 @@ proofs.
 | `rwlock_upgradableguard_drop` | Release an upgradeable read guard and restore its permissions. | Atomic-ghost proof in `RwLockUpgradeableGuard::drop` | [vostd](https://github.com/asterinas/vostd) | [`rwlock.rs`](solutions/base/rwlock.rs) | [`rwlock_upgradableguard_drop.rs`](tasks/rwlock_upgradableguard_drop.rs) |
 | `rwlock_writeguard_drop` | Release a write guard and restore the lock's writable state. | Atomic-ghost proof in `RwLockWriteGuard::drop` | [vostd](https://github.com/asterinas/vostd) | [`rwlock.rs`](solutions/base/rwlock.rs) | [`rwlock_writeguard_drop.rs`](tasks/rwlock_writeguard_drop.rs) |
 | `statics_get` | Lazily initialize and retrieve a static value. | Atomic-ghost proof in `Lazy::get` | [Verus](https://github.com/verus-lang/verus) | [`statics.rs`](solutions/base/statics.rs) | [`statics_get.rs`](tasks/statics_get.rs) |
-| `wait_enqueue` | Enqueue a waiter while keeping the atomic queue-length mirror consistent. | Atomic-ghost proof in `WaitQueue::enqueue` | [vostd](https://github.com/asterinas/vostd) | [`wait.rs`](solutions/base/wait.rs) | [`wait_enqueue.rs`](tasks/wait_enqueue.rs) |
-| `wait_wake_all` | Wake all queued waiters while decrementing the mirrored count. | Atomic-ghost proof in `WaitQueue::wake_all` | [vostd](https://github.com/asterinas/vostd) | [`wait.rs`](solutions/base/wait.rs) | [`wait_wake_all.rs`](tasks/wait_wake_all.rs) |
-| `wait_wake_one` | Wake one queued waiter while decrementing the mirrored count. | Atomic-ghost proof in `WaitQueue::wake_one` | [vostd](https://github.com/asterinas/vostd) | [`wait.rs`](solutions/base/wait.rs) | [`wait_wake_one.rs`](tasks/wait_wake_one.rs) |
+| `wait` | Repair the queue-length ghost updates when waking all waiters, waking one waiter, and enqueueing a waiter. | Atomic-ghost proofs in `WaitQueue::{wake_all,wake_one,enqueue}` | [vostd](https://github.com/asterinas/vostd) | [`wait.rs`](solutions/base/wait.rs) | [`wait.rs`](tasks/wait.rs) |
 | `count_to_two_read_x` | Read the shared counter after both one-shot events have completed. | Logical-atomic proof in `CounterSharedState::read_x` | [Verus](https://github.com/verus-lang/verus) | [`count_to_two.rs`](solutions/base/count_to_two.rs) | [`count_to_two_read_x.rs`](tasks/count_to_two_read_x.rs) |
 | `count_to_two_thread_routine` | Increment the counter and complete the caller's one-shot event. | Logical-atomic proof in `thread_routine` | [Verus](https://github.com/verus-lang/verus) | [`count_to_two.rs`](solutions/base/count_to_two.rs) | [`count_to_two_thread_routine.rs`](tasks/count_to_two_thread_routine.rs) |
 | `helping_try_cancel_two_flips` | Cancel two pending flip operations through the helping protocol. | Logical-atomic proof in `try_cancel_two_flips` | [Verus](https://github.com/verus-lang/verus) | [`helping.rs`](solutions/base/helping.rs) | [`helping_try_cancel_two_flips.rs`](tasks/helping_try_cancel_two_flips.rs) |
@@ -84,6 +119,8 @@ proofs.
 | `linked_list_take` | Take all blocks from a linked free list while preserving its list invariant. | Atomic-ghost proof in `LLAtomic::take` | [verified-memory-allocator] | [`linked_list.rs`](solutions/base/linked_list.rs) | [`linked_list_take.rs`](tasks/linked_list_take.rs) |
 | `linked_list_take_` | Take a nonempty linked free list while retaining its delay-state metadata. | Atomic-ghost proof in `LLAtomic::take` | [verified-memory-allocator] | [`linked_list.rs`](solutions/base/linked_list.rs) | [`linked_list_take_.rs`](tasks/linked_list_take_.rs) |
 | `linked_list_try_use_delayed_free` | Attempt to claim a linked list's delayed-free state atomically. | Atomic-ghost proof in `LLAtomic::try_use_delayed_free` | [verified-memory-allocator] | [`linked_list.rs`](solutions/base/linked_list.rs) | [`linked_list_try_use_delayed_free.rs`](tasks/linked_list_try_use_delayed_free.rs) |
+| `types_disable` | Disable a page's atomic heap pointer and recover its heap-of-page token. | Atomic-ghost proof in `AtomicHeapPtr::disable` | [verified-memory-allocator] | [`types.rs`](solutions/base/types.rs) | [`types_disable.rs`](tasks/types_disable.rs) |
+| `types_get_heap` | Read a page's owning heap while proving that it agrees with the local thread state. | Atomic-ghost proof in `PagePtr::get_heap` | [verified-memory-allocator] | [`types.rs`](solutions/base/types.rs) | [`types_get_heap.rs`](tasks/types_get_heap.rs) |
 
 ## `tokenized_state_machine!` tasks (33)
 
