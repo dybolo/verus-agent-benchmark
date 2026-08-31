@@ -70,6 +70,15 @@ class PlotSmokeTests(unittest.TestCase):
             {"atomic-operation": 20, "tokenized_state_machine!": 30},
         )
 
+    def test_caterpillar_uses_source_file_group_headers(self) -> None:
+        result = caterpillar(self.selected, 12, 5)
+        labels = [label for axis in result.figure.axes for label in axis.get_yticklabels()]
+        source_headers = [label for label in labels if label.get_text().endswith(".rs")]
+
+        self.assertTrue(source_headers)
+        self.assertTrue(all(label.get_fontweight() == "bold" for label in source_headers))
+        self.assertTrue(any(label.get_text().startswith("    ") for label in labels))
+
     def test_current_harness_comparison_is_qwen_pair(self) -> None:
         self.assertEqual(self.comparisons["comparison"].nunique(), 1)
         self.assertEqual(len(self.comparisons), 50)

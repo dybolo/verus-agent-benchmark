@@ -275,7 +275,11 @@ def caterpillar(attempts: pd.DataFrame, width: float, minimum_height: float) -> 
             axis.axis("off")
         return PlotResult(figure, summary, "No selected tasks have proof-style metadata.")
 
-    rows_per_panel = [len(summary[summary["proof_style"] == proof]) for proof in proof_order]
+    rows_per_panel = [
+        len(summary[summary["proof_style"] == proof])
+        + summary[summary["proof_style"] == proof]["source_module"].nunique()
+        for proof in proof_order
+    ]
     figure_height = max(minimum_height, 1.8 + 0.33 * max(rows_per_panel))
     with _style():
         figure, axes = plt.subplots(
@@ -289,24 +293,51 @@ def caterpillar(attempts: pd.DataFrame, width: float, minimum_height: float) -> 
             panel = summary[summary["proof_style"] == proof_style].sort_values(
                 ["source_module", "solve_rate", "task_id"], kind="stable"
             )
-            y = np.arange(len(panel))
+            task_positions: list[float] = []
+            tick_positions: list[float] = []
             labels: list[str] = []
-            previous_module = None
-            for _, row in panel.iterrows():
-                prefix = f"{row['source_module']}  ›  " if row["source_module"] != previous_module else "    "
-                labels.append(prefix + row["task_id"])
-                previous_module = row["source_module"]
-            axis.hlines(y, 0, panel["solve_rate"], color=COLORS["light_gray"], linewidth=1.5)
+            header_ticks: list[bool] = []
+            cursor = 0.0
+            for source_module, module_tasks in panel.groupby(
+                "source_module", observed=True, sort=False
+            ):
+                header_position = cursor
+                tick_positions.append(header_position)
+                labels.append(str(source_module))
+                header_ticks.append(True)
+                axis.axhspan(
+                    header_position - 0.38,
+                    header_position + 0.38,
+                    color=COLORS["light_gray"],
+                    alpha=0.65,
+                    linewidth=0,
+                    zorder=0,
+                )
+                cursor += 0.85
+                for task_id in module_tasks["task_id"]:
+                    task_positions.append(cursor)
+                    tick_positions.append(cursor)
+                    labels.append(f"    {task_id}")
+                    header_ticks.append(False)
+                    cursor += 1.0
+                cursor += 0.35
+            axis.hlines(
+                task_positions,
+                0,
+                panel["solve_rate"],
+                color=COLORS["light_gray"],
+                linewidth=1.5,
+            )
             axis.scatter(
                 panel["solve_rate"],
-                y,
+                task_positions,
                 color=COLORS["blue"] if proof_style == "atomic-operation" else COLORS["orange"],
                 edgecolor=COLORS["dark"],
                 linewidth=0.4,
                 s=38,
                 zorder=3,
             )
-            for position, (_, row) in enumerate(panel.iterrows()):
+            for position, (_, row) in zip(task_positions, panel.iterrows()):
                 axis.annotate(
                     f"{int(row['solved'])}/{int(row['observed'])}",
                     (row["solve_rate"], position),
@@ -315,7 +346,11 @@ def caterpillar(attempts: pd.DataFrame, width: float, minimum_height: float) -> 
                     va="center",
                     fontsize=8,
                 )
-            axis.set_yticks(y, labels)
+            axis.set_yticks(tick_positions, labels)
+            for tick_label, is_header in zip(axis.get_yticklabels(), header_ticks):
+                if is_header:
+                    tick_label.set_fontweight("bold")
+            axis.set_ylim(-0.5, cursor - 0.15)
             axis.invert_yaxis()
             axis.set_xlim(-0.02, 1.14)
             axis.set_xticks(np.linspace(0, 1, 5), ["0", "25", "50", "75", "100"])
