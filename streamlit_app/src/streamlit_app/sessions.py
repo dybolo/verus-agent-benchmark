@@ -256,6 +256,109 @@ def normalize_copilot(events: list[dict[str, Any]]) -> list[TimelineItem]:
     return items
 
 
+def codex_status(item: dict[str, Any], event_type: str) -> str:
+    """Translate Codex item states into the viewer's shared status values."""
+    status = str(item.get("status", ""))
+    if status in {"failed", "error"}:
+        return "error"
+    if status == "completed" or event_type == "item.completed":
+        return "completed"
+    return status or "unknown"
+
+
+def normalize_codex(events: list[dict[str, Any]]) -> list[TimelineItem]:
+    """Normalize events emitted by ``codex exec --json``.
+
+    Item start, update, and completion records repeat the full item. Only the last
+    version of each item is rendered so commands and file edits do not appear twice.
+    """
+    last_item_event: dict[str, int] = {}
+    for index, event in enumerate(events):
+        item = event.get("item")
+        if isinstance(item, dict) and item.get("id"):
+            last_item_event[str(item["id"])] = index
+
+    items: list[TimelineItem] = []
+    for index, event in enumerate(events):
+        event_type = str(event.get("type", "event"))
+        timestamp = parse_timestamp(event.get("received_at") or event.get("timestamp"))
+        item = event.get("item")
+
+        if isinstance(item, dict):
+            item_id = item.get("id")
+            if item_id and last_item_event.get(str(item_id)) != index:
+                continue
+            item_type = str(item.get("type", "item"))
+            status = codex_status(item, event_type)
+            if item_type == "agent_message":
+                items.append(
+                    TimelineItem(
+                        "message", "Assistant", timestamp,
+                        role="assistant", body=str(item.get("text", "")),
+                    )
+                )
+            elif item_type == "command_execution":
+                items.append(
+                    TimelineItem(
+                        "tool", "Command", timestamp,
+                        input=item.get("command"), output=item.get("aggregated_output"),
+                        status=status,
+                        details={"exit_code": item.get("exit_code")},
+                    )
+                )
+            elif item_type == "file_change":
+                items.append(
+                    TimelineItem(
+                        "tool", "File changes", timestamp,
+                        input=item.get("changes"), status=status,
+                    )
+                )
+            elif item_type == "web_search":
+                items.append(
+                    TimelineItem(
+                        "tool", "Web search", timestamp,
+                        input=item.get("action") or item.get("query"), status=status,
+                    )
+                )
+            elif item_type == "todo_list":
+                items.append(
+                    TimelineItem(
+                        "event", "Todo list", timestamp,
+                        status=status, details=item.get("items"),
+                    )
+                )
+            elif item_type == "error":
+                items.append(
+                    TimelineItem(
+                        "event", "Error", timestamp,
+                        body=str(item.get("message", "")), status="error",
+                    )
+                )
+            else:
+                items.append(
+                    TimelineItem(
+                        "event", item_type.replace("_", " ").title(), timestamp,
+                        status=status, details=item,
+                    )
+                )
+            continue
+
+        if event_type in {"session.started", "thread.started", "turn.started", "turn.completed"}:
+            details = {
+                key: value
+                for key, value in event.items()
+                if key not in {"type", "timestamp", "received_at"}
+            }
+            items.append(
+                TimelineItem(
+                    "event", event_type.replace(".", " ").title(), timestamp,
+                    status="completed" if event_type == "turn.completed" else None,
+                    details=details or None,
+                )
+            )
+    return items
+
+
 def normalize_generic(events: list[dict[str, Any]]) -> list[TimelineItem]:
     """Represent unrecognized provider events without discarding their details."""
     return [
@@ -269,6 +372,8 @@ def normalize_session(events: list[dict[str, Any]], agent_name: str) -> list[Tim
     agent = agent_name.split("/", maxsplit=1)[0]
     if agent == "copilot":
         items = normalize_copilot(events)
+    elif agent == "codex":
+        items = normalize_codex(events)
     elif agent == "opencode":
         items = normalize_opencode(events)
     elif agent.startswith("pi"):

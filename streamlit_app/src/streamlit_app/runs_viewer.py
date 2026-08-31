@@ -60,13 +60,23 @@ def safe_repo_path(repo_root: Path, value: Any) -> Path | None:
     """Resolve a path only when it stays inside the benchmark repository."""
     if not isinstance(value, str) or not value:
         return None
+    resolved_root = repo_root.resolve()
     candidate = Path(value)
-    resolved = candidate.resolve() if candidate.is_absolute() else (repo_root / candidate).resolve()
+    resolved = candidate.resolve() if candidate.is_absolute() else (resolved_root / candidate).resolve()
     try:
-        resolved.relative_to(repo_root)
+        resolved.relative_to(resolved_root)
     except ValueError:
         return None
     return resolved
+
+
+def original_task_path(repo_root: Path, task_name: str) -> Path | None:
+    """Find the original input for a regular or ``--full-file`` benchmark task."""
+    for task_directory in ("tasks", "full_tasks"):
+        candidate = safe_repo_path(repo_root, f"{task_directory}/{task_name}")
+        if candidate is not None and candidate.is_file():
+            return candidate
+    return None
 
 
 def summarize_run(run: dict[str, Any]) -> dict[str, Any]:
@@ -253,9 +263,9 @@ def render_solution(repo_root: Path, task_name: str, result: dict[str, Any]) -> 
         st.error(f"Could not read the solution: {error}")
         return
 
-    original_path = safe_repo_path(repo_root, f"tasks/{task_name}")
+    original_path = original_task_path(repo_root, task_name)
     st.caption(str(solution_path.relative_to(repo_root)))
-    if original_path is None or not original_path.is_file():
+    if original_path is None:
         st.info("The original task file is no longer present. Showing the solution only.")
         st.code(solution, language="rust", line_numbers=True)
         return
