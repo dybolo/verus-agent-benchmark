@@ -3,34 +3,7 @@ import json
 import os
 from datetime import datetime
 
-from stats_protocol import Stats
-
-MODEL_PRICING = {
-    "gpt-5.6-luna":         {"input": 0.20, "cachedInput": 0.02,  "cacheWrite": 0.25, "output": 1.20},
-    "gpt-4.1":              {"input": 2.00, "cachedInput": 0.50,  "output": 8.00},
-    "gpt-5-mini":           {"input": 0.25, "cachedInput": 0.025, "output": 2.00},
-    "gpt-5.2":              {"input": 1.75, "cachedInput": 0.175, "output": 14.00},
-    "gpt-5.2-codex":        {"input": 1.75, "cachedInput": 0.175, "output": 14.00},
-    "gpt-5.3-codex":        {"input": 1.75, "cachedInput": 0.175, "output": 14.00},
-    "gpt-5.4":              {"input": 2.50, "cachedInput": 0.25,  "output": 15.00},
-    "gpt-5.4-mini":         {"input": 0.75, "cachedInput": 0.075, "output": 4.50},
-    "gpt-5.4-nano":         {"input": 0.20, "cachedInput": 0.02,  "output": 1.25},
-    "gpt-5.5":              {"input": 5.00, "cachedInput": 0.50,  "output": 30.00},
-    "claude-haiku-4.5":     {"input": 1.00, "cachedInput": 0.10,  "cacheWrite": 1.25, "output": 5.00},
-    "claude-sonnet-4":      {"input": 3.00, "cachedInput": 0.30,  "cacheWrite": 3.75, "output": 15.00},
-    "claude-sonnet-4.5":    {"input": 3.00, "cachedInput": 0.30,  "cacheWrite": 3.75, "output": 15.00},
-    "claude-sonnet-4.6":    {"input": 3.00, "cachedInput": 0.30,  "cacheWrite": 3.75, "output": 15.00},
-    "claude-opus-4.5":      {"input": 5.00, "cachedInput": 0.50,  "cacheWrite": 6.25, "output": 25.00},
-    "claude-opus-4.6":      {"input": 5.00, "cachedInput": 0.50,  "cacheWrite": 6.25, "output": 25.00},
-    "claude-opus-4.7":      {"input": 5.00, "cachedInput": 0.50,  "cacheWrite": 6.25, "output": 25.00},
-    "claude-opus-4.8":      {"input": 5.00, "cachedInput": 0.50,  "cacheWrite": 6.25, "output": 25.00},
-    "gemini-2.5-pro":       {"input": 1.25, "cachedInput": 0.125, "output": 10.00},
-    "gemini-3-flash":       {"input": 0.50, "cachedInput": 0.05,  "output": 3.00},
-    "gemini-3.1-pro":       {"input": 2.00, "cachedInput": 0.20,  "output": 12.00},
-    "grok-code-fast-1":     {"input": 0.20, "cachedInput": 0.02,  "output": 1.50},
-    "raptor-mini":          {"input": 0.25, "cachedInput": 0.025, "output": 2.00},
-    "goldeneye":            {"input": 1.25, "cachedInput": 0.125, "output": 10.00},
-}
+from stats_protocol import Stats, calculate_price
 
 
 def parse_timestamp(ts_str):
@@ -55,22 +28,6 @@ def _model_call_cost(data):
     if not model:
         model = response_chunk.get("model")
 
-    pricing = MODEL_PRICING.get(model)
-    if pricing:
-        prices = pricing
-    else:
-        billing = data.get("modelInfo", {}).get("billing", {})
-        default_prices = billing.get("token_prices", {}).get("default", {})
-        if not default_prices:
-            return 0.0
-        discount = billing.get("auto_discount", 0.0)
-        prices = {
-            "input": default_prices.get("input_price", 0) / 100 * (1 - discount),
-            "cachedInput": default_prices.get("cache_read_price", 0) / 100 * (1 - discount),
-            "cacheWrite": default_prices.get("cache_write_price", 0) / 100 * (1 - discount),
-            "output": default_prices.get("output_price", 0) / 100 * (1 - discount),
-        }
-
     token_counts = {"input": 0, "cache_read": 0, "cache_write": 0, "output": 0}
     for detail in token_details:
         token_type = detail.get("token_type")
@@ -84,12 +41,13 @@ def _model_call_cost(data):
         token_counts["input"] = max(usage.get("prompt_tokens", 0) - token_counts["cache_read"], 0)
         token_counts["output"] = usage.get("completion_tokens", 0)
 
-    return (
-        token_counts["input"] * prices["input"]
-        + token_counts["cache_read"] * prices.get("cachedInput", 0)
-        + token_counts["cache_write"] * prices.get("cacheWrite", 0)
-        + token_counts["output"] * prices["output"]
-    ) / 1_000_000
+    return calculate_price(
+        model,
+        token_counts["input"],
+        token_counts["cache_read"],
+        token_counts["cache_write"],
+        token_counts["output"],
+    )
 
 
 def _otel_attribute(attributes, name, *aliases, default=0):
@@ -133,16 +91,6 @@ def _compute_otel_cost(path: str):
                 attributes.get("gen_ai.response.model")
                 or attributes.get("gen_ai.request.model")
             )
-            pricing = MODEL_PRICING.get(model)
-            if pricing is None:
-                # Copilot documents this as the monetary cost of this chat
-                # span. Prefer fixed benchmark pricing whenever the model is
-                # known so costs remain comparable across agent harnesses.
-                reported_cost = attributes.get("github.copilot.cost", 0)
-                if isinstance(reported_cost, (int, float)):
-                    total_cost += reported_cost
-                continue
-
             input_tokens = _otel_attribute(
                 attributes, "gen_ai.usage.input_tokens"
             )
@@ -164,12 +112,13 @@ def _compute_otel_cost(path: str):
             uncached_input_tokens = max(
                 input_tokens - cache_read_tokens - cache_write_tokens, 0
             )
-            total_cost += (
-                uncached_input_tokens * pricing["input"]
-                + cache_read_tokens * pricing.get("cachedInput", 0)
-                + cache_write_tokens * pricing.get("cacheWrite", 0)
-                + output_tokens * pricing["output"]
-            ) / 1_000_000
+            total_cost += calculate_price(
+                model,
+                uncached_input_tokens,
+                cache_read_tokens,
+                cache_write_tokens,
+                output_tokens,
+            )
 
     return total_cost if chat_span_count else None
 
@@ -293,13 +242,9 @@ def compute_statistics(session_dir: str) -> Stats:
     cache_write_tokens = 0
     reasoning_tokens = 0
     total_requests = 0
-    cost_input = 0.0
-    cost_output = 0.0
-    cost_cache_read = 0.0
-    cost_cache_write = 0.0
+    total_cost = 0.0
 
     for model_name, model_data in model_metrics.items():
-        pricing = MODEL_PRICING.get(model_name)
         usage = model_data.get("usage", {})
         requests_data = model_data.get("requests", {})
 
@@ -310,21 +255,21 @@ def compute_statistics(session_dir: str) -> Stats:
         reasoning_tokens += usage.get("reasoningTokens", 0)
         total_requests += requests_data.get("count", 0)
 
-        if pricing:
-            cost_input += input_tokens * pricing["input"] / 1_000_000
-            cost_output += output_tokens * pricing["output"] / 1_000_000
-            cost_cache_read += cache_read_tokens * pricing.get("cachedInput", 0) / 1_000_000
-            cost_cache_write += cache_write_tokens * pricing.get("cacheWrite", 0) / 1_000_000
+        total_cost += calculate_price(
+            model_name,
+            usage.get("inputTokens", 0),
+            usage.get("cacheReadTokens", 0),
+            usage.get("cacheWriteTokens", 0),
+            usage.get("outputTokens", 0),
+        )
 
     total_duration_ms = data.get("totalApiDurationMs", 0)
     if total_duration_ms == 0 and first_ts and last_ts:
         total_duration_ms = (last_ts - first_ts).total_seconds() * 1000
 
     # total_tokens = input_tokens + output_tokens + cache_read_tokens + cache_write_tokens
-    # total_cost = cost_input + cost_output + cost_cache_read + cost_cache_write
-
     return Stats(
-        total_costs=round(cost_input + cost_output + cost_cache_read + cost_cache_write, 8),
+        total_costs=round(total_cost, 8),
         total_turns=turn_count,
         total_tool_calls=tool_call_count,
         duration_seconds=total_duration_ms / 1000,

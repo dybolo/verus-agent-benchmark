@@ -2,7 +2,17 @@ import json
 import os
 from datetime import datetime
 
-from stats_protocol import Stats
+from stats_protocol import Stats, calculate_price
+
+
+def _usage_cost(model, usage):
+    return calculate_price(
+        model,
+        usage.get("input", 0),
+        usage.get("cacheRead", 0),
+        usage.get("cacheWrite", 0),
+        usage.get("output", 0),
+    )
 
 
 def parse_timestamp(ts_str):
@@ -18,16 +28,6 @@ def compute_statistics(session_dir: str) -> Stats:
     else:
         path = session_dir
 
-    # Detailed token and cost breakdown (available for inspection)
-    input_tokens = 0
-    output_tokens = 0
-    cache_read_tokens = 0
-    cache_write_tokens = 0
-    total_tokens = 0
-    cost_input = 0.0
-    cost_output = 0.0
-    cost_cache_read = 0.0
-    cost_cache_write = 0.0
     cost_total = 0.0
     tool_call_count = 0
     assistant_msg_count = 0
@@ -55,17 +55,7 @@ def compute_statistics(session_dir: str) -> Stats:
                 role = msg.get("role")
                 usage = msg.get("usage")
                 if usage:
-                    input_tokens += usage.get("input", 0)
-                    output_tokens += usage.get("output", 0)
-                    cache_read_tokens += usage.get("cacheRead", 0)
-                    cache_write_tokens += usage.get("cacheWrite", 0)
-                    total_tokens += usage.get("totalTokens", 0)
-                    cost = usage.get("cost", {})
-                    cost_input += cost.get("input", 0)
-                    cost_output += cost.get("output", 0)
-                    cost_cache_read += cost.get("cacheRead", 0)
-                    cost_cache_write += cost.get("cacheWrite", 0)
-                    cost_total += cost.get("total", 0)
+                    cost_total += _usage_cost(msg.get("model"), usage)
                 if role == "assistant":
                     assistant_msg_count += 1
                     content = msg.get("content", [])

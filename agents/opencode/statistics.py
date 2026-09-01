@@ -1,15 +1,7 @@
 import json
 import os
 
-from stats_protocol import Stats
-
-# USD per one million tokens. ChatGPT subscription sessions do not include a
-# billable API price in OpenCode's `cost` field, so use the equivalent API
-# pricing when calculating comparable benchmark costs.
-MODEL_PRICING = {
-    "gpt-5.6-luna": {"input": 0.20, "cached_input": 0.02, "output": 1.20},
-    "gpt-5.6-terra": {"input": 2.00, "cached_input": 0.20, "output": 12.00},
-}
+from stats_protocol import Stats, calculate_price
 
 
 def _model_name(session_dir: str) -> str | None:
@@ -42,14 +34,13 @@ def compute_statistics(session_dir: str) -> Stats:
     cache_read_tokens = 0
     cache_write_tokens = 0
     reasoning_tokens = 0
-    total_cost_actual = 0.0
-    total_cost_estimated = 0.0
+    total_cost = 0.0
     total_requests = 0
     turn_count = 0
     tool_call_count = 0
     first_ts = None
     last_ts = None
-    pricing = MODEL_PRICING.get(_model_name(session_dir))
+    model_name = _model_name(session_dir)
 
     with open(jsonl_path) as f:
         for line in f:
@@ -76,18 +67,14 @@ def compute_statistics(session_dir: str) -> Stats:
                 cache = tokens.get("cache", {})
                 cache_read_tokens += cache.get("read", 0)
                 cache_write_tokens += cache.get("write", 0)
-                reported_cost = part.get("cost")
-                if isinstance(reported_cost, (int, float)) and reported_cost > 0:
-                    total_cost_actual += reported_cost
-                elif pricing:
-                    # OpenCode's input token count excludes cache reads; cache
-                    # reads are reported separately in `tokens.cache.read`.
-                    total_cost_estimated += (
-                        tokens.get("input", 0) * pricing["input"]
-                        + cache.get("read", 0) * pricing["cached_input"]
-                        + cache.get("write", 0) * pricing["cached_input"]
-                        + tokens.get("output", 0) * pricing["output"]
-                    ) / 1_000_000
+                # OpenCode reports input and cache tokens as separate buckets.
+                total_cost += calculate_price(
+                    model_name,
+                    tokens.get("input", 0),
+                    cache.get("read", 0),
+                    cache.get("write", 0),
+                    tokens.get("output", 0),
+                )
                 total_requests += 1
                 turn_count += 1
 
@@ -105,7 +92,7 @@ def compute_statistics(session_dir: str) -> Stats:
     # total_tokens = input_tokens + output_tokens + cache_read_tokens + cache_write_tokens
 
     return Stats(
-        total_costs=round(total_cost_actual + total_cost_estimated, 8),
+        total_costs=round(total_cost, 8),
         total_turns=turn_count,
         total_tool_calls=tool_call_count,
         duration_seconds=duration_seconds,

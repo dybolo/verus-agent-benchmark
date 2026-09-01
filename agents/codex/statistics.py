@@ -2,18 +2,7 @@ import json
 import os
 from datetime import datetime
 
-from stats_protocol import Stats
-
-MODEL_PRICING = {
-    # USD per one million tokens: input, cached input, and output.
-    "gpt-5.6-sol": {"input": 4.00, "cached_input": 0.40, "output": 20.00},
-    "gpt-5.6-terra": {"input": 2.00, "cached_input": 0.20, "output": 12.00},
-    "gpt-5.6-luna": {
-        "input": 0.20,
-        "cached_input": 0.02,
-        "output": 1.20,
-    },
-}
+from stats_protocol import Stats, calculate_price
 
 
 def _timestamp(value):
@@ -125,12 +114,6 @@ def compute_statistics(session_dir: str) -> Stats:
     if duration_seconds is None:
         duration_seconds = 0.0
 
-    pricing = MODEL_PRICING.get(model_name)
-    if model_name == "gpt-5.6":
-        pricing = MODEL_PRICING["gpt-5.6-sol"]
-    if pricing is None:
-        raise ValueError(f"no fixed pricing configured for Codex model {model_name!r}")
-
     usage = final_usage or {}
     input_tokens = usage.get("input_tokens", usage.get("inputTokens", 0))
     cached_input_tokens = usage.get(
@@ -142,11 +125,13 @@ def compute_statistics(session_dir: str) -> Stats:
     # subset. Charge uncached input at the normal rate and the cached subset at
     # the discounted rate.
     uncached_input_tokens = max(input_tokens - cached_input_tokens, 0)
-    total_cost = (
-        uncached_input_tokens * pricing["input"]
-        + cached_input_tokens * pricing["cached_input"]
-        + output_tokens * pricing["output"]
-    ) / 1_000_000
+    total_cost = calculate_price(
+        model_name,
+        uncached_input_tokens,
+        cached_input_tokens,
+        0,
+        output_tokens,
+    )
 
     return Stats(
         total_costs=round(total_cost, 8),
