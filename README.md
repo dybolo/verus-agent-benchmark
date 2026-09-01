@@ -36,10 +36,11 @@ Each agent has a single `Dockerfile` shared by all its entrypoints. When the ben
 
 The `codex/gpt-5.6-luna`, `opencode/gpt-5.6-luna`, `pi/gpt-5.6-luna`, and
 `copilot/gpt-5.6-luna` entrypoints use ChatGPT Plus/Pro OAuth instead of an
-OpenAI API key. Credentials live under
-`.agent-auth/<agent>/` by default (or under `$BENCHMARK_AUTH_DIR/<agent>/`) and
-are mounted directly into the container; they are excluded from Git and are
-not copied into session artifacts.
+OpenAI API key. Credentials live under `.agent-auth/<agent>/` by default (or
+under `$BENCHMARK_AUTH_DIR/<agent>/`). At runtime, only the agent's `auth.json`
+file is mounted into the container, at `/tmp/auth.json`; the containing auth
+directory and any CLI session history in it are not exposed. Credentials are
+excluded from Git and are not copied into session artifacts.
 
 Build the images, then authenticate each agent once:
 

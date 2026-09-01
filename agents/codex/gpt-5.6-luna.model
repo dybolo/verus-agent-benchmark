@@ -1,13 +1,13 @@
 #!/bin/bash
 set -eu
 
-if [ -z "${BENCHMARK_AGENT_AUTH_DIR:-}" ] ||
-    [ ! -f "$BENCHMARK_AGENT_AUTH_DIR/auth.json" ]; then
+if [ -z "${BENCHMARK_AGENT_AUTH_FILE:-}" ] ||
+    [ ! -f "$BENCHMARK_AGENT_AUTH_FILE" ]; then
     echo "Missing Codex ChatGPT credentials. Follow the ChatGPT subscription setup in README.md." >&2
     exit 1
 fi
 
-export CODEX_HOME="$BENCHMARK_AGENT_AUTH_DIR"
+export CODEX_HOME="$(dirname "$BENCHMARK_AGENT_AUTH_FILE")"
 
 # Add timestamps: copying the session file only at the end can
 # fail to preserve the output when the task times out. Record the start before

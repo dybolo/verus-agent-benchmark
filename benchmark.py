@@ -25,6 +25,26 @@ from typing import Any
 from stats_protocol import StatsFn
 
 
+FINAL_TASK_STATUSES = {"completed"}
+RATE_LIMIT_PATTERNS = (
+    r"rate[ -]?limit",
+    r"usage[ -]?limit",
+    r"too many requests",
+    r"quota (?:has been )?exceeded",
+    r"insufficient_quota",
+    r"resource_exhausted",
+)
+SESSION_ERROR_PATTERNS = (r'"stopReason"\s*:\s*"error"',)
+CONTAINER_AUTH_FILE = "/tmp/auth.json"
+# Paths relative to .agent-auth/<agent>/ when they differ from auth.json.
+AGENT_AUTH_FILE_OVERRIDES = {
+    "opencode": os.path.join("opencode", "auth.json"),
+}
+
+
+print_lock = threading.Lock()
+
+
 def build_base_image():
     """Build the base Docker image with all shared dependencies."""
     print("=" * 60)
@@ -37,18 +57,28 @@ def build_base_image():
     print()
 
 
-print_lock = threading.Lock()
+def get_agent_auth_file(agent: AgentSpec) -> str | None:
+    """Return the one credential file an agent may receive, if it exists."""
+    auth_root = os.environ.get("BENCHMARK_AUTH_DIR", ".agent-auth")
+    relative_path = AGENT_AUTH_FILE_OVERRIDES.get(agent.agent_dir, "auth.json")
+    auth_file = os.path.abspath(
+        os.path.join(auth_root, agent.agent_dir, relative_path)
+    )
+    return auth_file if os.path.isfile(auth_file) else None
 
-FINAL_TASK_STATUSES = {"completed"}
-RATE_LIMIT_PATTERNS = (
-    r"rate[ -]?limit",
-    r"usage[ -]?limit",
-    r"too many requests",
-    r"quota (?:has been )?exceeded",
-    r"insufficient_quota",
-    r"resource_exhausted",
-)
-SESSION_ERROR_PATTERNS = (r'"stopReason"\s*:\s*"error"',)
+
+def add_agent_auth_mount(cmd: list[str], agent: AgentSpec) -> None:
+    """Add a single-file auth mount to a Docker command when configured."""
+    agent_auth_file = get_agent_auth_file(agent)
+    if agent_auth_file:
+        cmd.extend(
+            [
+                "-v",
+                f"{agent_auth_file}:{CONTAINER_AUTH_FILE}",
+                "-e",
+                f"BENCHMARK_AGENT_AUTH_FILE={CONTAINER_AUTH_FILE}",
+            ]
+        )
 
 
 @dataclass(frozen=True)
@@ -466,20 +496,7 @@ def run_single_job(
             "SESSION",
         ]
 
-        # Subscription-backed agents keep refreshable OAuth credentials outside
-        # task staging/session directories so they are never copied into run
-        # artifacts. BENCHMARK_AUTH_DIR contains one directory per agent.
-        auth_root = os.environ.get("BENCHMARK_AUTH_DIR", ".agent-auth")
-        agent_auth_dir = os.path.abspath(os.path.join(auth_root, agent.agent_dir))
-        if os.path.isdir(agent_auth_dir):
-            cmd.extend(
-                [
-                    "-v",
-                    f"{agent_auth_dir}:/workspace/agent_auth",
-                    "-e",
-                    "BENCHMARK_AGENT_AUTH_DIR=/workspace/agent_auth",
-                ]
-            )
+        add_agent_auth_mount(cmd, agent)
 
         for key in [
             "ANTHROPIC_API_KEY",

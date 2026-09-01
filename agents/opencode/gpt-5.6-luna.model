@@ -1,17 +1,19 @@
 #!/bin/bash
 set -euo pipefail
 
-if [[ -z "${BENCHMARK_AGENT_AUTH_DIR:-}" ]] ||
-    [[ ! -f "$BENCHMARK_AGENT_AUTH_DIR/opencode/auth.json" ]]; then
+if [[ -z "${BENCHMARK_AGENT_AUTH_FILE:-}" ]] ||
+    [[ ! -f "$BENCHMARK_AGENT_AUTH_FILE" ]]; then
     echo "Missing OpenCode ChatGPT credentials. Follow the ChatGPT subscription setup in README.md." >&2
     exit 1
 fi
 
-export XDG_DATA_HOME="$BENCHMARK_AGENT_AUTH_DIR"
 OPENCODE_RUNTIME_DIR=$(mktemp -d)
 trap 'rm -rf "$OPENCODE_RUNTIME_DIR"' EXIT
+export XDG_DATA_HOME="$OPENCODE_RUNTIME_DIR/data"
 export XDG_STATE_HOME="$OPENCODE_RUNTIME_DIR/state"
 export XDG_CACHE_HOME="$OPENCODE_RUNTIME_DIR/cache"
+mkdir -p "$XDG_DATA_HOME/opencode"
+cp "$BENCHMARK_AGENT_AUTH_FILE" "$XDG_DATA_HOME/opencode/auth.json"
 export OPENCODE_PERMISSION='{"websearch":"deny","webfetch":"deny","bash":{"*":"allow","curl":"deny","curl *":"deny","wget":"deny","wget *":"deny"}}'
 
 opencode run --auto --format json \

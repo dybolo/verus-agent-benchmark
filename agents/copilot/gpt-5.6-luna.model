@@ -1,8 +1,8 @@
 #!/bin/sh
 set -eu
 
-if [ -z "${BENCHMARK_AGENT_AUTH_DIR:-}" ] ||
-    [ ! -f "$BENCHMARK_AGENT_AUTH_DIR/auth.json" ]; then
+if [ -z "${BENCHMARK_AGENT_AUTH_FILE:-}" ] ||
+    [ ! -f "$BENCHMARK_AGENT_AUTH_FILE" ]; then
     echo "Missing Copilot ChatGPT credentials. Follow the ChatGPT subscription setup in README.md." >&2
     exit 1
 fi
@@ -15,7 +15,7 @@ trap 'if [ -n "${LITELLM_PID:-}" ]; then kill "$LITELLM_PID" 2>/dev/null || true
 # Codex writes OAuth credentials as {"tokens": { ... }}, while LiteLLM's
 # ChatGPT provider expects access_token/refresh_token/id_token at the top level.
 # Normalize into a temporary file so the mounted credentials stay untouched.
-python3 - "$BENCHMARK_AGENT_AUTH_DIR/auth.json" "$LITELLM_AUTH_DIR/auth.json" <<'PY'
+python3 - "$BENCHMARK_AGENT_AUTH_FILE" "$LITELLM_AUTH_DIR/auth.json" <<'PY'
 import json
 import sys
 
