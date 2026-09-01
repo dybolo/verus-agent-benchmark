@@ -8,8 +8,10 @@ if [[ -z "${BENCHMARK_AGENT_AUTH_DIR:-}" ]] ||
 fi
 
 export XDG_DATA_HOME="$BENCHMARK_AGENT_AUTH_DIR"
-export XDG_STATE_HOME="$SESSION/opencode-state"
-export XDG_CACHE_HOME="$SESSION/opencode-cache"
+OPENCODE_RUNTIME_DIR=$(mktemp -d)
+trap 'rm -rf "$OPENCODE_RUNTIME_DIR"' EXIT
+export XDG_STATE_HOME="$OPENCODE_RUNTIME_DIR/state"
+export XDG_CACHE_HOME="$OPENCODE_RUNTIME_DIR/cache"
 export OPENCODE_PERMISSION='{"websearch":"deny","webfetch":"deny","bash":{"*":"allow","curl":"deny","curl *":"deny","wget":"deny","wget *":"deny"}}'
 
 opencode run --auto --format json \

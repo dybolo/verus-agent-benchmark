@@ -7,8 +7,10 @@ if [ -z "${BENCHMARK_AGENT_AUTH_DIR:-}" ] ||
     exit 1
 fi
 
-LITELLM_AUTH_DIR=$(mktemp -d)
-trap 'if [ -n "${LITELLM_PID:-}" ]; then kill "$LITELLM_PID" 2>/dev/null || true; fi; rm -rf "$LITELLM_AUTH_DIR"' EXIT
+COPILOT_RUNTIME_DIR=$(mktemp -d)
+LITELLM_AUTH_DIR="$COPILOT_RUNTIME_DIR/litellm-auth"
+mkdir -p "$LITELLM_AUTH_DIR"
+trap 'if [ -n "${LITELLM_PID:-}" ]; then kill "$LITELLM_PID" 2>/dev/null || true; fi; rm -rf "$COPILOT_RUNTIME_DIR"' EXIT
 
 # Codex writes OAuth credentials as {"tokens": { ... }}, while LiteLLM's
 # ChatGPT provider expects access_token/refresh_token/id_token at the top level.
@@ -38,7 +40,7 @@ PY
 export CHATGPT_TOKEN_DIR="$LITELLM_AUTH_DIR"
 export CHATGPT_AUTH_FILE=auth.json
 
-cat > /tmp/litellm_config.yaml << 'EOF'
+cat > "$COPILOT_RUNTIME_DIR/litellm-config.yaml" << 'EOF'
 model_list:
   - model_name: gpt-5.6-luna
     model_info:
@@ -53,7 +55,7 @@ general_settings:
   disable_master_key_required: true
 EOF
 
-litellm --port 11434 --config /tmp/litellm_config.yaml 2> /dev/null &
+litellm --port 11434 --config "$COPILOT_RUNTIME_DIR/litellm-config.yaml" 2> /dev/null &
 LITELLM_PID=$!
 
 for i in $(seq 1 30); do
@@ -64,12 +66,12 @@ done
 export COPILOT_PROVIDER_TYPE=openai
 export COPILOT_PROVIDER_BASE_URL="http://localhost:11434/v1"
 export COPILOT_MODEL=gpt-5.6-luna
-export COPILOT_HOME="$SESSION"
-export XDG_CACHE_HOME="$SESSION/cache"
+export COPILOT_HOME="$COPILOT_RUNTIME_DIR/copilot-home"
+export XDG_CACHE_HOME="$COPILOT_RUNTIME_DIR/cache"
 export COPILOT_OTEL_ENABLED=true
 export COPILOT_OTEL_EXPORTER_TYPE=file
 export COPILOT_OTEL_FILE_EXPORTER_PATH="$SESSION/otel.jsonl"
-mkdir -p "$XDG_CACHE_HOME"
+mkdir -p "$COPILOT_HOME" "$XDG_CACHE_HOME"
 
 copilot --autopilot -p "$TASK_PROMPT" --allow-all-tools --allow-all-paths \
   --excluded-tools='web_search,web_fetch' \

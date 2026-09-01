@@ -11,4 +11,4 @@ export PI_CODING_AGENT_DIR="$BENCHMARK_AGENT_AUTH_DIR"
 
 pi --tools read,write,edit,bash,grep,find,ls \
     --model openai-codex/gpt-5.6-luna \
-    --session-dir "$SESSION" -p "$TASK_PROMPT"
+    --session "$SESSION/session.jsonl" -p "$TASK_PROMPT"
