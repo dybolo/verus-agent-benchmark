@@ -1143,8 +1143,13 @@ impl MyHashMap {
             if entry.is_some() && entry.unwrap().0 == key {
                 try_open_atomic_update!(au, mpt => {
                     proof {
-                        self.instance.query_some(key, h1x as nat, i as nat, &mpt,
-                            &handle1x.borrow().rows.tracked_borrow(h1x as nat).token);
+                        self.instance.query_some(
+                            key,
+                            h1x as nat,
+                            i as nat,
+                            &mpt,
+                            &handle1x.borrow().rows.tracked_borrow(h1x as nat).token,
+                        );
                     }
                     Tracked(Commit(mpt))
                 });
@@ -1172,8 +1177,13 @@ impl MyHashMap {
             if entry.is_some() && entry.unwrap().0 == key {
                 try_open_atomic_update!(au, mpt => {
                     proof {
-                        self.instance.query_some(key, h2x as nat, i as nat, &mpt,
-                            &handle2x.borrow().rows.tracked_borrow(h2x as nat).token);
+                        self.instance.query_some(
+                            key,
+                            h2x as nat,
+                            i as nat,
+                            &mpt,
+                            &handle2x.borrow().rows.tracked_borrow(h2x as nat).token,
+                        );
                     }
                     Tracked(Commit(mpt))
                 });
@@ -1190,13 +1200,19 @@ impl MyHashMap {
         try_open_atomic_update!(au, mpt => {
             proof {
                 if l1 < l2 {
-                    self.instance.query_none(key, &mpt,
+                    self.instance.query_none(
+                        key,
+                        &mpt,
                         &handle1x.borrow().rows.tracked_borrow(h1x as nat).token,
-                        &handle2x.borrow().rows.tracked_borrow(h2x as nat).token);
-                } else {
-                    self.instance.query_none(key, &mpt,
                         &handle2x.borrow().rows.tracked_borrow(h2x as nat).token,
-                        &handle1x.borrow().rows.tracked_borrow(h1x as nat).token);
+                    );
+                } else {
+                    self.instance.query_none(
+                        key,
+                        &mpt,
+                        &handle2x.borrow().rows.tracked_borrow(h2x as nat).token,
+                        &handle1x.borrow().rows.tracked_borrow(h1x as nat).token,
+                    );
                 }
             }
             Tracked(Commit(mpt))

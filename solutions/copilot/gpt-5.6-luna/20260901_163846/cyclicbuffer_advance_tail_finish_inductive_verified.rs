@@ -559,30 +559,28 @@ tokenized_state_machine! { CyclicBuffer<DT: Dispatch> {
 
     #[inductive(advance_tail_finish)]
     fn advance_tail_finish_inductive(pre: Self, post: Self, node_id: NodeId, new_tail: nat) {
+        assert(pre.inv_buffer_contents());
+        assert(pre.all_combiner_valid());
+        assert(pre.combiner.contains_key(node_id));
+        assert(pre.combiner[node_id].is_AdvancingTail());
+        assert(post.combiner.contains_key(node_id));
+        assert(post.combiner[node_id].is_Appending());
         let min_local_head = map_min_value(pre.local_versions, (pre.num_replicas - 1) as nat);
         map_min_value_smallest(pre.local_versions, (pre.num_replicas - 1) as nat);
-        assert(pre.head <= pre.tail);
-        assert(pre.tail <= new_tail);
+        assert(pre.combiner_valid(node_id, pre.combiner[node_id]));
+        assert(pre.combiner[node_id].get_AdvancingTail_observed_head() <= min_local_head);
         assert(new_tail <= min_local_head + pre.buffer_size);
-        assert(new_tail - pre.buffer_size <= min_local_head);
-        assert forall |i: int| new_tail - pre.buffer_size <= i < new_tail implies
-            (log_entry_is_alive(post.alive_bits, i, post.buffer_size) ||
-                i < map_min_value(post.local_versions, (post.num_replicas - 1) as nat))
-            <==> post.contents.contains_key(i) by {
-            if i < pre.tail {
-                assert(pre.contents.contains_key(i) <==>
-                    (log_entry_is_alive(pre.alive_bits, i, pre.buffer_size) ||
-                        i < min_local_head));
-            } else {
-                assert(!pre.contents.contains_key(i));
-                assert(!log_entry_is_alive(pre.alive_bits, i, pre.buffer_size));
-            }
+        assert(post.combiner_valid(node_id, post.combiner[node_id])) by {
+            assert(pre.pointer_ordering());
+            assert(pre.local_versions.contains_key(node_id));
+            assert(pre.local_versions[node_id] <= pre.tail);
+            assert(post.local_versions[node_id] == pre.local_versions[node_id]);
+            assert(pre.tail <= new_tail);
+            assert(new_tail <= post.tail);
+            assert(post.tail - post.buffer_size <= pre.tail);
         };
-        assert forall |n| 0 <= n < post.num_replicas ==> 
-            post.local_versions[n] <= post.combiner[node_id].get_Appending_0()
-                .get_cur_idx() by {
-            assert(post.local_versions[n] <= pre.tail);
-        };
+        assert(post.all_combiner_valid());
+        assert(post.inv_buffer_contents());
     }
 
     #[inductive(append_flip_bit)]

@@ -550,21 +550,39 @@ tokenized_state_machine! { CyclicBuffer<DT: Dispatch> {
 
     #[inductive(advance_head_finish)]
     fn advance_head_finish_inductive(pre: Self, post: Self, node_id: NodeId) {
-        assert(post.head == pre.combiner[node_id].get_AdvancingHead_min_local_version());
+        assert(pre.combiner.contains_key(node_id));
         assert(pre.combiner[node_id].is_AdvancingHead());
-        assert(pre.combiner[node_id].get_AdvancingHead_idx() == pre.num_replicas);
-        assert(forall|n| 0 <= n < pre.num_replicas ==>
-            pre.combiner[node_id].get_AdvancingHead_min_local_version() <= pre.local_versions[n]);
+        assert(pre.pointer_ordering());
+        assert(pre.all_combiner_valid());
+        let min_local_version = pre.combiner[node_id].get_AdvancingHead_min_local_version();
+        assert forall |n| 0 <= n < pre.num_replicas implies
+            min_local_version <= pre.local_versions[n] by {
+            assert(pre.combiner[node_id].is_AdvancingHead());
+            assert(pre.combiner_valid(node_id, pre.combiner[node_id]));
+        };
         assert(pre.num_replicas > 0);
         assert(pre.local_versions.contains_key(0));
-        assert(pre.combiner[node_id].get_AdvancingHead_min_local_version()
-            <= pre.local_versions[0]);
-        assert(pre.local_versions[0] <= pre.tail);
+        assert(min_local_version <= pre.local_versions[0]) by {
+            assert(0 <= 0 < pre.num_replicas);
+        };
+        assert(min_local_version <= pre.tail) by {
+            assert(pre.head <= pre.local_versions[0] <= pre.tail);
+            assert(pre.local_versions[0] <= pre.tail);
+        };
+        assert(post.head == min_local_version);
+        assert(post.tail == pre.tail);
+        assert(post.local_versions === pre.local_versions);
         assert(post.head <= post.tail);
-        assert(forall|i| #[trigger] post.local_versions.contains_key(i) ==>
-            post.head <= post.local_versions[i] <= post.tail);
-        assert(forall|i| #[trigger] post.local_versions.contains_key(i) ==>
-            post.tail <= post.local_versions[i] + post.buffer_size);
+        assert forall |n| post.local_versions.contains_key(n) implies
+            post.head <= post.local_versions[n] <= post.tail by {
+            assert(pre.local_versions.contains_key(n));
+            assert(pre.head <= pre.local_versions[n] <= pre.tail);
+        };
+        assert forall |n| post.local_versions.contains_key(n) implies
+            post.tail <= post.local_versions[n] + post.buffer_size by {
+            assert(pre.local_versions.contains_key(n));
+            assert(pre.tail <= pre.local_versions[n] + pre.buffer_size);
+        };
     }
 
     #[inductive(advance_tail_start)]

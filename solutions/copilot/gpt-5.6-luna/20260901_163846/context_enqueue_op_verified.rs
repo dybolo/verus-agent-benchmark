@@ -261,6 +261,21 @@ impl<DT: Dispatch> Context<DT> {
             &self.atomic.0 => store(1);
             update prev->next;
             ghost g => {
+                self.flat_combiner_instance.borrow().pre_send_request(
+                    fc_clients.key(),
+                    &fc_clients,
+                    &g.slots,
+                );
+                send_request_result = self.flat_combiner_instance.borrow().send_request(
+                    fc_clients.key(),
+                    local_updates.key(),
+                    fc_clients,
+                    g.slots,
+                );
+                fc_clients = send_request_result.0.get();
+                g.slots = send_request_result.1.get();
+                g.batch_perms = Some(batch_perms);
+                g.update = Some(local_updates);
             }
         );
         let tracked new_context_ghost = FCClientRequestResponseGhost {

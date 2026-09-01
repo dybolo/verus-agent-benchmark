@@ -1250,12 +1250,13 @@ impl MyHashMap {
             let entry = self.matrix[h1x].borrow(
                 Tracked(&lock1x.rows.tracked_borrow(h1x as nat).pt))[i];
             if entry.is_some() && entry.unwrap().0 == key {
-                let tracked mut r;
+                let tracked mut r: RowStore;
                 try_open_atomic_update!(au, mut mpt => {
                     proof {
                         r = lock1x.rows.tracked_remove(h1x as nat);
                         let tracked (Tracked(mpt0), Tracked(tok0)) =
-                            self.instance.delete_key_value(key, h1x as nat, i as nat, mpt, r.token);
+                            self.instance.delete_key_value(
+                                key, h1x as nat, i as nat, mpt, r.token);
                         mpt = mpt0;
                         r.token = tok0;
                     }
@@ -1291,12 +1292,13 @@ impl MyHashMap {
             let entry = self.matrix[h2x].borrow(
                 Tracked(&lock2x.rows.tracked_borrow(h2x as nat).pt))[i];
             if entry.is_some() && entry.unwrap().0 == key {
-                let tracked mut r;
+                let tracked mut r: RowStore;
                 try_open_atomic_update!(au, mut mpt => {
                     proof {
                         r = lock2x.rows.tracked_remove(h2x as nat);
                         let tracked (Tracked(mpt0), Tracked(tok0)) =
-                            self.instance.delete_key_value(key, h2x as nat, i as nat, mpt, r.token);
+                            self.instance.delete_key_value(
+                                key, h2x as nat, i as nat, mpt, r.token);
                         mpt = mpt0;
                         r.token = tok0;
                     }

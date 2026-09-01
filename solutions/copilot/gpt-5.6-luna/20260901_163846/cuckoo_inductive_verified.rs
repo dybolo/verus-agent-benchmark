@@ -13,6 +13,8 @@ use vstd::atomic_ghost::*;
 use vstd::invariant::InvariantPredicate;
 use vstd::modes::*;
 use vstd::multiset::*;
+use vstd::imap::group_imap_lemmas;
+use vstd::imap_lib::group_imap_properties;
 use vstd::prelude::*;
 use vstd::set::*;
 
@@ -772,6 +774,7 @@ tokenized_state_machine!{ Cuckoo {
                     && self.matrix[row][col].unwrap().0 == key
     }
 
+
     #[invariant]
     pub spec fn pair_in_matrix_implies_pair_in_map(&self) -> bool {
         forall |row, col|
@@ -797,21 +800,33 @@ tokenized_state_machine!{ Cuckoo {
 
     #[inductive(delete_key_value)]
     fn delete_key_value_inductive(pre: Self, post: Self, key: Key, row: Row, col: Col) {
+        broadcast use group_imap_lemmas;
+        broadcast use group_imap_properties;
+        broadcast use group_imap_extra;
         assert(pre.key_in_map_implies_key_in_matrix());
     }
 
     #[inductive(update_key_value)]
     fn update_key_value_inductive(pre: Self, post: Self, key: Key, new_val: Value, row: Row, col: Col) {
+        broadcast use group_imap_lemmas;
+        broadcast use group_imap_properties;
+        broadcast use group_imap_extra;
         assert(pre.key_in_map_implies_key_in_matrix());
     }
 
     #[inductive(insert_key_value)]
     fn insert_key_value_inductive(pre: Self, post: Self, key: Key, new_val: Value, row: Row, col: Col) {
+        broadcast use group_imap_lemmas;
+        broadcast use group_imap_properties;
+        broadcast use group_imap_extra;
         assert(pre.key_in_map_implies_key_in_matrix());
     }
 
     #[inductive(swing)]
     fn swing_inductive(pre: Self, post: Self, key: Key, row: Row, col: Col, row2: Row, col2: Col) {
+        broadcast use group_imap_lemmas;
+        broadcast use group_imap_properties;
+        broadcast use group_imap_extra;
         assert(pre.key_in_map_implies_key_in_matrix());
     }
 }}
