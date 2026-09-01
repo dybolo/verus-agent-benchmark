@@ -1,0 +1,26 @@
+#!/bin/bash
+set -eu
+
+if [ -z "${BENCHMARK_AGENT_AUTH_DIR:-}" ] ||
+    [ ! -f "$BENCHMARK_AGENT_AUTH_DIR/auth.json" ]; then
+    echo "Missing Codex ChatGPT credentials. Follow the ChatGPT subscription setup in README.md." >&2
+    exit 1
+fi
+
+export CODEX_HOME="$BENCHMARK_AGENT_AUTH_DIR"
+
+# Add timestamps: copying the session file only at the end can
+# fail to preserve the output when the task times out. Record the start before
+# launching Codex so buffered output still has a meaningful duration.
+set -o pipefail
+printf '{"type":"session.started","received_at":"%s"}\n' \
+    "$(date -u +%Y-%m-%dT%H:%M:%S.%3NZ)" > "$SESSION/session.jsonl"
+
+codex exec -m gpt-5.6-luna --dangerously-bypass-approvals-and-sandbox \
+    --config 'web_search="disabled"' \
+    --skip-git-repo-check --json "$TASK_PROMPT" |
+    while IFS= read -r line; do
+        jq -c \
+            --arg received_at "$(date -u +%Y-%m-%dT%H:%M:%S.%3NZ)" \
+            '. + {received_at: $received_at}' <<< "$line"
+    done >> "$SESSION/session.jsonl"
