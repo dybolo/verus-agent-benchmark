@@ -43,7 +43,7 @@ pub trait SpinGuardian {
     fn read_guard() -> Self::ReadGuard;
 }
 
-} 
+}
 
 #[verifier::external]
 pub enum PreemptDisabled {}
@@ -77,7 +77,7 @@ verus! {
         }
     }
 
-} 
+}
 
 
 verus! {
@@ -95,7 +95,7 @@ impl<T: Inv> Inv for Option<T> {
     }
 }
 
-} 
+}
 
 
 verus! {
@@ -2549,7 +2549,7 @@ impl<T, const TOTAL: u64> CountResource<T, TOTAL> {
     }
 }
 
-} 
+}
 
 verus! {
 
@@ -3237,28 +3237,6 @@ impl<'a, T               , G: SpinGuardian> RwLockUpgradeableGuard<'a, T, G> {
             update prev -> next;
             returning res;
             ghost g => {
-                lemma_consts_properties_prev_next(prev, next);
-                if res is Ok {
-                    g.core_token.validate_with_one_left_owner(&upread_guard_token);
-                    if g.upreader_guard_token is Some {
-                        upread_guard_token.validate_with_one_left_owner(g.upreader_guard_token.tracked_borrow());
-                    }
-                    g.core_token.join_one_left_owner(upread_guard_token);
-                    let tracked read_guard_token = g.read_guard_token.tracked_take_left();
-                    let tracked (read_resource, read_empty) = read_guard_token.take_resource();
-                    g.read_guard_token = Sum::Right(read_empty);
-                    let tracked (read_half_cell_perm, left_token) = read_resource;
-                    g.core_token.join_one_left_knowledge(left_token);
-                    let tracked mut pointsto = g.core_token.take_resource_left();
-                    pointsto.combine(read_half_cell_perm);
-                    let tracked (pointsto, empty) = pointsto.take_resource();
-                    write_perm = Some(pointsto);
-                    g.core_token.change_to_right(empty);
-                    write_guard_token = Some(g.core_token.split_one_right_knowledge());
-                    retract_upgrade_token = Some(g.upread_retract_token.tracked_take());
-                } else {
-                    err_upread_guard_token = Some(upread_guard_token);
-                }
             }
         );
         if res.is_ok() {
@@ -3268,15 +3246,6 @@ impl<'a, T               , G: SpinGuardian> RwLockUpgradeableGuard<'a, T, G> {
                 inner.lock => fetch_sub(UPGRADEABLE_READER);
                 update prev -> next;
                 ghost g => {
-                    let prev_usize = prev as usize;
-                    let next_usize = next as usize;
-                    lemma_consts_properties_value(prev_usize);
-                    lemma_consts_properties_prev_next(prev_usize, next_usize);
-                    let tracked mut token = retract_upgrade_token.tracked_unwrap();
-                    if g.upread_retract_token is Some {
-                        token.validate_with_other(g.upread_retract_token.tracked_borrow());
-                    }
-                    g.upread_retract_token = Some(token);
                 }
             );
             Ok(
@@ -3475,4 +3444,4 @@ proof fn lemma_consts_properties_prev_next(prev: usize, next: usize)
 {
 }
 
-} 
+}
