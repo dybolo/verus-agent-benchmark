@@ -88,15 +88,15 @@
           "session_file": "sessions/codex/gpt-5.6-luna/20260902_140157/cuckoo_full/session.jsonl"
         },
         "cyclicbuffer_full.rs": {
-          "verus_passed": false,
+          "verus_passed": true,
           "cheat_checker_passed": true,
           "timed_out": false,
           "status": "completed",
           "solution_file": "solutions/codex/gpt-5.6-luna/20260902_140157/cyclicbuffer_full_verified.rs",
-          "total_costs": 0.06035648,
-          "total_turns": 4,
-          "total_tool_calls": 28,
-          "duration_seconds": 364.576,
+          "total_costs": 0.0657316,
+          "total_turns": 5,
+          "total_tool_calls": 29,
+          "duration_seconds": 332.885,
           "session_file": "sessions/codex/gpt-5.6-luna/20260902_140157/cyclicbuffer_full/session.jsonl"
         },
         "dist_rwlock_full.rs": {
@@ -112,15 +112,15 @@
           "session_file": "sessions/codex/gpt-5.6-luna/20260902_140157/dist_rwlock_full/session.jsonl"
         },
         "fifo_full.rs": {
-          "verus_passed": true,
+          "verus_passed": false,
           "cheat_checker_passed": true,
           "timed_out": false,
           "status": "completed",
           "solution_file": "solutions/codex/gpt-5.6-luna/20260902_140157/fifo_full_verified.rs",
-          "total_costs": 0.04855028,
+          "total_costs": 0.20180656,
           "total_turns": 4,
-          "total_tool_calls": 30,
-          "duration_seconds": 264.3,
+          "total_tool_calls": 69,
+          "duration_seconds": 726.16,
           "session_file": "sessions/codex/gpt-5.6-luna/20260902_140157/fifo_full/session.jsonl"
         },
         "flat_combine_full.rs": {
@@ -213,10 +213,10 @@
           "timed_out": false,
           "status": "completed",
           "solution_file": "solutions/codex/gpt-5.6-luna/20260902_140157/rwlock_full_verified.rs",
-          "total_costs": 0.13372284,
+          "total_costs": 0.16578944,
           "total_turns": 5,
-          "total_tool_calls": 51,
-          "duration_seconds": 565.585,
+          "total_tool_calls": 44,
+          "duration_seconds": 519.366,
           "session_file": "sessions/codex/gpt-5.6-luna/20260902_140157/rwlock_full/session.jsonl"
         },
         "tokens_full.rs": {

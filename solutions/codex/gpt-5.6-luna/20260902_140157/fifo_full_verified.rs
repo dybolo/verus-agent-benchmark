@@ -348,10 +348,14 @@ tokenized_state_machine!{FifoQueue<T> {
 
     #[inductive(initialize)]
     fn initialize_inductive(post: Self, backing_cells: Seq<CellId>, storage: Map<nat, cell::PointsTo<T>>) {
-        assert forall|i: nat|
-            0 <= i && i < post.len() implies post.valid_storage_at_idx(i)
-        by {
+        assert forall|i: nat| 0 <= i && i < post.len() ==> post.valid_storage_at_idx(i) by {
+            if 0 <= i && i < post.len() {
             assert(post.storage.dom().contains(i));
+            assert(post.storage.index(i).is_uninit());
+            assert(post.storage.index(i).id() == post.backing_cells.index(i as int));
+            assert(!post.is_checked_out(i));
+            assert(!post.in_active_range(i));
+            }
         }
     }
 
@@ -359,61 +363,82 @@ tokenized_state_machine!{FifoQueue<T> {
 
     #[inductive(produce_start)]
     fn produce_start_inductive(pre: Self, post: Self) {
-        let tail = pre.producer.get_Idle_0();
-        assert(!pre.in_active_range(tail));
-        match (post.producer, post.consumer) {
-            (ProducerState::Producing(tail), ConsumerState::Idle(head)) => {
-                assert(Self::inc_wrap(tail, post.len()) != head);
+        assert forall|i: nat| 0 <= i && i < post.len() ==> post.valid_storage_at_idx(i) by {
+            if 0 <= i && i < post.len() {
+            assert(pre.valid_storage_at_idx(i));
+            if post.is_checked_out(i) {
+                assert(!post.storage.dom().contains(i));
+            } else {
+                assert(post.storage.dom().contains(i));
+                assert(post.storage.index(i).id() == post.backing_cells.index(i as int));
+                if post.in_active_range(i) {
+                    assert(post.storage.index(i).is_init());
+                } else {
+                    assert(post.storage.index(i).is_uninit());
+                }
             }
-            (ProducerState::Producing(tail), ConsumerState::Consuming(head)) => {
-                assert(head != tail);
-                assert(Self::inc_wrap(tail, post.len()) != head);
-            }
-            (ProducerState::Idle(tail), ConsumerState::Idle(head)) => { }
-            (ProducerState::Idle(tail), ConsumerState::Consuming(head)) => {
-                assert(head != tail);
             }
         }
-        assert(forall|i| pre.valid_storage_at_idx(i) ==> post.valid_storage_at_idx(i));
     }
 
     #[inductive(produce_end)]
     fn produce_end_inductive(pre: Self, post: Self, perm: cell::PointsTo<T>) {
-        assert forall |i|
-            pre.valid_storage_at_idx(i) implies
-            post.valid_storage_at_idx(i)
-        by { }
+        assert forall|i: nat| 0 <= i && i < post.len() ==> post.valid_storage_at_idx(i) by {
+            if 0 <= i && i < post.len() {
+            assert(pre.valid_storage_at_idx(i));
+            if post.is_checked_out(i) {
+                assert(!post.storage.dom().contains(i));
+            } else {
+                assert(post.storage.dom().contains(i));
+                assert(post.storage.index(i).id() == post.backing_cells.index(i as int));
+                if post.in_active_range(i) {
+                    assert(post.storage.index(i).is_init());
+                } else {
+                    assert(post.storage.index(i).is_uninit());
+                }
+            }
+            }
+        }
     }
 
     #[inductive(consume_start)]
     fn consume_start_inductive(pre: Self, post: Self) {
-        assert forall |i|
-            pre.valid_storage_at_idx(i) implies post.valid_storage_at_idx(i)
-        by { }
+        assert forall|i: nat| 0 <= i && i < post.len() ==> post.valid_storage_at_idx(i) by {
+            if 0 <= i && i < post.len() {
+            assert(pre.valid_storage_at_idx(i));
+            if post.is_checked_out(i) {
+                assert(!post.storage.dom().contains(i));
+            } else {
+                assert(post.storage.dom().contains(i));
+                assert(post.storage.index(i).id() == post.backing_cells.index(i as int));
+                if post.in_active_range(i) {
+                    assert(post.storage.index(i).is_init());
+                } else {
+                    assert(post.storage.index(i).is_uninit());
+                }
+            }
+            }
+        }
     }
 
     #[inductive(consume_end)]
     fn consume_end_inductive(pre: Self, post: Self, perm: cell::PointsTo<T>) {
-        let head = pre.consumer.get_Consuming_0();
-        assert(post.storage.dom().contains(head));
-        assert(post.storage.index(head).id() == post.backing_cells.index(head as int));
-        assert(if post.in_active_range(head) {
-            post.storage.index(head).is_init()
-        } else {
-            post.storage.index(head).is_uninit()
-        });
-        match (pre.producer, pre.consumer) {
-            (ProducerState::Producing(tail), ConsumerState::Idle(head)) => { assert(pre.head != pre.tail); }
-            (ProducerState::Producing(tail), ConsumerState::Consuming(head)) => { assert(pre.head != pre.tail); }
-            (ProducerState::Idle(tail), ConsumerState::Idle(head)) => { assert(pre.head != pre.tail); }
-            (ProducerState::Idle(tail), ConsumerState::Consuming(head)) => { assert(pre.head != pre.tail); }
-        };
-        assert(pre.head != pre.tail);
-        assert(!post.is_checked_out(head));
-        assert(post.valid_storage_at_idx(head));
-        assert forall |i|
-            pre.valid_storage_at_idx(i) implies post.valid_storage_at_idx(i)
-        by { }
+        assert forall|i: nat| 0 <= i && i < post.len() ==> post.valid_storage_at_idx(i) by {
+            if 0 <= i && i < post.len() {
+            assert(pre.valid_storage_at_idx(i));
+            if post.is_checked_out(i) {
+                assert(!post.storage.dom().contains(i));
+            } else {
+                assert(post.storage.dom().contains(i));
+                assert(post.storage.index(i).id() == post.backing_cells.index(i as int));
+                if post.in_active_range(i) {
+                    assert(post.storage.index(i).is_init());
+                } else {
+                    assert(post.storage.index(i).is_uninit());
+                }
+            }
+            }
+        }
     }
 }}
 
@@ -577,18 +602,21 @@ impl<T> Producer<T> {
             } else {
                 self.tail + 1
             };
-            let tracked cell_perm: Option<cell::PointsTo<T>>;
+            let tracked mut cell_perm: Option<cell::PointsTo<T>> = None;
             // Get the current `head` value from the shared atomic.
             let head =
                 atomic_with_ghost!(&queue.head => load();
                 returning head;
                 ghost head_token => {
-                    cell_perm = if head != next_tail as u64 {
-                        let tracked cp = queue.instance.borrow().produce_start(&head_token, self.producer.borrow_mut());
-                        Option::Some(cp)
-                    } else {
-                        Option::None
-                    };
+                    assert(head_token.instance_id() == queue.instance@.id());
+                    assert(head_token.value() == head as nat);
+                    assert(self.producer@.instance_id() == queue.instance@.id());
+                    assert(self.producer@.value() == ProducerState::Idle(self.tail as nat));
+                    assert(queue.instance@.backing_cells().len() == queue.buffer@.len());
+                    assert(queue.instance@.backing_cells().len() > 0);
+                    let tracked perm =
+                        queue.instance.borrow().produce_start(&mut head_token, self.producer.borrow_mut());
+                    cell_perm = Some(perm);
                 }
             );
             // Here's where we "actually" do the `head != next_tail` check:
@@ -607,8 +635,7 @@ impl<T> Producer<T> {
                 // Store the updated tail to the shared `tail` atomic,
                 // while performing the `produce_end` transition.
                 atomic_with_ghost!(&queue.tail => store(next_tail as u64); ghost tail_token => {
-                    queue.instance.borrow().produce_end(cell_perm,
-                        cell_perm, &mut tail_token, self.producer.borrow_mut());
+                    queue.instance.borrow().produce_end(cell_perm, cell_perm, &mut tail_token, self.producer.borrow_mut());
                 });
                 self.tail = next_tail;
                 return ;
@@ -638,17 +665,20 @@ impl<T> Consumer<T> {
             } else {
                 self.head + 1
             };
-            let tracked cell_perm: Option<cell::PointsTo<T>>;
+            let tracked mut cell_perm: Option<cell::PointsTo<T>> = None;
             let tail =
                 atomic_with_ghost!(&queue.tail => load();
                 returning tail;
                 ghost tail_token => {
-                    cell_perm = if self.head as u64 != tail {
-                        let tracked (_, Tracked(cp)) = queue.instance.borrow().consume_start(&tail_token, self.consumer.borrow_mut());
-                        Option::Some(cp)
-                    } else {
-                        Option::None
-                    };
+                    assert(tail_token.instance_id() == queue.instance@.id());
+                    assert(tail_token.value() == tail as nat);
+                    assert(self.consumer@.instance_id() == queue.instance@.id());
+                    assert(self.consumer@.value() == ConsumerState::Idle(self.head as nat));
+                    assert(queue.instance@.backing_cells().len() == queue.buffer@.len());
+                    assert(queue.instance@.backing_cells().len() > 0);
+                    let tracked (storage, Tracked(perm)) =
+                        queue.instance.borrow().consume_start(&mut tail_token, self.consumer.borrow_mut());
+                    cell_perm = Some(perm);
                 }
             );
             if self.head as u64 != tail {
@@ -661,8 +691,7 @@ impl<T> Consumer<T> {
                 };
                 let t = queue.buffer[self.head].take(Tracked(&mut cell_perm));
                 atomic_with_ghost!(&queue.head => store(next_head as u64); ghost head_token => {
-                    queue.instance.borrow().consume_end(cell_perm,
-                        cell_perm, &mut head_token, self.consumer.borrow_mut());
+                    queue.instance.borrow().consume_end(cell_perm, cell_perm, &mut head_token, self.consumer.borrow_mut());
                 });
                 self.head = next_head;
                 return t;
