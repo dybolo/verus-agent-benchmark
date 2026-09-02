@@ -553,11 +553,15 @@ tokenized_state_machine! { CyclicBuffer<DT: Dispatch> {
 
     #[inductive(advance_tail_start)]
     fn advance_tail_start_inductive(pre: Self, post: Self, node_id: NodeId) {
-        assert forall |n| 0 <= n < pre.num_replicas as nat implies pre.head <= pre.local_versions[n] by {
-            assert(pre.complete());
+        assert(pre.complete());
+        assert(pre.local_versions.contains_key(node_id));
+        assert(pre.pointer_ordering());
+        assert(pre.head <= pre.local_versions[node_id]);
+        assert forall |n| 0 <= n < pre.num_replicas implies
+            pre.head <= pre.local_versions[n] by {
             assert(pre.local_versions.contains_key(n));
-            assert(pre.pointer_ordering());
-        };
+            assert(pre.head <= pre.local_versions[n]);
+        }
     }
 
     #[inductive(advance_tail_abort)]

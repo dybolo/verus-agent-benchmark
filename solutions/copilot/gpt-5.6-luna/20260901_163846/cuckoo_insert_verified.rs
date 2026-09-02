@@ -1387,8 +1387,7 @@ impl MyHashMap {
                     proof {
                         r = lock1x.rows.tracked_remove(h1x as nat);
                         let tracked (Tracked(mpt0), Tracked(tok0)) =
-                            self.instance.update_key_value(
-                                key, new_val, h1x as nat, i as nat, mpt, r.token);
+                            self.instance.update_key_value(key, new_val, h1x as nat, i as nat, mpt, r.token);
                         mpt = mpt0;
                         r.token = tok0;
                     }
@@ -1430,8 +1429,7 @@ impl MyHashMap {
                     proof {
                         r = lock2x.rows.tracked_remove(h2x as nat);
                         let tracked (Tracked(mpt0), Tracked(tok0)) =
-                            self.instance.update_key_value(
-                                key, new_val, h2x as nat, i as nat, mpt, r.token);
+                            self.instance.update_key_value(key, new_val, h2x as nat, i as nat, mpt, r.token);
                         mpt = mpt0;
                         r.token = tok0;
                     }
@@ -1474,8 +1472,7 @@ impl MyHashMap {
                     proof {
                         r = lock1x.rows.tracked_remove(h1x as nat);
                         let tracked (Tracked(mpt0), Tracked(tok0)) =
-                            self.instance.insert_key_value(
-                                key, new_val, h1x as nat, i as nat, mpt, r.token,
+                            self.instance.insert_key_value(key, new_val, h1x as nat, i as nat, mpt, r.token,
                                 &lock2x.rows.tracked_borrow(h2x as nat).token);
                         mpt = mpt0;
                         r.token = tok0;
@@ -1518,8 +1515,7 @@ impl MyHashMap {
                     proof {
                         r = lock2x.rows.tracked_remove(h2x as nat);
                         let tracked (Tracked(mpt0), Tracked(tok0)) =
-                            self.instance.insert_key_value(
-                                key, new_val, h2x as nat, i as nat, mpt, r.token,
+                            self.instance.insert_key_value(key, new_val, h2x as nat, i as nat, mpt, r.token,
                                 &lock1x.rows.tracked_borrow(h1x as nat).token);
                         mpt = mpt0;
                         r.token = tok0;
@@ -1661,8 +1657,7 @@ impl MyHashMap {
                     proof {
                         r = lock1x.rows.tracked_remove(h1x as nat);
                         let tracked (Tracked(mpt0), Tracked(tok0)) =
-                            self.instance.update_key_value(
-                                key, new_val, h1x as nat, i as nat, mpt, r.token);
+                            self.instance.update_key_value(key, new_val, h1x as nat, i as nat, mpt, r.token);
                         mpt = mpt0;
                         r.token = tok0;
                     }
@@ -1704,8 +1699,7 @@ impl MyHashMap {
                     proof {
                         r = lock2x.rows.tracked_remove(h2x as nat);
                         let tracked (Tracked(mpt0), Tracked(tok0)) =
-                            self.instance.update_key_value(
-                                key, new_val, h2x as nat, i as nat, mpt, r.token);
+                            self.instance.update_key_value(key, new_val, h2x as nat, i as nat, mpt, r.token);
                         mpt = mpt0;
                         r.token = tok0;
                     }
@@ -1747,8 +1741,7 @@ impl MyHashMap {
                     proof {
                         r = lock1x.rows.tracked_remove(h1x as nat);
                         let tracked (Tracked(mpt0), Tracked(tok0)) =
-                            self.instance.insert_key_value(
-                                key, new_val, h1x as nat, i as nat, mpt, r.token,
+                            self.instance.insert_key_value(key, new_val, h1x as nat, i as nat, mpt, r.token,
                                 &lock2x.rows.tracked_borrow(h2x as nat).token);
                         mpt = mpt0;
                         r.token = tok0;
@@ -1791,8 +1784,7 @@ impl MyHashMap {
                     proof {
                         r = lock2x.rows.tracked_remove(h2x as nat);
                         let tracked (Tracked(mpt0), Tracked(tok0)) =
-                            self.instance.insert_key_value(
-                                key, new_val, h2x as nat, i as nat, mpt, r.token,
+                            self.instance.insert_key_value(key, new_val, h2x as nat, i as nat, mpt, r.token,
                                 &lock1x.rows.tracked_borrow(h1x as nat).token);
                         mpt = mpt0;
                         r.token = tok0;

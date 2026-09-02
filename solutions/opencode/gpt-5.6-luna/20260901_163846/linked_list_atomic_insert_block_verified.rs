@@ -11065,22 +11065,21 @@ impl ThreadLLSimple {
             block_token.value().heap_id == Some(self.heap_id@),
             is_block_ptr(ptr as *mut u8, block_token.key()),
     {
-        let tracked mut points_to_raw = Some(points_to_raw);
+        let tracked mut points_to_raw_opt = Some(points_to_raw);
         let tracked mut block_token_opt = Some(block_token);
-        let tracked mut ptr_mem = None;
-        let tracked mut raw_mem = None;
-        let tracked mut exposed_mem = None;
 
         let Tracked(exposed) = expose_provenance(ptr);
-        proof { exposed_mem = Some(exposed); }
 
         loop
             invariant_except_break
                 block_token_opt == Some(block_token),
+                match points_to_raw_opt {
+                    Some(p) => p.is_range(ptr as int, block_token.key().block_size as int)
+                        && p.provenance() == ptr@.provenance,
+                    None => false,
+                },
 
                 self.wf(),
-                points_to_raw@.is_range(ptr as int, block_token.key().block_size as int),
-                points_to_raw@.provenance() == ptr@.provenance,
                 exposed.provenance() == ptr@.provenance,
 
                 block_token.instance_id() == self.instance@.id(),
@@ -11095,35 +11094,36 @@ impl ThreadLLSimple {
                 block_ptr_aligned_to_word();
             }
 
-            let (Tracked(ptr_mem0), Tracked(raw_mem0)) = LL::block_write_ptr(ptr, Tracked(points_to_raw.tracked_take()), next_ptr);
+            proof { assert(points_to_raw_opt != None); }
+            let tracked points_to_raw = points_to_raw_opt.tracked_unwrap();
+            proof { points_to_raw_opt = None; }
             proof {
-                ptr_mem = Some(ptr_mem0);
-                raw_mem = Some(raw_mem0);
+                assert(points_to_raw.is_range(ptr as int, block_token.key().block_size as int));
+                assert(points_to_raw.provenance() == ptr@.provenance);
             }
+            let (Tracked(ptr_mem0), Tracked(raw_mem0)) = LL::block_write_ptr(ptr, Tracked(points_to_raw), next_ptr);
 
             let cas_result = atomic_with_ghost!(
                 &self.atomic => compare_exchange_weak(next_ptr, ptr);
                 returning cas_result;
                 ghost ghost_ll =>
             {
-                match cas_result {
-                    Result::Ok(_) => {
-                        let tracked block = block_token_opt.tracked_unwrap();
-                        LL::ghost_insert_block(
-                            mut_ref_tracked(&mut ghost_ll),
-                            ptr,
-                            ptr_mem.tracked_unwrap(),
-                            raw_mem.tracked_unwrap(),
-                            block,
-                            exposed_mem.tracked_unwrap(),
-                        );
-                        block_token_opt = None;
-                    }
-                    _ => {
-                        let tracked ptr_mem0 = ptr_mem.tracked_unwrap();
-                        let tracked raw_mem0 = raw_mem.tracked_unwrap();
-                        points_to_raw = Some(ptr_mem0.into_raw().join(raw_mem0));
-                    }
+                if cas_result.is_ok() {
+                    let tracked block = block_token_opt.tracked_unwrap();
+                    LL::ghost_insert_block(
+                        mut_ref_tracked(&mut ghost_ll),
+                        ptr,
+                        ptr_mem0,
+                        raw_mem0,
+                        block,
+                        exposed,
+                    );
+                    block_token_opt = None;
+                } else {
+                    let tracked mut ptr_mem0 = ptr_mem0;
+                    let tracked raw_mem0 = raw_mem0;
+                    ptr_mem0.leak_contents();
+                    points_to_raw_opt = Some(ptr_mem0.into_raw().join(raw_mem0));
                 }
             });
 

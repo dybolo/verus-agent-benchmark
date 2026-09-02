@@ -13,10 +13,12 @@ use vstd::atomic_ghost::*;
 use vstd::invariant::InvariantPredicate;
 use vstd::modes::*;
 use vstd::multiset::*;
-use vstd::imap::group_imap_lemmas;
-use vstd::imap_lib::group_imap_properties;
 use vstd::prelude::*;
 use vstd::set::*;
+use vstd::imap::group_imap_lemmas;
+use vstd::seq::group_seq_lemmas;
+use vstd::imap_lib::group_imap_properties;
+use vstd::seq_lib::group_seq_properties;
 
 fn main() {}
 
@@ -774,7 +776,6 @@ tokenized_state_machine!{ Cuckoo {
                     && self.matrix[row][col].unwrap().0 == key
     }
 
-
     #[invariant]
     pub spec fn pair_in_matrix_implies_pair_in_map(&self) -> bool {
         forall |row, col|
@@ -801,33 +802,139 @@ tokenized_state_machine!{ Cuckoo {
     #[inductive(delete_key_value)]
     fn delete_key_value_inductive(pre: Self, post: Self, key: Key, row: Row, col: Col) {
         broadcast use group_imap_lemmas;
+        broadcast use group_seq_lemmas;
         broadcast use group_imap_properties;
-        broadcast use group_imap_extra;
+        broadcast use group_seq_properties;
         assert(pre.key_in_map_implies_key_in_matrix());
+        assert forall |key0| #[trigger] pre.frag[key0].is_some() ==> exists |row0, col0|
+            0 <= row0 < HEIGHT && 0 <= col0 < WIDTH
+                && pre.matrix[row0][col0].is_some()
+                && pre.matrix[row0][col0].unwrap().0 == key0 by { };
+        assert forall |key0| #[trigger] post.frag[key0].is_some() ==> exists |row0, col0|
+            0 <= row0 < HEIGHT && 0 <= col0 < WIDTH
+                && (#[trigger] post.matrix[row0][col0]).is_some()
+                && post.matrix[row0][col0].unwrap().0 == key0 by {
+            if key0 != key {
+                assert(pre.frag[key0] == post.frag[key0]);
+                let (row0, col0) = choose |row0: nat, col0: int|
+                    0 <= row0 < HEIGHT && 0 <= col0 < WIDTH
+                    && pre.matrix[row0][col0].is_some()
+                    && pre.matrix[row0][col0].unwrap().0 == key0;
+                assert(pre.matrix[row][col as int].is_some());
+                assert(pre.matrix[row][col as int].unwrap().0 == key);
+                assert(pre.matrix[row0][col0].unwrap().0 == key0);
+                assert(pre.all_distinct());
+                assert(pre.matrix[row][col as int].unwrap().0 !=
+                    pre.matrix[row0][col0].unwrap().0);
+                assert(row0 != row || col0 != col);
+                assert(post.matrix[row0][col0] == pre.matrix[row0][col0]);
+            } else {
+                assert(post.frag[key0] == None);
+            }
+        };
     }
 
     #[inductive(update_key_value)]
     fn update_key_value_inductive(pre: Self, post: Self, key: Key, new_val: Value, row: Row, col: Col) {
         broadcast use group_imap_lemmas;
+        broadcast use group_seq_lemmas;
         broadcast use group_imap_properties;
-        broadcast use group_imap_extra;
+        broadcast use group_seq_properties;
         assert(pre.key_in_map_implies_key_in_matrix());
+        assert forall |key0| #[trigger] pre.frag[key0].is_some() ==> exists |row0, col0|
+            0 <= row0 < HEIGHT && 0 <= col0 < WIDTH
+                && pre.matrix[row0][col0].is_some()
+                && pre.matrix[row0][col0].unwrap().0 == key0 by { };
+        assert forall |key0| #[trigger] post.frag[key0].is_some() ==> exists |row0, col0|
+            0 <= row0 < HEIGHT && 0 <= col0 < WIDTH
+                && (#[trigger] post.matrix[row0][col0]).is_some()
+                && post.matrix[row0][col0].unwrap().0 == key0 by {
+            if key0 == key {
+                assert(post.matrix[row][col as int].is_some());
+                assert(post.matrix[row][col as int].unwrap().0 == key);
+                assert(exists |r: nat, c: nat| r == row && c == col
+                    && 0 <= r < HEIGHT && 0 <= c < WIDTH
+                    && post.matrix[r][c as int].is_some()
+                    && post.matrix[r][c as int].unwrap().0 == key0);
+            } else {
+                let (row0, col0) = choose |row0: nat, col0: int|
+                    0 <= row0 < HEIGHT && 0 <= col0 < WIDTH
+                    && pre.matrix[row0][col0].is_some()
+                    && pre.matrix[row0][col0].unwrap().0 == key0;
+                assert(pre.matrix[row][col as int].is_some());
+                assert(pre.matrix[row][col as int].unwrap().0 == key);
+                assert(pre.matrix[row0][col0].unwrap().0 == key0);
+                assert(pre.all_distinct());
+                assert(pre.matrix[row][col as int].unwrap().0 !=
+                    pre.matrix[row0][col0].unwrap().0);
+                assert(row0 != row || col0 != col);
+                assert(post.matrix[row0][col0] == pre.matrix[row0][col0]);
+            }
+        };
+        assert forall |key0| #[trigger] post.frag[key0].is_some() ==> exists |row0, col0|
+            0 <= row0 < HEIGHT && 0 <= col0 < WIDTH
+                && (#[trigger] post.matrix[row0][col0]).is_some()
+                && post.matrix[row0][col0].unwrap().0 == key0 by {
+        };
     }
 
     #[inductive(insert_key_value)]
     fn insert_key_value_inductive(pre: Self, post: Self, key: Key, new_val: Value, row: Row, col: Col) {
         broadcast use group_imap_lemmas;
+        broadcast use group_seq_lemmas;
         broadcast use group_imap_properties;
-        broadcast use group_imap_extra;
+        broadcast use group_seq_properties;
         assert(pre.key_in_map_implies_key_in_matrix());
+        assert forall |key0| #[trigger] pre.frag[key0].is_some() ==> exists |row0, col0|
+            0 <= row0 < HEIGHT && 0 <= col0 < WIDTH
+                && pre.matrix[row0][col0].is_some()
+                && pre.matrix[row0][col0].unwrap().0 == key0 by { };
+        assert forall |key0| #[trigger] post.frag[key0].is_some() ==> exists |row0, col0|
+            0 <= row0 < HEIGHT && 0 <= col0 < WIDTH
+                && (#[trigger] post.matrix[row0][col0]).is_some()
+                && post.matrix[row0][col0].unwrap().0 == key0 by {
+            if key0 == key {
+                assert(post.matrix[row][col as int].is_some());
+                assert(post.matrix[row][col as int].unwrap().0 == key);
+                assert(exists |r: nat, c: nat| r == row && c == col
+                    && 0 <= r < HEIGHT && 0 <= c < WIDTH
+                    && post.matrix[r][c as int].is_some()
+                    && post.matrix[r][c as int].unwrap().0 == key0);
+            } else {
+                let (row0, col0) = choose |row0: nat, col0: int|
+                    0 <= row0 < HEIGHT && 0 <= col0 < WIDTH
+                    && pre.matrix[row0][col0].is_some()
+                    && pre.matrix[row0][col0].unwrap().0 == key0;
+                assert(pre.matrix[row][col as int].is_some());
+                assert(pre.matrix[row][col as int].unwrap().0 == key);
+                assert(pre.matrix[row0][col0].unwrap().0 == key0);
+                assert(pre.all_distinct());
+                assert(pre.matrix[row][col as int].unwrap().0 !=
+                    pre.matrix[row0][col0].unwrap().0);
+                assert(row0 != row || col0 != col);
+                assert(post.matrix[row0][col0] == pre.matrix[row0][col0]);
+            }
+        };
+        assert forall |key0| #[trigger] post.frag[key0].is_some() ==> exists |row0, col0|
+            0 <= row0 < HEIGHT && 0 <= col0 < WIDTH
+                && (#[trigger] post.matrix[row0][col0]).is_some()
+                && post.matrix[row0][col0].unwrap().0 == key0 by {
+        };
     }
 
     #[inductive(swing)]
     fn swing_inductive(pre: Self, post: Self, key: Key, row: Row, col: Col, row2: Row, col2: Col) {
         broadcast use group_imap_lemmas;
+        broadcast use group_seq_lemmas;
         broadcast use group_imap_properties;
-        broadcast use group_imap_extra;
+        broadcast use group_seq_properties;
         assert(pre.key_in_map_implies_key_in_matrix());
+        assert(post.frag[key] == pre.frag[key]);
+        assert forall |key0| #[trigger] post.frag[key0].is_some() ==> exists |row0, col0|
+            0 <= row0 < HEIGHT && 0 <= col0 < WIDTH
+                && (#[trigger] post.matrix[row0][col0]).is_some()
+                && post.matrix[row0][col0].unwrap().0 == key0 by {
+        };
     }
 }}
 

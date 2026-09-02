@@ -262,12 +262,12 @@ impl<DT: Dispatch> Context<DT> {
             update prev->next;
             ghost g => {
                 self.flat_combiner_instance.borrow().pre_send_request(
-                    fc_clients.key(),
+                    self.thread_id_g@,
                     &fc_clients,
                     &g.slots,
                 );
                 send_request_result = self.flat_combiner_instance.borrow().send_request(
-                    fc_clients.key(),
+                    self.thread_id_g@,
                     local_updates.key(),
                     fc_clients,
                     g.slots,

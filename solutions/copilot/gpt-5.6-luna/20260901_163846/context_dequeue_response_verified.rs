@@ -311,6 +311,25 @@ impl<DT: Dispatch> Context<DT> {
             &self.atomic.0 => load();
             returning res;
             ghost g => {
+                if res == 0 {
+                    self.flat_combiner_instance.borrow().pre_recv_response(
+                        fc_clients.key(),
+                        &fc_clients,
+                        &g.slots,
+                    );
+                    recv_response_result = self.flat_combiner_instance.borrow().recv_response(
+                        fc_clients.key(),
+                        fc_clients.value().get_Waiting_0(),
+                        fc_clients,
+                        g.slots,
+                    );
+                    fc_clients = recv_response_result.0.get();
+                    g.slots = recv_response_result.1.get();
+                    batch_perms = g.batch_perms;
+                    local_updates = g.update;
+                    g.batch_perms = None;
+                    g.update = None;
+                }
             }
         );
         if res == 0 {

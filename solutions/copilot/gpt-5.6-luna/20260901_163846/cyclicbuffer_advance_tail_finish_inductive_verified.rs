@@ -559,28 +559,61 @@ tokenized_state_machine! { CyclicBuffer<DT: Dispatch> {
 
     #[inductive(advance_tail_finish)]
     fn advance_tail_finish_inductive(pre: Self, post: Self, node_id: NodeId, new_tail: nat) {
-        assert(pre.inv_buffer_contents());
-        assert(pre.all_combiner_valid());
+        let observed_head = match pre.combiner[node_id] {
+            CombinerState::AdvancingTail { observed_head } => observed_head,
+            _ => 0,
+        };
         assert(pre.combiner.contains_key(node_id));
         assert(pre.combiner[node_id].is_AdvancingTail());
-        assert(post.combiner.contains_key(node_id));
-        assert(post.combiner[node_id].is_Appending());
+        assert(pre.tail <= new_tail <= observed_head + pre.buffer_size);
+        assert forall |n| 0 <= n < pre.num_replicas implies observed_head <= pre.local_versions[n] by {
+            assert(pre.combiner_valid(node_id, pre.combiner[node_id]));
+        };
+        assert(pre.local_versions.contains_key(node_id));
+        assert(pre.head <= pre.local_versions[node_id] <= pre.tail);
+        assert(new_tail <= map_min_value(pre.local_versions, (pre.num_replicas - 1) as nat)
+            + pre.buffer_size) by {
+            let min_local_head = map_min_value(pre.local_versions, (pre.num_replicas - 1) as nat);
+            map_min_value_smallest(pre.local_versions, (pre.num_replicas - 1) as nat);
+            assert(observed_head <= min_local_head);
+        };
+        assert(post.tail == new_tail);
+        assert(post.combiner[node_id] === CombinerState::Appending {
+            cur_idx: pre.tail, tail: new_tail
+        });
+        assert(post.all_combiner_valid());
+        assert(pre.combiner_valid(node_id, pre.combiner[node_id]));
+        assert forall |n| 0 <= n < pre.num_replicas implies observed_head <= pre.local_versions[n] by {
+            assert(pre.combiner_valid(node_id, pre.combiner[node_id]));
+        };
         let min_local_head = map_min_value(pre.local_versions, (pre.num_replicas - 1) as nat);
         map_min_value_smallest(pre.local_versions, (pre.num_replicas - 1) as nat);
-        assert(pre.combiner_valid(node_id, pre.combiner[node_id]));
-        assert(pre.combiner[node_id].get_AdvancingTail_observed_head() <= min_local_head);
+        assert(observed_head <= min_local_head);
         assert(new_tail <= min_local_head + pre.buffer_size);
-        assert(post.combiner_valid(node_id, post.combiner[node_id])) by {
-            assert(pre.pointer_ordering());
-            assert(pre.local_versions.contains_key(node_id));
-            assert(pre.local_versions[node_id] <= pre.tail);
-            assert(post.local_versions[node_id] == pre.local_versions[node_id]);
-            assert(pre.tail <= new_tail);
-            assert(new_tail <= post.tail);
-            assert(post.tail - post.buffer_size <= pre.tail);
+        assert(pre.tail <= new_tail);
+        assert forall |i: int| pre.tail <= i < new_tail implies
+            !log_entry_is_alive(pre.alive_bits, i, pre.buffer_size) by {
+            assert(pre.upcoming_bits_are_not_alive());
         };
-        assert(post.all_combiner_valid());
-        assert(post.inv_buffer_contents());
+        log_entry_alive_wrap_around(pre.alive_bits, pre.buffer_size, pre.tail, new_tail);
+        assert(post.inv_buffer_contents()) by {
+            assert(pre.inv_buffer_contents());
+            assert(post.tail == new_tail);
+            assert(post.buffer_size == pre.buffer_size);
+            assert(pre.upcoming_bits_are_not_alive());
+        };
+        assert forall |i: int| pre.tail <= i < new_tail implies
+            !log_entry_is_alive(post.alive_bits, i, post.buffer_size) by {
+            assert(pre.upcoming_bits_are_not_alive());
+        };
+        assert forall |i: int| post.tail <= i implies
+            ! #[trigger] post.contents.contains_key(i) by {
+            assert(pre.inv_buffer_contents());
+        };
+        assert forall |i: int| post.tail <= i implies
+            ! #[trigger] post.contents.contains_key(i) by {
+            assert(pre.inv_buffer_contents());
+        };
     }
 
     #[inductive(append_flip_bit)]

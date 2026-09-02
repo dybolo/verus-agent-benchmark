@@ -11496,34 +11496,59 @@ impl ThreadLLWithDelayBits {
             ll.fixed_page(),
     {
         let tracked ll: LL;
-        let ghost mut delay;
-        let ghost mut old_addr;
+        let ghost mut old_delay;
         let p = core::ptr::null_mut::<Node>();
         let res = atomic_with_ghost!(
             &self.atomic => fetch_and(3);
             update old_v -> new_v;
             ghost g => {
-                self.emp_inst.borrow().agree(self.emp.borrow(), &g.0);
-                let tracked (emp_token, pair_opt) = g;
-                let tracked pair = pair_opt.tracked_unwrap();
-                let tracked (delay_token, ghost_ll) = pair;
-                delay = delay_token.value();
-                old_addr = old_v.addr();
-                assert(ghost_ll.wf());
-                crate::layout::block_ptr_aligned_to_word();
-                assert(ghost_ll.ptr() as int % 4 == 0);
-                let mut data = ghost_ll.data@;
+                let tracked (mut y, pair_opt) = g;
+                self.emp_inst.borrow().agree(self.emp.borrow(), &y);
+                assert(pair_opt.is_some());
+                let tracked (delay_token, ghost_ll) = pair_opt.tracked_unwrap();
+                ll = ghost_ll;
+                old_delay = delay_token.value();
+                assert(ll.wf());
+                assert(ll.ptr().addr() % 4 == 0);
+                assert(old_v as int == ll.ptr() as int + delay_token.value().to_int());
+                assert(old_v.addr() % 4 == delay_token.value().to_int());
+                let old_v_addr = old_v.addr();
+                assert(new_v.addr() == (old_v_addr & 3));
+                vstd::bits::lemma_usize_low_bits_mask_is_mod(old_v_addr, 2);
+                vstd::bits::lemma_low_bits_mask_values();
+                vstd::arithmetic::power2::lemma_pow2_unfold(2);
+                vstd::arithmetic::power2::lemma_pow2_unfold(1);
+                assert(vstd::bits::low_bits_mask(2) == 3);
+                assert(vstd::arithmetic::power2::pow2(2) == 4);
+                assert((old_v_addr & 3) == old_v_addr % 4);
+                let mut data = ll.data@;
                 data.len = 0;
                 let tracked new_ll = LL {
                     first: p,
                     data: Ghost(data),
                     perms: Tracked(Map::tracked_empty()),
                 };
-                ll = ghost_ll;
-                g = (emp_token, Some((delay_token, new_ll)));
-                let new_addr = new_v.addr();
-                assert(new_addr == old_addr & 3) by (bit_vector);
-                assert(new_addr == delay.to_int());
+                assert(new_ll.wf());
+                let new_v_addr = new_v.addr();
+                match delay_token.value() {
+                    DelayState::UseDelayedFree => {
+                        assert(old_v_addr % 4 == 0);
+                        assert(new_v_addr == 0);
+                    }
+                    DelayState::Freeing => {
+                        assert(old_v_addr % 4 == 1);
+                        assert(new_v_addr == 1);
+                    }
+                    DelayState::NoDelayedFree => {
+                        assert(old_v_addr % 4 == 2);
+                        assert(new_v_addr == 2);
+                    }
+                    DelayState::NeverDelayedFree => {
+                        assert(old_v_addr % 4 == 3);
+                        assert(new_v_addr == 3);
+                    }
+                }
+                g = (y, Some((delay_token, new_ll)));
             }
         );
         let ret_ll = LL {
@@ -11532,13 +11557,38 @@ impl ThreadLLWithDelayBits {
             perms: Tracked(ll.perms.get()),
         };
         proof {
-            let res_addr = res.addr();
-            assert(res_addr == old_addr);
-            assert(res_addr & !3 == ll.first.addr()) by (bit_vector);
+            let ret_addr = ret_ll.first.addr();
+            let ll_addr = ll.ptr().addr();
+            assert(ret_addr == (res.addr() & !3));
+            assert(res.addr() as int == ll_addr as int + old_delay.to_int());
+            assert(ll_addr % 4 == 0);
+            match old_delay {
+                DelayState::UseDelayedFree => {
+                    assert(res.addr() as int == ll_addr as int);
+                    assert(res.addr() == ll_addr);
+                    assert(ret_addr == ll_addr) by(bit_vector);
+                }
+                DelayState::Freeing => {
+                    assert(res.addr() as int == ll_addr as int + 1);
+                    assert(res.addr() == ll_addr + 1);
+                    assert(ret_addr == ll_addr) by(bit_vector);
+                }
+                DelayState::NoDelayedFree => {
+                    assert(res.addr() as int == ll_addr as int + 2);
+                    assert(res.addr() == ll_addr + 2);
+                    assert(ret_addr == ll_addr) by(bit_vector);
+                }
+                DelayState::NeverDelayedFree => {
+                    assert(res.addr() as int == ll_addr as int + 3);
+                    assert(res.addr() == ll_addr + 3);
+                    assert(ret_addr == ll_addr) by(bit_vector);
+                }
+            }
             assert forall |i: nat| ret_ll.valid_node(i, #[trigger] ret_ll.next_ptr(i))
             by {
                 assert(ll.valid_node(i, ll.next_ptr(i)));
             }
+            assert(ret_ll.wf());
         }
         ret_ll
     }

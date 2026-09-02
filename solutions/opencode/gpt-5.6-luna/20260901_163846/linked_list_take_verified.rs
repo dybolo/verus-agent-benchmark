@@ -11140,18 +11140,21 @@ impl ThreadLLSimple {
         let p = core::ptr::null_mut::<Node>();
         let res = atomic_with_ghost!(
             &self.atomic => swap(core::ptr::null_mut());
-            update old_v -> new_v;
             ghost g => {
-                let tracked old_ll = g.get();
-                let mut data = old_ll.data@;
-                data.len = 0;
-                let tracked empty_ll = LL {
+                let tracked old_ll = g;
+                ll = old_ll.get();
+                g = Tracked(LL {
                     first: p,
-                    data: Ghost(data),
+                    data: Ghost(LLData {
+                        fixed_page: false,
+                        block_size: ll.block_size(),
+                        page_id: ll.page_id(),
+                        heap_id: ll.heap_id(),
+                        instance: ll.instance(),
+                        len: 0,
+                    }),
                     perms: Tracked(Map::tracked_empty()),
-                };
-                ll = old_ll;
-                g = Tracked(empty_ll);
+                });
             }
         );
         let new_ll = LL {

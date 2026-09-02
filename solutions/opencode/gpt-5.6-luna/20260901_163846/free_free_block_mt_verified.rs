@@ -13237,15 +13237,14 @@ fn free_block_mt(page: PagePtr, ptr: *mut u8, Tracked(perm): Tracked<PointsToRaw
         let pag: &Page = ptr_ref(page.page_ptr, Tracked(&page_shared_access.points_to));
 
 
-        let ghost mut next_ptr;
-        let ghost mut delay;
-        let mask = atomic_with_ghost!(&pag.xthread_free.atomic => load(); ghost g => {
-            pag.xthread_free.emp_inst.borrow().agree(
-                pag.xthread_free.emp.borrow(), &g.0);
-            next_ptr = g.1.unwrap().1.ptr();
-            delay = g.1.unwrap().0.value();
-        });
-        assert(!pag.xthread_free.is_empty());
+         let ghost mut next_ptr;
+         let ghost mut delay;
+         let mask = atomic_with_ghost!(&pag.xthread_free.atomic => load(); ghost g => {
+             pag.xthread_free.emp_inst.borrow().agree(pag.xthread_free.emp.borrow(), &g.0);
+             assert(g.0.value() == pag.xthread_free.emp@.value());
+             next_ptr = g.1.unwrap().1.ptr();
+             delay = g.1.unwrap().0.value();
+         });
 
         use_delayed = masked_ptr_delay_get_is_use_delayed(mask, Ghost(delay), Ghost(next_ptr));
         let mask1;
@@ -13284,65 +13283,61 @@ fn free_block_mt(page: PagePtr, ptr: *mut u8, Tracked(perm): Tracked<PointsToRaw
 
         let cas_result = atomic_with_ghost!(
             &pag.xthread_free.atomic => compare_exchange_weak(mask, mask1);
-             update v_old -> v_new;
+            update v_old -> v_new;
              returning cas_result;
-             ghost g =>
+              ghost g =>
          {
-             let tracked (emp_token, pair_opt) = g;
-             assert(!pag.xthread_free.is_empty());
-             assert(pag.xthread_free.emp@.value().is_some());
-             assert(g.0.value().is_some());
-             assert(pair_opt.is_some());
-             let tracked (delay_token, ghost_ll) = pair_opt.tracked_unwrap();
-             let tracked mut ghost_ll = Tracked(ghost_ll);
-             if cas_result.is_ok() && use_delayed {
-                 assert(delay == DelayState::UseDelayedFree);
-                 assert(delay_token.value() == DelayState::UseDelayedFree);
-                 assert(mim_block_opt.tracked_borrow().instance_id() == mim_instance.id());
-                 assert(mim_block_opt.tracked_borrow().key() == dealloc.block_id());
-                 let tracked (Tracked(delay_token), Tracked(delay_actor)) = mim_instance.delay_enter_freeing(
-                     dealloc.block_id().page_id,
-                     dealloc.block_id(),
-                     mim_block_opt.tracked_borrow(),
-                     delay_token,
-                 );
-                 delay_actor_token_opt = Some(delay_actor);
-                 g = (emp_token, Some((delay_token, ghost_ll.get())));
-             } else if cas_result.is_ok() {
-                 assert(ptr_mem.is_some());
-                 assert(raw_mem.is_some());
-                 assert(exposed.is_some());
-                 assert(mim_block_opt.is_some());
-                 let tracked ptr_mem = ptr_mem.tracked_unwrap();
-                 let tracked raw_mem = raw_mem.tracked_unwrap();
-                 let tracked exposed = exposed.tracked_unwrap();
-                 let tracked block_token = mim_block_opt.tracked_unwrap();
-                 assert(block_token.instance_id() == mim_instance.id());
-                 assert(block_token.key() == dealloc.block_id());
-                 mim_block_opt = None;
-                 LL::ghost_insert_block(
-                     &mut ghost_ll, ptr, ptr_mem, raw_mem, block_token, exposed);
-                 g = (emp_token, Some((delay_token, ghost_ll.get())));
-             } else if !use_delayed {
-                 assert(ptr_mem.is_some());
-                 assert(raw_mem.is_some());
-                 let tracked mut ptr_mem = ptr_mem.tracked_unwrap();
-                 let tracked raw_mem = raw_mem.tracked_unwrap();
-                 ptr_mem.leak_contents();
-                 perm = ptr_mem.into_raw().join(raw_mem);
-                 g = (emp_token, Some((delay_token, ghost_ll.get())));
-             } else {
-                 g = (emp_token, Some((delay_token, ghost_ll.get())));
-             }
+            pag.xthread_free.emp_inst.borrow().agree(pag.xthread_free.emp.borrow(), &g.0);
+            assert(g.0.value() == pag.xthread_free.emp@.value());
+            if cas_result.is_ok() && use_delayed {
+                let tracked (emp_token, pair_opt) = g;
+                let tracked (delay_token, ghost_ll) = pair_opt.tracked_unwrap();
+                let tracked (Tracked(new_delay), Tracked(actor_token)) = local.instance.delay_enter_freeing(
+                    dealloc.block_id().page_id,
+                    dealloc.block_id(),
+                    mim_block_opt.tracked_borrow(),
+                    delay_token,
+                );
+                delay_actor_token_opt = Some(actor_token);
+                g = (emp_token, Some((new_delay, ghost_ll)));
+            } else if cas_result.is_ok() {
+                let tracked (emp_token, pair_opt) = g;
+                let tracked (delay_token, mut ghost_ll) = pair_opt.tracked_unwrap();
+                assert(emp_token.value().is_some());
+                assert(emp_token.value().unwrap().page_id == ghost_ll.page_id());
+                let tracked mut ghost_ll_tracked = Tracked(ghost_ll);
+                let tracked block_token = mim_block_opt.tracked_unwrap();
+                let tracked ptr_mem = ptr_mem.tracked_unwrap();
+                let tracked raw_mem = raw_mem.tracked_unwrap();
+                let tracked exposed = exposed.tracked_unwrap();
+                assert(ghost_ll.fixed_page());
+                assert(pag.xthread_free.page_id() == dealloc.block_id().page_id);
+                assert(ghost_ll.page_id() == block_token.key().page_id);
+                assert(ghost_ll.block_size() == block_token.key().block_size);
+                LL::ghost_insert_block(
+                    &mut ghost_ll_tracked,
+                    ptr,
+                    ptr_mem,
+                    raw_mem,
+                    block_token,
+                    exposed,
+                );
+                mim_block_opt = None;
+                g = (emp_token, Some((delay_token, ghost_ll_tracked.get())));
+            }
          });
 
         match cas_result {
             Result::Err(_) => { }
             Result::Ok(_) => {
-                if unlikely(use_delayed) {
+                 if unlikely(use_delayed) {
 
-                    let tracked mut delay_actor_token = delay_actor_token_opt.tracked_unwrap();
+                     let tracked mut delay_actor_token;
                     let ghost mut heap_id: crate::tokens::HeapId;
+
+                    proof {
+                        delay_actor_token = delay_actor_token_opt.tracked_unwrap();
+                    }
 
                     let tracked page_shared_access: &PageSharedAccess =
                         mim_instance.alloc_guards_page_shared_access(

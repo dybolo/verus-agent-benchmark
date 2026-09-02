@@ -1175,13 +1175,12 @@ impl<DT: Dispatch> NrLog<DT> {
                 returning tail;
                 ghost g => { }
             );
-            let tracked cb_head;
-            let head =
-                atomic_with_ghost!(
+            let head = atomic_with_ghost!(
                 &self.head.0 => load();
                 returning tail;
                 ghost g => {
-                    cb_head = g;
+                    cb_combiner = self.cyclic_buffer_instance.borrow()
+                        .advance_tail_start(nid as nat, &g, cb_combiner);
                 }
             );
             if tail > head + (self.slog.len() as u64 - GC_FROM_HEAD as u64) {
@@ -1191,12 +1190,6 @@ impl<DT: Dispatch> NrLog<DT> {
                 }
                 waitgc = waitgc + 1;
                 proof {
-                    cb_combiner =
-                        self.cyclic_buffer_instance.borrow().advance_tail_start(
-                            nid as nat,
-                            &cb_head,
-                            cb_combiner,
-                        );
                     cb_combiner =
                     self.cyclic_buffer_instance.borrow().advance_tail_abort(
                         nid as nat,
@@ -1247,6 +1240,42 @@ impl<DT: Dispatch> NrLog<DT> {
                 update prev -> next;
                 returning result;
                 ghost g => {
+                    if matches!(result, Result::Ok(_)) {
+                        if nops != 0 {
+                            assert(nops == request_ids@.len());
+                            let tracked state = AppendEntriesGhostState {
+                                idx: 0,
+                                old_tail: tail as nat,
+                                log_entries: Map::tracked_empty(),
+                                local_updates,
+                                combiner,
+                                tail: g.0,
+                                request_ids: request_ids@,
+                                operations: operations@,
+                            };
+                            let tracked state = self.unbounded_log_append_entries(
+                                nid as nat,
+                                (nops - 1) as nat,
+                                state,
+                            );
+                            log_entries = state.log_entries;
+                            local_updates = state.local_updates;
+                            combiner = state.combiner;
+                            g.0 = state.tail;
+                        }
+                        let tracked (_withdrawn, contents0, cb_combiner0) =
+                            self.cyclic_buffer_instance.borrow().advance_tail_finish(
+                                nid as nat,
+                                new_tail as nat,
+                                &mut g.1,
+                                cb_combiner,
+                            );
+                        cb_log_entries = contents0.get();
+                        cb_combiner = cb_combiner0.get();
+                    } else {
+                        cb_combiner = self.cyclic_buffer_instance.borrow()
+                            .advance_tail_abort(nid as nat, cb_combiner);
+                    }
                 }
             );
             if !matches!(result, Result::Ok(tail)) {
@@ -1313,6 +1342,7 @@ impl<DT: Dispatch> NrLog<DT> {
                     cb_log_entry = cb_log_entries.tracked_remove((tail + idx) - LOG_SIZE);
                 }
                 let tracked mut cb_log_entry_perms = cb_log_entry.cell_perms;
+                let tracked log_entry = log_entries.tracked_remove(idx as nat);
                 let logical_log_idx = tail + idx as u64;
                 let log_idx = self.index(logical_log_idx);
                 let new_log_entry = ConcreteLogEntry {
@@ -1324,18 +1354,23 @@ impl<DT: Dispatch> NrLog<DT> {
                     Option::Some(new_log_entry),
                 );
                 let m = self.is_alive_value(logical_log_idx as u64);
+                let tracked deposited = StoredType {
+                    cell_perms: cb_log_entry_perms,
+                    log_entry: Some(log_entry),
+                };
                 atomic_with_ghost!(
                     &self.slog[log_idx].alive => store(m);
                     ghost g => {
-                        let tracked (Tracked(g0), Tracked(cb_combiner0)) =
-                            self.cyclic_buffer_instance.borrow().append_flip_bit(
+                        let tracked cb_combiner0 = self.cyclic_buffer_instance.borrow()
+                            .append_flip_bit(
                                 nid as nat,
-                                cb_log_entry,
+                                deposited,
+                                deposited,
                                 g,
                                 cb_combiner,
                             );
-                        g = g0;
-                        cb_combiner = cb_combiner0;
+                        g = cb_combiner0.0.get();
+                        cb_combiner = cb_combiner0.1.get();
                     }
                 );
                 idx = idx + 1;
