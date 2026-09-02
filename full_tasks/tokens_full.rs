@@ -9,16 +9,10 @@ use vstd::cell::pcell;
 use vstd::arithmetic::power2::pow2;
 use vstd::std_specs::bits::u64_leading_zeros;
 
-////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////
 
-// Logical identifiers for the various objects, which are based on the hierarchy outlined
-// above. Note that the implementation just uses pointers.
 
 verus!{
 
-// Dependencies inlined from verus-mimalloc/types.rs and its direct imports.
 pub const INTPTR_SIZE: u64 = 8;
 pub const MAX_ALIGN_GUARANTEE: u64 = 8 * 16;
 pub const BIN_HUGE: u64 = 73;
@@ -158,13 +152,8 @@ pub ghost struct PageId {
 pub ghost struct BlockId {
     pub page_id: PageId,
 
-    // Index of the block within the *page*
     pub idx: nat,
 
-    // Recall that a page may be multiple slices.
-    // The `slice_idx` is the index of the *specific* slice that this block is in.
-    // (Relative to the segment, so the slice's "offset" is going to be
-    // slice_idx - page_id.idx)
     pub slice_idx: nat,
 
     pub block_size: nat,
@@ -172,7 +161,6 @@ pub ghost struct BlockId {
 
 impl PageId {
     pub open spec fn range_from(&self, lo: int, hi: int) -> Set<PageId> {
-        // {page_id | page_id.segment_id == self.segment_id && self.idx + lo <= page_id.idx < self.idx + hi}
         Set::range(self.idx + lo, self.idx + hi).map_by(
             |idx: int| PageId { segment_id: self.segment_id, idx: idx as nat },
             |page_id: PageId| page_id.idx as int,
@@ -201,7 +189,6 @@ impl BlockId {
     }
 }
 
-// States
 
 pub ghost enum DelayState {
     UseDelayedFree,
@@ -221,16 +208,10 @@ impl DelayState {
     }
 }
 
-/*pub struct PageThreadListState {
-    pub delayed: DelayedState,
-    pub len: nat,
-}*/
 
 pub ghost struct PageState {
     pub offset: int,
 
-    //pub prev: Option<PageId>,
-    //pub next: Option<PageId>,
 
     pub block_size: nat,
     pub num_blocks: nat,
@@ -240,15 +221,12 @@ pub ghost struct PageState {
 }
 
 pub ghost struct SegmentState {
-    // TODO what do we need here?
-    //pub has_extra_slice: bool,
 
     pub shared_access: SegmentSharedAccess,
     pub is_enabled: bool,
 }
 
 pub ghost struct BlockState {
-    // Shared access this element can 'guard'
     pub segment_shared_access: SegmentSharedAccess,
     pub page_shared_access: PageSharedAccess,
     pub page_slice_shared_access: PageSharedAccess,
@@ -256,18 +234,8 @@ pub ghost struct BlockState {
     pub heap_id: Option<HeapId>,
 }
 
-/*
-pub ghost struct PageQueueIds {
-    // TODO are these supposed to be options?
-    pub first: Option<PageId>,
-    pub last: Option<PageId>,
-}
-*/
 
 pub ghost struct HeapState {
-    // For the doubly-linked list of Pages
-    //pub pages: Map<int, PageQueueIds>,
-    //pub full_list: PageQueueIds,
 
     pub shared_access: HeapSharedAccess,
 }
@@ -285,7 +253,6 @@ pub ghost struct ThreadCheckedState {
 }
 
 
-// Shared States
 
 pub tracked struct SegmentSharedAccess {
     pub points_to: raw_ptr::PointsTo<SegmentHeader>,
@@ -318,8 +285,6 @@ impl SegmentLocalAccess {
     }
 }
 
-//pub struct PageSharedAccess { i: int }
-//pub struct PageLocalAccess { i: int }
 pub tracked struct PageSharedAccess {
     pub tracked points_to: raw_ptr::PointsTo<Page>,
     pub tracked exposed: raw_ptr::IsExposed,
@@ -380,10 +345,9 @@ impl HeapLocalAccess {
 
               && (forall |i: int| #[trigger] valid_bin_idx(i) ==>
                   self.pages.value()[i].block_size == size_of_bin(i))
-              // 0 isn't a valid_bin_idx
               && self.pages.value()[0].block_size == 8
               && self.pages.value()[BIN_FULL as int].block_size ==
-                    8 * (524288 + 2) //MEDIUM_OBJ_WSIZE_MAX + 2
+                    8 * (524288 + 2) 
 
               && self.pages_free_direct.value()@.len() == PAGES_DIRECT
               && self.pages.value()@.len() == BIN_FULL + 1
@@ -393,19 +357,9 @@ impl HeapLocalAccess {
 
 
 
-// TODO this is currently unused, and I don't remember exactly why I made it.
-// Is it going to be necessary when we do more cleanup stuff?
-//
-// Actor lets us track what a single thread is doing.
-// The idea is that when the thread checks the 'thread id' of a page,
-// it needs to then be sure that the page will remain valid for the duration
-// of the period the thread is accessing it.
-// That means we need to prevent the thread from modifying the page state
-// while the 'AccessingMySegment' is in progress.
 
 pub ghost enum Actor {
     Idle,
-    //AccessingMySegment(SegmentId, SegmentLocalAccess),
     Abandoned,
 }
 
@@ -414,10 +368,7 @@ pub ghost enum DelayFreeingActor {
     Heap(HeapId, HeapSharedAccess, PageSharedAccess),
 }
 
-// ThreadId is inlined above.
 
-// PAPER CUT: doing this more than once, no generic finite condition for map,
-// having to do the maximum thing
 pub open spec fn segment_u_max(s: Set<SegmentId>) -> int
     decreases s.len()
 {
@@ -508,37 +459,25 @@ pub open spec fn range_block_ids(lo: nat, hi: nat, page_id: PageId, block_size: 
 
 tokenized_state_machine!{ Mim {
     fields {
-        // Thread-local state to each entity
 
         #[sharding(bool)] pub right_to_set_inst: bool,
         #[sharding(persistent_option)] pub my_inst: Option<InstanceId>,
 
-        /*
-        #[sharding(map)] pub heap: Map<HeapId, HeapState>,
-        #[sharding(map)] pub tld: Map<ThreadId, ThreadState>,
-        #[sharding(map)] pub segment: Map<SegmentId, SegmentState>,
-        #[sharding(map)] pub page: Map<PageId, PageState>,
-        */
         #[sharding(map)] pub thread_local_state: Map<ThreadId, ThreadState>,
         #[sharding(set)] pub right_to_use_thread: Set<ThreadId>,
 
-        // Blocks that are allocated (these ghost shards are handed to the user
-        // to give them the right to 'deallocate')
 
         #[sharding(map)] pub block: Map<BlockId, BlockState>,
 
-        // Atomics (accessed concurrently)
 
         #[sharding(map)] pub thread_of_segment: Map<SegmentId, ThreadId>,
         #[sharding(map)] pub delay: Map<PageId, DelayState>,
         #[sharding(map)] pub heap_of_page: Map<PageId, HeapId>,
 
-        // Thread actors
 
         #[sharding(map)] pub actor: Map<ThreadId, Actor>,
         #[sharding(map)] pub delay_actor: Map<PageId, DelayFreeingActor>,
 
-        // Storage
 
         #[sharding(storage_map)] pub segment_shared_access: Map<SegmentId, SegmentSharedAccess>,
 
@@ -546,16 +485,11 @@ tokenized_state_machine!{ Mim {
 
         #[sharding(storage_map)] pub heap_shared_access: Map<HeapId, HeapSharedAccess>,
 
-        // PAPER CUT
-        // reason - deposit can't be after birds_eye so create_thread_mk_tokens needs to work
-        // in two steps
         #[sharding(set)] pub reserved_uniq: Set<HeapId>,
 
         #[sharding(map)] pub thread_checked_state: Map<ThreadId, ThreadCheckedState>,
 
-        // Extra state that doesn't form tokens but helps writing invariants
 
-        //#[sharding(not_tokenized)] pub thread_segments: Map<ThreadId, Seq<SegmentId>>,
 
         #[sharding(not_tokenized)] pub heap_to_thread: Map<HeapId, ThreadId>,
     }
@@ -588,74 +522,19 @@ tokenized_state_machine!{ Mim {
         }
     }
 
-    /*transition!{
-        alloc_block(block_id: BlockId, thread_id: ThreadId) {
-            remove block -= [block_id => let block_state];
-            remove thread_local_state -= [thread_id => let tls];
 
-            require(!block_state.allocated);
-            require(tls.pages.dom().contains(block_id.page_id));
-            let page = tls.pages.index(block_id.page_id);
-            require(page.len >= 1);
 
-            assert(page.len >= 1);
 
-            let new_page = PageState {
-                len: (page.len - 1) as nat,
-                .. page
-            };
-            let new_tls = ThreadState {
-                pages: tls.pages.insert(block_id.page_id, new_page),
-                .. tls
-            };
-            let new_block_state = BlockState {
-                allocated: true,
-                .. block_state
-            };
 
-            add block += [block_id => new_block_state];
-            add thread_local_state += [thread_id => new_tls];
-        }
-    }*/
 
-    /*
 
-    transition!{
-        free_block_local(block_id: BlockId) {
-            remove block -= [block_id => let block_state];
-            remove page -= [block_id.page_id => let page_state];
 
-            require(block_state.allocated);
 
-            let new_block_state = BlockState {
-                allocated: false,
-                .. block_state
-            };
-            let new_page_state = PageState { len: page_state.len + 1, .. page_state };
 
-            add block += [block_id => new_block_state];
-            add page += [block_id.page_id => new_page_state];
-        }
-    }*/
 
-    /*transition!{
-        free_block_from_other_thread(block_id: BlockId) {
-            remove block -= [block_id => let block_state];
-            remove page_thread_list_state -= [block_id.page_id => let ptls];
 
-            require(block_state.allocated);
-            // TODO need some additional requirement on the 'delay' state
 
-            let new_block_state = BlockState {
-                allocated: false,
-                .. block_state
-            };
-            let new_ptls = PageThreadListState { len: ptls.len + 1, .. ptls };
 
-            add block += [block_id => new_block_state];
-            add page_thread_list_state += [block_id.page_id => new_ptls];
-        }
-    }*/
 
     property!{
         block_on_the_local_thread(thread_id: ThreadId, block_id: BlockId) {
@@ -674,7 +553,6 @@ tokenized_state_machine!{ Mim {
         }
     }
 
-    //// Actors and accessing stuff
 
     property!{
         alloc_guards_segment_shared_access(block_id: BlockId) {
@@ -725,7 +603,6 @@ tokenized_state_machine!{ Mim {
         }
     }
 
-    // Delay states and delay actors
 
     transition!{
         set_use_delayed_free(page_id: PageId) {
@@ -752,7 +629,6 @@ tokenized_state_machine!{ Mim {
 
             remove delay_actor -= [ page_id => let _ ];
 
-            // This should follow from the existence of the 'delay_actor'
             assert(prev_state == DelayState::Freeing);
         }
     }
@@ -769,7 +645,6 @@ tokenized_state_machine!{ Mim {
             add delay_actor += [ block_id.page_id => DelayFreeingActor::Heap(heap_id, hsa, psa) ];
             assert(hsa.wf2(heap_id, inst));
 
-            //assert(hsa.wf(heap_id));
         }
     }
 
@@ -823,34 +698,11 @@ tokenized_state_machine!{ Mim {
             require(thread_state.segments[segment_id].is_enabled);
             guard segment_shared_access >= [ segment_id =>
                 thread_state.segments.index(segment_id).shared_access ]
-            /*by {
-                assert(thread_state.segments.dom().contains(segment_id));
-                assert(pre.segment_shared_access.dom().contains(segment_id));
-            };*/
                 by { assert(pre.segment_shared_access.dom().contains(segment_id)); };
         }
     }
 
-    // Setting up a page
 
-    /*pub open spec fn block_map_on_create_page(page_id: PageId, n_blocks: nat, block_size: nat)
-        Map::new(
-            |block_id: BlockId|
-                block_id.page_id == page_id
-                  && 0 <= block_id.idx < n_blocks
-                  && block_id.block_size == block_size
-                  && block_id.slice_idx_is_right(),
-            |block_id: BlockId|
-              BlockState {
-                  segment_shared_access: ssa,
-                  page_shared_access: psa_map[page_id],
-                  page_slice_shared_access: psa_map[PageId {
-                      segment_id: page_id.segment_id,
-                      idx: block_id.slice_idx,
-                  }]
-              }
-        );
-    }*/
 
     transition!{
         reserve_uniq_identifier() {
@@ -958,12 +810,6 @@ tokenized_state_machine!{ Mim {
             require ts.segments.dom().contains(page_id.segment_id);
             require ts.segments[page_id.segment_id].is_enabled;
 
-            //let range = Set::new(|pid: PageId| pid.segment_id == page_id.segment_id
-            //      && page_id.idx <= pid.idx < page_id.idx + n_slices);
-            //let new_pages = Map::new(
-            //    |pid: PageId| range.contains(pid),
-            //    |pid: PageId|
-            //);
             require(forall |pid: PageId| page_map.dom().contains(pid)
               <==> (pid.segment_id == page_id.segment_id
                   && page_id.idx <= pid.idx < page_id.idx + n_slices));
@@ -977,30 +823,13 @@ tokenized_state_machine!{ Mim {
             require(page_map.dom().contains(page_id));
             require(page_map[page_id].block_size == block_size);
             require(ts.pages.dom().disjoint(page_map.dom()));
-            //require(page_map[page_id].reserved_blocks == n_blocks);
 
             let new_pages = ts.pages.union_prefer_right(page_map);
             let ts2 = ThreadState { pages: new_pages, .. ts };
 
             add thread_local_state += [ thread_id => ts2 ];
 
-            /*birds_eye let ssa = pre.segment_shared_access[page_id.segment_id];
 
-            let block_map = Map::new(
-                |block_id: BlockId|
-                    block_id.page_id == page_id
-                      && 0 <= block_id.idx < n_blocks
-                      && block_id.block_size == block_size
-                      && block_id.slice_idx_is_right(),
-                |block_id: BlockId|
-                  BlockState {
-                      segment_shared_access: ssa,
-                      page_shared_access: arbitrary(),
-                      page_slice_shared_access: arbitrary(),
-                      is_enabled: false,
-                  }
-            );
-            add block += (block_map);*/
 
             add heap_of_page += [ page_id => ts.heap_id ];
             add delay += [ page_id => DelayState::UseDelayedFree ];
@@ -1041,18 +870,6 @@ tokenized_state_machine!{ Mim {
 
             add thread_local_state += [ thread_id => ts2 ];
             deposit page_shared_access += (psa_map);
-            /*by {
-                assert forall |pid| psa_map.dom().contains(pid) implies pre.page_shared_access.dom().contains(pid) == false
-                by {
-                    assert(ts.pages.dom().contains(pid));
-                    assert(ts.pages[pid].is_enabled == false);
-                    if pre.page_shared_access.dom().contains(pid) {
-                        assert(ts.pages.dom().contains(pid));
-                        assert(ts.segments.dom().contains(pid.segment_id));
-                        assert(pre.thread_of_segment[pid.segment_id] == thread_id);
-                    }
-                }
-            };*/
         }
     }
 
@@ -1085,7 +902,6 @@ tokenized_state_machine!{ Mim {
                 ==> Self::okay_to_add_block(ts, page_id, idx, block_size);
 
             birds_eye let ssa = pre.segment_shared_access[page_id.segment_id];
-            //let ssa = ts.segments[page_id.segment_id].shared_access;
             let block_map = Map::new(
                 range_block_ids(old_num_blocks, new_num_blocks, page_id, block_size),
                 |block_id: BlockId|
@@ -1178,11 +994,6 @@ tokenized_state_machine!{ Mim {
                     ts.pages.dom().contains(pid)
                     && ts.pages[pid].is_enabled
                     && ts.pages[pid].offset == pid.idx - page_id.idx;
-            //require forall |pid: PageId|
-            //      pid.segment_id == page_id.segment_id
-            //          && !page_id.range_from(0, n_slices as int).contains(pid)
-            //          && ts.pages.dom().contains(pid)
-            //          ==> ts.pages[pid].offset != pid.idx - page_id.idx;
 
             let new_pages0 = Map::<PageId, PageState>::new(
                 page_id.range_from(0, n_slices as int),
@@ -1203,8 +1014,6 @@ tokenized_state_machine!{ Mim {
             );
             withdraw page_shared_access -= (psa_map)
             by {
-                //page_disable_withdraw_ok(thread_id, page_id, n_slices);
-                // PAPER CUT
                 assert forall |pid: PageId| #![all_triggers]
                     psa_map.dom().contains(pid) implies
                         pre.page_shared_access.dom().contains(pid)
@@ -1228,8 +1037,6 @@ tokenized_state_machine!{ Mim {
             remove delay -= [ page_id => let _ ];
 
             remove thread_local_state -= [ thread_id => let ts ];
-            //require ts.pages.dom().contains(page_id);
-            //require !ts.pages[page_id].is_enabled;
             require page_id.range_from(0, n_slices as int).subset_of(ts.pages.dom());
             require n_slices >= 1;
 
@@ -1295,7 +1102,6 @@ tokenized_state_machine!{ Mim {
         }
     }
 
-    // Invariants
 
     #[invariant]
     pub closed spec fn inv_reserved(&self) -> bool {
@@ -1320,13 +1126,6 @@ tokenized_state_machine!{ Mim {
         self.heap_of_page.dom() =~= self.delay.dom()
     }
 
-    /*#[invariant]
-    pub closed spec fn inv_heap_of_page_offset0(&self) -> bool {
-        forall |thread_id, page_id| #![all_triggers]
-            self.thread_local_state.dom().contains(thread_id)
-            && self.thread_local_state[thread_id].pages.dom().contains(page_id)
-                ==>
-    }*/
 
     #[invariant]
     pub closed spec fn inv_delay_state(&self) -> bool {
@@ -1346,7 +1145,7 @@ tokenized_state_machine!{ Mim {
                 !self.delay_actor.dom().contains(page_id)
             }
             DelayState::NeverDelayedFree => {
-                false // not used right now
+                false 
             }
         }
     }
@@ -1399,11 +1198,6 @@ tokenized_state_machine!{ Mim {
                       && !self.delay_actor.dom().contains(page_id)
     }
 
-    //#[invariant]
-    //pub closed spec fn inv_threads_hsa(&self) -> bool {
-    //    forall |thread_id: ThreadId| self.thread_local_state.dom().contains(thread_id) ==>
-    //        self.thread_local_state[thread_id]
-    //}
 
     #[invariant]
     pub closed spec fn right_to_use_thread_complement(&self) -> bool {
@@ -1481,7 +1275,6 @@ tokenized_state_machine!{ Mim {
     pub closed spec fn heap_of_page_is_correct(&self) -> bool {
         forall |page_id|
             #[trigger] self.heap_of_page.dom().contains(page_id) ==>
-                //self.heap_shared_access.dom().contains(self.heap_of_page[page_id])
                 self.heap_of_page[page_id] ==
                   self.thread_local_state[self.thread_of_segment[page_id.segment_id]].heap_id
     }
@@ -1630,32 +1423,10 @@ tokenized_state_machine!{ Mim {
 
     #[inductive(block_set_heap_id)]
     fn block_set_heap_id_inductive(pre: Self, post: Self, block_id: BlockId) {
-        /*match pre.delay_actor[block_id.page_id] {
-            DelayFreeingActor::Heap(heap_id, _hsa, _psa) => {
-                let thread_id = post.heap_to_thread[heap_id];
-                assert(post.heap_to_thread.dom().contains(heap_id));
-                assert(thread_id == post.thread_of_segment[block_id.page_id.segment_id]);
-                assert(heap_id == post.thread_local_state[thread_id].heap_id);
-                assert(heap_id == post.thread_local_state[post.thread_of_segment[block_id.page_id.segment_id]].heap_id);
-            }
-            _ => { assert(false); }
-        }*/
     }
 
     #[inductive(create_thread_mk_tokens)]
     fn create_thread_mk_tokens_inductive(pre: Self, post: Self, thread_id: ThreadId, thread_state: ThreadState) {
-        /*assert forall |tid, segment_id| post.thread_local_state.dom().contains(tid) && #[trigger] post.thread_local_state[tid].segments.dom().contains(segment_id) implies
-            post.thread_of_segment.dom().contains(segment_id)
-              && post.thread_of_segment[segment_id] == tid
-        by {
-            if tid == thread_id {
-                assert(post.thread_of_segment.dom().contains(segment_id));
-                assert(post.thread_of_segment[segment_id] == tid);
-            } else {
-                assert(post.thread_of_segment.dom().contains(segment_id));
-                assert(post.thread_of_segment[segment_id] == tid);
-            }
-        }*/
     }
 
     #[inductive(create_segment_mk_tokens)]
@@ -1744,25 +1515,6 @@ tokenized_state_machine!{ Mim {
     #[inductive(block_in_range)]
     fn block_in_range_inductive(pre: Self, post: Self, thread_id: ThreadId, block_id: BlockId) { }
 
-    /*proof fn page_disable_withdraw_ok(
-            &self,
-            thread_id: ThreadId,
-            page_id: PageId,
-            n_slices: nat)
-      requires self.invariant(),
-            ts.pages.dom().contains(page_id),
-            ts.pages[page_id].is_enabled,
-            ts.pages[page_id].checked_delay_state,
-            ts.pages[page_id].num_blocks == 0,
-            page_id.range_from(0, n_slices as int).subset_of(ts.pages.dom()),
-      ensures ({
-            let psa_map = Map::new(
-                |pid: PageId| page_id.range_from(0, n_slices as int).contains(pid),
-                |pid: PageId| ts.pages[pid].shared_access,
-            );
-            forall |pid| psa_map.dom().contains(pid) ==>
-                pre.page_shared_access.dom().contains(pid)
-      })*/
 
     #[inductive(page_check_delay_state)]
     fn page_check_delay_state_inductive(pre: Self, post: Self, thread_id: ThreadId, page_id: PageId) { }

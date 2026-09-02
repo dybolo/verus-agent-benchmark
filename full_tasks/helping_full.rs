@@ -333,4 +333,4 @@ impl InvariantPredicate<Loc, FlagToken> for UserInv {
 fn main() {
 }
 
-} // verus!
+} 

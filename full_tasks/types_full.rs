@@ -1,4 +1,3 @@
-// ===== BEGIN INLINED DEPENDENCY: lib.rs =====
 #![feature(core_intrinsics)]
 #![feature(allocator_api)]
 #![allow(unused_imports)]
@@ -8,7 +7,6 @@
 #![feature(thread_id_value)]
 #![verifier::exec_allows_no_decreases_clause]
 
-// Minimal local replacement for the `libc` crate API used by `os_mem`.
 mod libc {
     pub use core::ffi::c_void;
 
@@ -23,7 +21,6 @@ mod libc {
     #[cfg(not(target_os = "macos"))]
     pub const MAP_ANONYMOUS: i32 = 0x20;
 
-    // macOS does not provide MAP_NORESERVE; zero leaves its flags unchanged.
     #[cfg(target_os = "macos")]
     pub const MAP_NORESERVE: i32 = 0;
     #[cfg(not(target_os = "macos"))]
@@ -54,10 +51,8 @@ mod libc {
     }
 }
 
-// bottom bread
 
 mod os_mem {
-// ===== BEGIN INLINED DEPENDENCY: os_mem.rs =====
 use vstd::prelude::*;
 use vstd::raw_ptr::*;
 use vstd::set_lib::*;
@@ -148,17 +143,13 @@ impl MemChunk {
     }
 
     pub open spec fn has_new_pointsto(&self, the_old: &MemChunk) -> bool {
-        // Same domain for OS permissions knowledge
         self.os.dom() == the_old.os.dom()
-        // points_to grew monotonically
         && the_old.points_to.dom().subset_of(self.points_to.dom())
-        // stuff with rw permission grew monotonically
         && (forall |addr: int|
             #[trigger] the_old.os.dom().contains(addr)
               ==> the_old.os[addr]@.mem_protect == MemProtect { read: true, write: true }
               ==> self.os[addr]@.mem_protect == MemProtect { read: true, write: true }
         )
-        // Anything that became rw, we now have the points_to for it
         && (forall |addr: int|
               self.os.dom().contains(addr)
               && self.os[addr]@.mem_protect == MemProtect { read: true, write: true }
@@ -176,9 +167,7 @@ impl OsMem {
 #[verus::trusted]
 pub const MAP_FAILED: usize = usize::MAX;
 
-//// Wrappers
 
-// TODO should allow these to return 0 for error case
 
 #[verus::trusted]
 #[verifier::external_body]
@@ -260,7 +249,6 @@ pub fn mprotect_prot_read_write(addr: *mut u8, len: usize, Tracked(mem): Tracked
     _mprotect_prot_read_write(addr as *mut libc::c_void, len);
 }
 
-//// Tested for macOS / Linux
 
 #[verus::trusted]
 #[verifier::external]
@@ -271,8 +259,6 @@ fn _mmap_prot_read_write(hint_addr: *mut libc::c_void, len: usize) -> *mut libc:
             len,
             PROT_READ | PROT_WRITE,
             MAP_PRIVATE | MAP_ANONYMOUS | MAP_NORESERVE,
-            // The fd argument is ignored [if MAP_ANONYMOUS is specified]; however,
-            // some implementations require fd to be -1
             -1,
             0)
     }
@@ -286,8 +272,6 @@ fn _mmap_prot_none(hint_addr: *mut libc::c_void, len: usize) -> *mut libc::c_voi
             len,
             PROT_NONE,
             MAP_PRIVATE | MAP_ANONYMOUS | MAP_NORESERVE,
-            // The fd argument is ignored [if MAP_ANONYMOUS is specified]; however,
-            // some implementations require fd to be -1
             -1,
             0)
     }
@@ -321,7 +305,6 @@ fn _mprotect_prot_none(addr: *mut libc::c_void, len: usize) {
     }
 }
 
-//// Misc utilities
 
 #[verus::trusted]
 #[verifier::external_type_specification]
@@ -339,24 +322,20 @@ pub fn clock_gettime_monotonic() -> libc::timespec
 
 
 }
-// ===== END INLINED DEPENDENCY: os_mem.rs =====
 }
 mod thread {
-// ===== BEGIN INLINED DEPENDENCY: thread.rs =====
 #![allow(unused_imports)]
 
 use vstd::prelude::*;
 
 verus!{
 
-// Note that ThreadIds may be re-used since we use the u64 version
 
 #[verus::trusted]
 pub struct ThreadId {
     pub thread_id: u64,
 }
 
-/// Proof object that guarantees the owning thread has the given ThreadId.
 
 #[verus::trusted]
 #[cfg(verus_keep_ghost)]
@@ -371,7 +350,6 @@ impl !Sync for IsThread { }
 #[cfg(verus_keep_ghost)]
 impl !Send for IsThread { }
 
-// TODO: remove this when !Sync, !Send are supported by stable Rust
 #[cfg(not(verus_keep_ghost))]
 #[verifier(external_body)]
 #[verus::trusted]
@@ -381,8 +359,6 @@ pub tracked struct IsThread { _no_send_sync: core::marker::PhantomData<*const ()
 impl IsThread {
     pub uninterp spec fn view(&self) -> ThreadId;
 
-    /// Guarantees that any two `IsThread` objects on the same thread
-    /// will have the same ID.
 
     #[verifier(external_body)]
     pub proof fn agrees(tracked self, tracked other: IsThread)
@@ -415,7 +391,6 @@ impl Clone for IsThread {
 #[verus::trusted]
 impl Copy for IsThread { }
 
-// Note: NO guarantee that a thread is not re-used
 
 #[verus::trusted]
 #[cfg(feature = "override_system_allocator")]
@@ -424,14 +399,11 @@ impl Copy for IsThread { }
 pub fn thread_id() -> (res: (ThreadId, Tracked<IsThread>))
     ensures res.1@@ == res.0,
 {
-    //let id: i32 = unsafe { libc::gettid() };
-    //let id_u64: u64 = ((id as u64) << 1) | 1; // make sure it's nonzero
     let id_u64: u64 = unsafe { crate::thread_id_helper() };
     let id = ThreadId { thread_id: id_u64 };
     (id, Tracked::assume_new())
 }
 
-// NOTE: std::thread recursively calls malloc, so this can't be used when doing override
 
 #[verus::trusted]
 #[cfg(not(feature = "override_system_allocator"))]
@@ -445,7 +417,6 @@ pub fn thread_id() -> (res: (ThreadId, Tracked<IsThread>))
 }
 
 
-/// Returns _just_ the ghost object, without physically obtaining the thread ID.
 
 #[verus::trusted]
 #[verifier::external_body]
@@ -461,13 +432,10 @@ pub fn ex_yield_now() {
 }
 
 }
-// ===== END INLINED DEPENDENCY: thread.rs =====
 }
 
-// fundamentals and definitions
 
 mod tokens {
-// ===== BEGIN INLINED DEPENDENCY: tokens.rs =====
 #![allow(unused_imports)]
 
 use verus_state_machines_macros::*;
@@ -476,12 +444,7 @@ use vstd::raw_ptr::*;
 use vstd::*;
 use crate::config::SLICE_SIZE;
 
-////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////
 
-// Logical identifiers for the various objects, which are based on the hierarchy outlined
-// above. Note that the implementation just uses pointers.
 
 verus!{
 
@@ -510,13 +473,8 @@ pub ghost struct PageId {
 pub ghost struct BlockId {
     pub page_id: PageId,
 
-    // Index of the block within the *page*
     pub idx: nat,
 
-    // Recall that a page may be multiple slices.
-    // The `slice_idx` is the index of the *specific* slice that this block is in.
-    // (Relative to the segment, so the slice's "offset" is going to be
-    // slice_idx - page_id.idx)
     pub slice_idx: nat,
 
     pub block_size: nat,
@@ -524,7 +482,6 @@ pub ghost struct BlockId {
 
 impl PageId {
     pub open spec fn range_from(&self, lo: int, hi: int) -> Set<PageId> {
-        // {page_id | page_id.segment_id == self.segment_id && self.idx + lo <= page_id.idx < self.idx + hi}
         Set::range(self.idx + lo, self.idx + hi).map_by(
             |idx: int| PageId { segment_id: self.segment_id, idx: idx as nat },
             |page_id: PageId| page_id.idx as int,
@@ -553,7 +510,6 @@ impl BlockId {
     }
 }
 
-// States
 
 pub ghost enum DelayState {
     UseDelayedFree,
@@ -573,16 +529,10 @@ impl DelayState {
     }
 }
 
-/*pub struct PageThreadListState {
-    pub delayed: DelayedState,
-    pub len: nat,
-}*/
 
 pub ghost struct PageState {
     pub offset: int,
 
-    //pub prev: Option<PageId>,
-    //pub next: Option<PageId>,
 
     pub block_size: nat,
     pub num_blocks: nat,
@@ -592,15 +542,12 @@ pub ghost struct PageState {
 }
 
 pub ghost struct SegmentState {
-    // TODO what do we need here?
-    //pub has_extra_slice: bool,
 
     pub shared_access: SegmentSharedAccess,
     pub is_enabled: bool,
 }
 
 pub ghost struct BlockState {
-    // Shared access this element can 'guard'
     pub segment_shared_access: SegmentSharedAccess,
     pub page_shared_access: PageSharedAccess,
     pub page_slice_shared_access: PageSharedAccess,
@@ -608,18 +555,8 @@ pub ghost struct BlockState {
     pub heap_id: Option<HeapId>,
 }
 
-/*
-pub ghost struct PageQueueIds {
-    // TODO are these supposed to be options?
-    pub first: Option<PageId>,
-    pub last: Option<PageId>,
-}
-*/
 
 pub ghost struct HeapState {
-    // For the doubly-linked list of Pages
-    //pub pages: Map<int, PageQueueIds>,
-    //pub full_list: PageQueueIds,
 
     pub shared_access: HeapSharedAccess,
 }
@@ -637,32 +574,19 @@ pub ghost struct ThreadCheckedState {
 }
 
 
-// Shared States
 
 use crate::types::SegmentSharedAccess;
 use crate::types::SegmentLocalAccess;
 
-//pub struct PageSharedAccess { i: int }
-//pub struct PageLocalAccess { i: int }
 use crate::types::PageSharedAccess;
 use crate::types::PageLocalAccess;
 
 use crate::types::HeapSharedAccess;
 use crate::types::HeapLocalAccess;
 
-// TODO this is currently unused, and I don't remember exactly why I made it.
-// Is it going to be necessary when we do more cleanup stuff?
-//
-// Actor lets us track what a single thread is doing.
-// The idea is that when the thread checks the 'thread id' of a page,
-// it needs to then be sure that the page will remain valid for the duration
-// of the period the thread is accessing it.
-// That means we need to prevent the thread from modifying the page state
-// while the 'AccessingMySegment' is in progress.
 
 pub ghost enum Actor {
     Idle,
-    //AccessingMySegment(SegmentId, SegmentLocalAccess),
     Abandoned,
 }
 
@@ -673,8 +597,6 @@ pub ghost enum DelayFreeingActor {
 
 pub type ThreadId = crate::thread::ThreadId;
 
-// PAPER CUT: doing this more than once, no generic finite condition for map,
-// having to do the maximum thing
 pub open spec fn segment_u_max(s: Set<SegmentId>) -> int
     decreases s.len()
 {
@@ -755,37 +677,25 @@ pub open spec fn range_block_ids(lo: nat, hi: nat, page_id: PageId, block_size: 
 
 tokenized_state_machine!{ Mim {
     fields {
-        // Thread-local state to each entity
 
         #[sharding(bool)] pub right_to_set_inst: bool,
         #[sharding(persistent_option)] pub my_inst: Option<InstanceId>,
 
-        /*
-        #[sharding(map)] pub heap: Map<HeapId, HeapState>,
-        #[sharding(map)] pub tld: Map<ThreadId, ThreadState>,
-        #[sharding(map)] pub segment: Map<SegmentId, SegmentState>,
-        #[sharding(map)] pub page: Map<PageId, PageState>,
-        */
         #[sharding(map)] pub thread_local_state: Map<ThreadId, ThreadState>,
         #[sharding(set)] pub right_to_use_thread: Set<ThreadId>,
 
-        // Blocks that are allocated (these ghost shards are handed to the user
-        // to give them the right to 'deallocate')
 
         #[sharding(map)] pub block: Map<BlockId, BlockState>,
 
-        // Atomics (accessed concurrently)
 
         #[sharding(map)] pub thread_of_segment: Map<SegmentId, ThreadId>,
         #[sharding(map)] pub delay: Map<PageId, DelayState>,
         #[sharding(map)] pub heap_of_page: Map<PageId, HeapId>,
 
-        // Thread actors
 
         #[sharding(map)] pub actor: Map<ThreadId, Actor>,
         #[sharding(map)] pub delay_actor: Map<PageId, DelayFreeingActor>,
 
-        // Storage
 
         #[sharding(storage_map)] pub segment_shared_access: Map<SegmentId, SegmentSharedAccess>,
 
@@ -793,16 +703,11 @@ tokenized_state_machine!{ Mim {
 
         #[sharding(storage_map)] pub heap_shared_access: Map<HeapId, HeapSharedAccess>,
 
-        // PAPER CUT
-        // reason - deposit can't be after birds_eye so create_thread_mk_tokens needs to work
-        // in two steps
         #[sharding(set)] pub reserved_uniq: Set<HeapId>,
 
         #[sharding(map)] pub thread_checked_state: Map<ThreadId, ThreadCheckedState>,
 
-        // Extra state that doesn't form tokens but helps writing invariants
 
-        //#[sharding(not_tokenized)] pub thread_segments: Map<ThreadId, Seq<SegmentId>>,
 
         #[sharding(not_tokenized)] pub heap_to_thread: Map<HeapId, ThreadId>,
     }
@@ -835,74 +740,19 @@ tokenized_state_machine!{ Mim {
         }
     }
 
-    /*transition!{
-        alloc_block(block_id: BlockId, thread_id: ThreadId) {
-            remove block -= [block_id => let block_state];
-            remove thread_local_state -= [thread_id => let tls];
 
-            require(!block_state.allocated);
-            require(tls.pages.dom().contains(block_id.page_id));
-            let page = tls.pages.index(block_id.page_id);
-            require(page.len >= 1);
 
-            assert(page.len >= 1);
 
-            let new_page = PageState {
-                len: (page.len - 1) as nat,
-                .. page
-            };
-            let new_tls = ThreadState {
-                pages: tls.pages.insert(block_id.page_id, new_page),
-                .. tls
-            };
-            let new_block_state = BlockState {
-                allocated: true,
-                .. block_state
-            };
 
-            add block += [block_id => new_block_state];
-            add thread_local_state += [thread_id => new_tls];
-        }
-    }*/
 
-    /*
 
-    transition!{
-        free_block_local(block_id: BlockId) {
-            remove block -= [block_id => let block_state];
-            remove page -= [block_id.page_id => let page_state];
 
-            require(block_state.allocated);
 
-            let new_block_state = BlockState {
-                allocated: false,
-                .. block_state
-            };
-            let new_page_state = PageState { len: page_state.len + 1, .. page_state };
 
-            add block += [block_id => new_block_state];
-            add page += [block_id.page_id => new_page_state];
-        }
-    }*/
 
-    /*transition!{
-        free_block_from_other_thread(block_id: BlockId) {
-            remove block -= [block_id => let block_state];
-            remove page_thread_list_state -= [block_id.page_id => let ptls];
 
-            require(block_state.allocated);
-            // TODO need some additional requirement on the 'delay' state
 
-            let new_block_state = BlockState {
-                allocated: false,
-                .. block_state
-            };
-            let new_ptls = PageThreadListState { len: ptls.len + 1, .. ptls };
 
-            add block += [block_id => new_block_state];
-            add page_thread_list_state += [block_id.page_id => new_ptls];
-        }
-    }*/
 
     property!{
         block_on_the_local_thread(thread_id: ThreadId, block_id: BlockId) {
@@ -921,7 +771,6 @@ tokenized_state_machine!{ Mim {
         }
     }
 
-    //// Actors and accessing stuff
 
     property!{
         alloc_guards_segment_shared_access(block_id: BlockId) {
@@ -972,7 +821,6 @@ tokenized_state_machine!{ Mim {
         }
     }
 
-    // Delay states and delay actors
 
     transition!{
         set_use_delayed_free(page_id: PageId) {
@@ -999,7 +847,6 @@ tokenized_state_machine!{ Mim {
 
             remove delay_actor -= [ page_id => let _ ];
 
-            // This should follow from the existence of the 'delay_actor'
             assert(prev_state == DelayState::Freeing);
         }
     }
@@ -1016,7 +863,6 @@ tokenized_state_machine!{ Mim {
             add delay_actor += [ block_id.page_id => DelayFreeingActor::Heap(heap_id, hsa, psa) ];
             assert(hsa.wf2(heap_id, inst));
 
-            //assert(hsa.wf(heap_id));
         }
     }
 
@@ -1070,34 +916,11 @@ tokenized_state_machine!{ Mim {
             require(thread_state.segments[segment_id].is_enabled);
             guard segment_shared_access >= [ segment_id =>
                 thread_state.segments.index(segment_id).shared_access ]
-            /*by {
-                assert(thread_state.segments.dom().contains(segment_id));
-                assert(pre.segment_shared_access.dom().contains(segment_id));
-            };*/
                 by { assert(pre.segment_shared_access.dom().contains(segment_id)); };
         }
     }
 
-    // Setting up a page
 
-    /*pub open spec fn block_map_on_create_page(page_id: PageId, n_blocks: nat, block_size: nat)
-        Map::new(
-            |block_id: BlockId|
-                block_id.page_id == page_id
-                  && 0 <= block_id.idx < n_blocks
-                  && block_id.block_size == block_size
-                  && block_id.slice_idx_is_right(),
-            |block_id: BlockId|
-              BlockState {
-                  segment_shared_access: ssa,
-                  page_shared_access: psa_map[page_id],
-                  page_slice_shared_access: psa_map[PageId {
-                      segment_id: page_id.segment_id,
-                      idx: block_id.slice_idx,
-                  }]
-              }
-        );
-    }*/
 
     transition!{
         reserve_uniq_identifier() {
@@ -1205,12 +1028,6 @@ tokenized_state_machine!{ Mim {
             require ts.segments.dom().contains(page_id.segment_id);
             require ts.segments[page_id.segment_id].is_enabled;
 
-            //let range = Set::new(|pid: PageId| pid.segment_id == page_id.segment_id
-            //      && page_id.idx <= pid.idx < page_id.idx + n_slices);
-            //let new_pages = Map::new(
-            //    |pid: PageId| range.contains(pid),
-            //    |pid: PageId|
-            //);
             require(forall |pid: PageId| page_map.dom().contains(pid)
               <==> (pid.segment_id == page_id.segment_id
                   && page_id.idx <= pid.idx < page_id.idx + n_slices));
@@ -1224,30 +1041,13 @@ tokenized_state_machine!{ Mim {
             require(page_map.dom().contains(page_id));
             require(page_map[page_id].block_size == block_size);
             require(ts.pages.dom().disjoint(page_map.dom()));
-            //require(page_map[page_id].reserved_blocks == n_blocks);
 
             let new_pages = ts.pages.union_prefer_right(page_map);
             let ts2 = ThreadState { pages: new_pages, .. ts };
 
             add thread_local_state += [ thread_id => ts2 ];
 
-            /*birds_eye let ssa = pre.segment_shared_access[page_id.segment_id];
 
-            let block_map = Map::new(
-                |block_id: BlockId|
-                    block_id.page_id == page_id
-                      && 0 <= block_id.idx < n_blocks
-                      && block_id.block_size == block_size
-                      && block_id.slice_idx_is_right(),
-                |block_id: BlockId|
-                  BlockState {
-                      segment_shared_access: ssa,
-                      page_shared_access: arbitrary(),
-                      page_slice_shared_access: arbitrary(),
-                      is_enabled: false,
-                  }
-            );
-            add block += (block_map);*/
 
             add heap_of_page += [ page_id => ts.heap_id ];
             add delay += [ page_id => DelayState::UseDelayedFree ];
@@ -1288,18 +1088,6 @@ tokenized_state_machine!{ Mim {
 
             add thread_local_state += [ thread_id => ts2 ];
             deposit page_shared_access += (psa_map);
-            /*by {
-                assert forall |pid| psa_map.dom().contains(pid) implies pre.page_shared_access.dom().contains(pid) == false
-                by {
-                    assert(ts.pages.dom().contains(pid));
-                    assert(ts.pages[pid].is_enabled == false);
-                    if pre.page_shared_access.dom().contains(pid) {
-                        assert(ts.pages.dom().contains(pid));
-                        assert(ts.segments.dom().contains(pid.segment_id));
-                        assert(pre.thread_of_segment[pid.segment_id] == thread_id);
-                    }
-                }
-            };*/
         }
     }
 
@@ -1332,7 +1120,6 @@ tokenized_state_machine!{ Mim {
                 ==> Self::okay_to_add_block(ts, page_id, idx, block_size);
 
             birds_eye let ssa = pre.segment_shared_access[page_id.segment_id];
-            //let ssa = ts.segments[page_id.segment_id].shared_access;
             let block_map = Map::new(
                 range_block_ids(old_num_blocks, new_num_blocks, page_id, block_size),
                 |block_id: BlockId|
@@ -1425,11 +1212,6 @@ tokenized_state_machine!{ Mim {
                     ts.pages.dom().contains(pid)
                     && ts.pages[pid].is_enabled
                     && ts.pages[pid].offset == pid.idx - page_id.idx;
-            //require forall |pid: PageId|
-            //      pid.segment_id == page_id.segment_id
-            //          && !page_id.range_from(0, n_slices as int).contains(pid)
-            //          && ts.pages.dom().contains(pid)
-            //          ==> ts.pages[pid].offset != pid.idx - page_id.idx;
 
             let new_pages0 = Map::<PageId, PageState>::new(
                 page_id.range_from(0, n_slices as int),
@@ -1450,8 +1232,6 @@ tokenized_state_machine!{ Mim {
             );
             withdraw page_shared_access -= (psa_map)
             by {
-                //page_disable_withdraw_ok(thread_id, page_id, n_slices);
-                // PAPER CUT
                 assert forall |pid: PageId| #![all_triggers]
                     psa_map.dom().contains(pid) implies
                         pre.page_shared_access.dom().contains(pid)
@@ -1475,8 +1255,6 @@ tokenized_state_machine!{ Mim {
             remove delay -= [ page_id => let _ ];
 
             remove thread_local_state -= [ thread_id => let ts ];
-            //require ts.pages.dom().contains(page_id);
-            //require !ts.pages[page_id].is_enabled;
             require page_id.range_from(0, n_slices as int).subset_of(ts.pages.dom());
             require n_slices >= 1;
 
@@ -1542,7 +1320,6 @@ tokenized_state_machine!{ Mim {
         }
     }
 
-    // Invariants
 
     #[invariant]
     pub closed spec fn inv_reserved(&self) -> bool {
@@ -1567,13 +1344,6 @@ tokenized_state_machine!{ Mim {
         self.heap_of_page.dom() =~= self.delay.dom()
     }
 
-    /*#[invariant]
-    pub closed spec fn inv_heap_of_page_offset0(&self) -> bool {
-        forall |thread_id, page_id| #![all_triggers]
-            self.thread_local_state.dom().contains(thread_id)
-            && self.thread_local_state[thread_id].pages.dom().contains(page_id)
-                ==>
-    }*/
 
     #[invariant]
     pub closed spec fn inv_delay_state(&self) -> bool {
@@ -1593,7 +1363,7 @@ tokenized_state_machine!{ Mim {
                 !self.delay_actor.dom().contains(page_id)
             }
             DelayState::NeverDelayedFree => {
-                false // not used right now
+                false 
             }
         }
     }
@@ -1646,11 +1416,6 @@ tokenized_state_machine!{ Mim {
                       && !self.delay_actor.dom().contains(page_id)
     }
 
-    //#[invariant]
-    //pub closed spec fn inv_threads_hsa(&self) -> bool {
-    //    forall |thread_id: ThreadId| self.thread_local_state.dom().contains(thread_id) ==>
-    //        self.thread_local_state[thread_id]
-    //}
 
     #[invariant]
     pub closed spec fn right_to_use_thread_complement(&self) -> bool {
@@ -1728,7 +1493,6 @@ tokenized_state_machine!{ Mim {
     pub closed spec fn heap_of_page_is_correct(&self) -> bool {
         forall |page_id|
             #[trigger] self.heap_of_page.dom().contains(page_id) ==>
-                //self.heap_shared_access.dom().contains(self.heap_of_page[page_id])
                 self.heap_of_page[page_id] ==
                   self.thread_local_state[self.thread_of_segment[page_id.segment_id]].heap_id
     }
@@ -1877,32 +1641,10 @@ tokenized_state_machine!{ Mim {
 
     #[inductive(block_set_heap_id)]
     fn block_set_heap_id_inductive(pre: Self, post: Self, block_id: BlockId) {
-        /*match pre.delay_actor[block_id.page_id] {
-            DelayFreeingActor::Heap(heap_id, _hsa, _psa) => {
-                let thread_id = post.heap_to_thread[heap_id];
-                assert(post.heap_to_thread.dom().contains(heap_id));
-                assert(thread_id == post.thread_of_segment[block_id.page_id.segment_id]);
-                assert(heap_id == post.thread_local_state[thread_id].heap_id);
-                assert(heap_id == post.thread_local_state[post.thread_of_segment[block_id.page_id.segment_id]].heap_id);
-            }
-            _ => { assert(false); }
-        }*/
     }
 
     #[inductive(create_thread_mk_tokens)]
     fn create_thread_mk_tokens_inductive(pre: Self, post: Self, thread_id: ThreadId, thread_state: ThreadState) {
-        /*assert forall |tid, segment_id| post.thread_local_state.dom().contains(tid) && #[trigger] post.thread_local_state[tid].segments.dom().contains(segment_id) implies
-            post.thread_of_segment.dom().contains(segment_id)
-              && post.thread_of_segment[segment_id] == tid
-        by {
-            if tid == thread_id {
-                assert(post.thread_of_segment.dom().contains(segment_id));
-                assert(post.thread_of_segment[segment_id] == tid);
-            } else {
-                assert(post.thread_of_segment.dom().contains(segment_id));
-                assert(post.thread_of_segment[segment_id] == tid);
-            }
-        }*/
     }
 
     #[inductive(create_segment_mk_tokens)]
@@ -1965,13 +1707,6 @@ tokenized_state_machine!{ Mim {
         let ts = pre.thread_local_state[thread_id];
         assert(forall |block_id: BlockId| blocks.dom().contains(block_id) ==>
             pre.block.dom().contains(block_id));
-        /*assert forall |block_id: BlockId| blocks.dom().contains(block_id) implies
-                block_id.page_id == page_id && 0 <= block_id.idx < ts.pages[page_id].num_blocks
-        by {
-            assert(pre.block.dom().contains(block_id));
-            assert(pre.inv_block_id_valid_for_block(block_id));
-            assert(0 <= block_id.idx < ts.pages[page_id].num_blocks);
-        }*/
 
         Self::block_map_with_len(blocks, page_id, ts.pages[page_id].num_blocks as int);
         assert forall |block_id: BlockId| #[trigger] post.block.dom().contains(block_id)
@@ -1999,32 +1734,8 @@ tokenized_state_machine!{ Mim {
                 assert(post.inv_delay_actor_for_page(pid));
             }
         }
-        /*assert forall |block_id: BlockId| #[trigger] post.block.dom().contains(block_id)
-            implies post.inv_block_id_valid_for_block(block_id)
-        by {
-            let slice_id = block_id.page_id_for_slice();
-            //let old_ts = pre.thread_local_state[pre.thread_of_segment[block_id.page_id.segment_id]];
-            let ts = post.thread_local_state[post.thread_of_segment[block_id.page_id.segment_id]];
 
-            if page_id.range_from(0, n_slices as int).contains(slice_id) {
-                assert(block_id.page_id == page_id);
-                assert(false);
-            }
 
-            //assert(old_ts.pages.dom().contains(slice_id));
-            //assert(old_ts.pages[slice_id].is_enabled);
-            //assert(ts.pages.dom().contains(slice_id));
-            //assert(ts.pages[slice_id].is_enabled);
-            //assert(post.inv_block_id_valid_for_block(block_id));
-        }*/
-        /*assert(post.inv_page_implies_first_page()) by {
-            assert forall |thread_id: ThreadId|
-                #[trigger] post.thread_local_state.dom().contains(thread_id) implies
-                  post.inv_page_implies_first_page_dom(post.thread_local_state[thread_id].pages.dom())
-            by {
-                reveal(State::inv_page_implies_first_page_dom);
-            }
-        }*/
     }
 
     #[inductive(page_destroy_tokens)]
@@ -2053,25 +1764,6 @@ tokenized_state_machine!{ Mim {
     #[inductive(block_in_range)]
     fn block_in_range_inductive(pre: Self, post: Self, thread_id: ThreadId, block_id: BlockId) { }
 
-    /*proof fn page_disable_withdraw_ok(
-            &self,
-            thread_id: ThreadId,
-            page_id: PageId,
-            n_slices: nat)
-      requires self.invariant(),
-            ts.pages.dom().contains(page_id),
-            ts.pages[page_id].is_enabled,
-            ts.pages[page_id].checked_delay_state,
-            ts.pages[page_id].num_blocks == 0,
-            page_id.range_from(0, n_slices as int).subset_of(ts.pages.dom()),
-      ensures ({
-            let psa_map = Map::new(
-                |pid: PageId| page_id.range_from(0, n_slices as int).contains(pid),
-                |pid: PageId| ts.pages[pid].shared_access,
-            );
-            forall |pid| psa_map.dom().contains(pid) ==>
-                pre.page_shared_access.dom().contains(pid)
-      })*/
 
     #[inductive(page_check_delay_state)]
     fn page_check_delay_state_inductive(pre: Self, post: Self, thread_id: ThreadId, page_id: PageId) { }
@@ -2096,10 +1788,8 @@ tokenized_state_machine!{ Mim {
 
 
 }}
-// ===== END INLINED DEPENDENCY: tokens.rs =====
 }
 mod types {
-// ===== BEGIN TARGET SOURCE: types.rs =====
 #![allow(unused_imports)]
 
 use vstd::prelude::*;
@@ -2124,23 +1814,19 @@ use crate::arena::{ArenaId, MemId};
 
 verus!{
 
-//// Page header data
 
 #[repr(C)]
 pub struct PageInner {
-    pub flags0: u8,   // is_reset, is_committed, is_zero_init,
+    pub flags0: u8,   
 
     pub capacity: u16,
     pub reserved: u16,
 
-    pub flags1: u8,       // in_full, has_aligned
-    pub flags2: u8,       // is_zero, retire_expire
+    pub flags1: u8,       
+    pub flags2: u8,       
 
     pub free: LL,
 
-    // number of blocks that are allocated, or in `xthread_free`
-    // In other words, this is the "complement" of the number
-    // of blocks in `free` and `local_free`.
     pub used: u32,
 
     pub xblock_size: u32,
@@ -2303,7 +1989,7 @@ impl AtomicHeapPtr {
 #[repr(C)]
 pub struct Page {
     pub count: PCell<u32>,
-    pub offset: u32, // this value is read-only while the Page is shared
+    pub offset: u32, 
 
     pub inner: PCell<PageInner>,
     pub xthread_free: ThreadLLWithDelayBits,
@@ -2411,8 +2097,6 @@ impl PageLocalAccess {
 
                 &&& match (self.count.value(), self.inner.value(), self.prev.value(), self.next.value()) {
                     (count, page_inner, prev, next) => {
-                        //&&& is_page_ptr_opt(prev, page_state.prev)
-                        //&&& is_page_ptr_opt(next, page_state.next)
 
                         &&& (page_state.offset == 0 ==>
                             page_inner.wf(page_id, page_state, mim_instance)
@@ -2438,7 +2122,6 @@ impl PageLocalAccess {
                 &&& self.next.id() == page.next.id()
 
                 &&& self.inner.value().zeroed_except_block_size()
-                // TODO move PageData comparison in here?
             }
             MemContents::Uninit => false,
         }
@@ -2454,9 +2137,6 @@ impl PageFullAccess {
     }
 }
 
-/////////////////////////////////////////////
-///////////////////////////////////////////// Segments
-/////////////////////////////////////////////
 
 #[derive(Clone, Copy)]
 pub enum SegmentKind {
@@ -2495,10 +2175,9 @@ struct_with_invariants!{
     #[repr(C)]
     pub struct SegmentHeader {
         pub main: PCell<SegmentHeaderMain>,
-        pub abandoned_next: usize, // TODO should be atomic
+        pub abandoned_next: usize, 
         pub main2: PCell<SegmentHeaderMain2>,
 
-        // Note: thread_id is 0 if the segment is abandoned
         pub thread_id: AtomicU64<_, Mim::thread_of_segment, _>,
 
         pub instance: Ghost<Mim::Instance>,
@@ -2553,9 +2232,6 @@ impl SegmentLocalAccess {
     }
 }
 
-/////////////////////////////////////////////
-///////////////////////////////////////////// Heaps
-/////////////////////////////////////////////
 
 pub struct PageQueue {
     pub first: *mut Page,
@@ -2576,22 +2252,17 @@ impl Copy for PageQueue { }
 pub struct Heap {
     pub tld_ptr: TldPtr,
 
-    pub pages_free_direct: PCell<[*mut Page; 129]>, // length PAGES_DIRECT
-    pub pages: PCell<[PageQueue; 75]>, // length BIN_FULL + 1
+    pub pages_free_direct: PCell<[*mut Page; 129]>, 
+    pub pages: PCell<[PageQueue; 75]>, 
 
     pub thread_delayed_free: ThreadLLSimple,
     pub thread_id: ThreadId,
     pub arena_id: ArenaId,
-    //pub cookie: usize,
-    //pub keys: usize,
-    //pub random:
     pub page_count: PCell<usize>,
     pub page_retired_min: PCell<usize>,
     pub page_retired_max: PCell<usize>,
-    //pub next: HeapPtr,
     pub no_reclaim: bool,
 
-    // TODO should be a global, but right now we don't support pointers to globals
     pub page_empty_ptr: *mut Page,
 }
 
@@ -2670,10 +2341,9 @@ impl HeapLocalAccess {
 
               && (forall |i: int| #[trigger] valid_bin_idx(i) ==>
                   self.pages.value()[i].block_size == size_of_bin(i))
-              // 0 isn't a valid_bin_idx
               && self.pages.value()[0].block_size == 8
               && self.pages.value()[BIN_FULL as int].block_size ==
-                    8 * (524288 + 2) //MEDIUM_OBJ_WSIZE_MAX + 2
+                    8 * (524288 + 2) 
 
               && self.pages_free_direct.value()@.len() == PAGES_DIRECT
               && self.pages.value()@.len() == BIN_FULL + 1
@@ -2681,16 +2351,10 @@ impl HeapLocalAccess {
     }
 }
 
-/////////////////////////////////////////////
-///////////////////////////////////////////// Thread local data
-/////////////////////////////////////////////
 
-//pub struct OsTld {
-//    pub region_idx: usize,
-//}
 
 pub struct SegmentsTld {
-    pub span_queue_headers: [SpanQueueHeader; 32], // len = SEGMENT_BIN_MAX + 1
+    pub span_queue_headers: [SpanQueueHeader; 32], 
     pub count: usize,
     pub peak_count: usize,
     pub current_size: usize,
@@ -2712,7 +2376,6 @@ impl Clone for SpanQueueHeader {
 impl Copy for SpanQueueHeader { }
 
 pub struct Tld {
-    // TODO mimalloc allows multiple heaps per thread
     pub heap_backing: *mut Heap,
 
     pub segments: SegmentsTld,
@@ -2735,12 +2398,9 @@ pub tracked struct Local {
 
     pub tracked segments: Map<SegmentId, SegmentLocalAccess>,
 
-    // All pages, used and unused
     pub tracked pages: Map<PageId, PageLocalAccess>,
     pub ghost psa: Map<PageId, PageSharedAccess>,
 
-    // All unused pages
-    // (used pages are in the token system)
     pub tracked unused_pages: Map<PageId, PageSharedAccess>,
 
     pub ghost page_organization: PageOrg::State,
@@ -2792,10 +2452,6 @@ impl Local {
         &&& self.my_inst.instance_id() == self.instance.id()
         &&& self.my_inst.value() == self.instance.id()
 
-        //&&& (forall |page_id|
-        //    self.thread_token.value().pages.dom().contains(page_id) <==>
-        //    self.pages.dom().contains(page_id))
-        //&&& self.thread_token.value().pages.dom() == self.pages.dom()
         &&& self.thread_token.value().segments.dom() == self.segments.dom()
 
         &&& self.thread_token.value().heap_id == self.heap_id
@@ -2803,7 +2459,6 @@ impl Local {
 
         &&& (forall |page_id|
             #[trigger] self.pages.dom().contains(page_id) ==>
-            // Page is either 'used' or 'unused'
               (self.unused_pages.dom().contains(page_id) <==>
                 !self.thread_token.value().pages.dom().contains(page_id)))
 
@@ -2862,11 +2517,6 @@ impl Local {
         &&& (forall |page_id: PageId| #[trigger] self.page_organization.pages.dom().contains(page_id) ==>
             (!self.page_organization.pages[page_id].is_used <==> self.unused_pages.dom().contains(page_id)))
 
-        //&&& (forall |page_id: PageId|
-        //  #[trigger] self.page_organization.pages.dom().contains(page_id)
-        //    ==> self.page_organization.pages[page_id].is_used
-        //    ==> self.page_organization.pages[page_id].offset == Some(0nat)
-        //    ==> self.thread_token.value().pages[page_id].offset == 0)
 
         &&& (forall |page_id|
           #[trigger] self.page_organization.pages.dom().contains(page_id)
@@ -2899,13 +2549,9 @@ impl Local {
     }
 
 
-    // This is for when we need to obtain ownership of the ThreadToken
-    // but when we have a &mut reference to the Local
 
     pub proof fn take_thread_token(tracked &mut self) -> (tracked tt: Mim::thread_local_state)
         ensures
-            // All fields remain the same except thread_token which is set to an
-            // arbitrary value
             *final(self) == (Local { thread_token: final(self).thread_token, .. *old(self) }),
             tt == old(self).thread_token,
     {
@@ -2916,8 +2562,6 @@ impl Local {
 
     pub proof fn take_checked_token(tracked &mut self) -> (tracked tt: Mim::thread_checked_state)
         ensures
-            // All fields remain the same except thread_token which is set to an
-            // arbitrary value
             *final(self) == (Local { checked_token: final(self).checked_token, .. *old(self) }),
             tt == old(self).checked_token,
     {
@@ -2989,11 +2633,6 @@ pub open spec fn page_organization_pages_match(
     &&& org_pages.dom() =~= pages.dom()
     &&& org_pages.dom() =~= psa.dom()
 
-    //&&& (forall |page_id| #[trigger] org_pages.dom().contains(page_id)
-    //    && !org_pages[page_id].is_used ==> unused_pages.dom().contains(page_id))
-    //
-    //&&& (forall |page_id| #[trigger] org_pages.dom().contains(page_id)
-    //    && !org_pages[page_id].is_used ==> unused_pages[page_id].wf_unused(page_id))
 
     &&& (forall |page_id| #[trigger] org_pages.dom().contains(page_id) ==>
         page_organization_pages_match_data(org_pages[page_id], pages[page_id], psa[page_id], page_id, popped))
@@ -3075,21 +2714,9 @@ pub open spec fn page_organization_matches_token_page(
 {
     page_data.offset.is_some()
     && page_data.offset.unwrap() == page_state.offset
-    /*&& (match page_data.page_header_kind {
-        Some(PageHeaderKind::Normal(bsize)) => bsize == page_state.block_size,
-        _ => true,
-    })*/
 }
 
 
-/////////////////////////////////////////////
-/////////////////////////////////////////////
-/////////////////////////////////////////////
-/////////////////////////////////////////////
-/////////////////////////////////////////////
-/////////////////////////////////////////////
-/////////////////////////////////////////////
-////// Utilities for local access
 
 pub struct HeapPtr {
     pub heap_ptr: *mut Heap,
@@ -3427,7 +3054,6 @@ impl SegmentPtr {
     #[inline(always)]
     pub fn get_ref<'a>(&self, Tracked(local): Tracked<&'a Local>) -> (segment: &'a SegmentHeader)
         requires
-            //local.wf_main(),
             local.thread_token.value().segments.dom().contains(self.segment_id@),
             local.thread_token.value().segments[self.segment_id@].shared_access.points_to.ptr() == self.segment_ptr,
             local.thread_token.value().segments[self.segment_id@].shared_access.points_to.is_init(),
@@ -3449,7 +3075,6 @@ impl SegmentPtr {
     pub fn get_main_ref<'a>(&self, Tracked(local): Tracked<&'a Local>) -> (segment_header_main: &'a SegmentHeaderMain)
         requires
             self.wf(), self.is_in(*local),
-            //local.wf_main(),
             local.thread_token.value().segments.dom().contains(self.segment_id@),
             local.thread_token.value().segments[self.segment_id@].shared_access.points_to.ptr() == self.segment_ptr,
             local.thread_token.value().segments.index(self.segment_id@).shared_access.points_to.is_init(),
@@ -3905,8 +3530,6 @@ impl PagePtr {
     }
 }
 
-// Use macro as a work-arounds for not supporting functions that return &mut
-// (note: not necessary anymore now that &mut is supported)
 
 #[macro_export]
 macro_rules! page_get_mut_inner {
@@ -4390,10 +4013,8 @@ pub use segment_get_mut_local_internal;
 
 
 }
-// ===== END TARGET SOURCE: types.rs =====
 }
 mod flags {
-// ===== BEGIN INLINED DEPENDENCY: flags.rs =====
 #![allow(unused_imports)]
 
 use vstd::prelude::*;
@@ -4426,7 +4047,6 @@ impl PageInner {
     pub open spec fn is_zero(&self) -> bool { flags2_is_zero(self.flags2) }
     pub open spec fn retire_expire(&self) -> int { flags2_retire_expire(self.flags2) }
 
-    // getters
 
     #[inline(always)]
     pub fn get_is_reset(&self) -> (b: bool)
@@ -4495,7 +4115,6 @@ impl PageInner {
         self.flags1 == 0
     }
 
-    // setters
 
     #[inline(always)]
     pub fn set_retire_expire(&mut self, u: u8)
@@ -4601,10 +4220,8 @@ impl PageInner {
 }
 
 }
-// ===== END INLINED DEPENDENCY: flags.rs =====
 }
 mod layout {
-// ===== BEGIN INLINED DEPENDENCY: layout.rs =====
 #![allow(unused_imports)]
 
 use verus_state_machines_macros::*;
@@ -4617,7 +4234,6 @@ use crate::types::{SegmentHeader, Page, PagePtr, SegmentPtr, todo, Heap, Tld};
 use crate::tokens::{PageId, SegmentId, BlockId, HeapId, TldId};
 use crate::config::*;
 
-// Relationship between pointers and IDs
 
 verus!{
 
@@ -4655,7 +4271,6 @@ pub open spec fn page_start(page_id: PageId) -> int {
 }
 
 pub closed spec fn start_offset(block_size: int) -> int {
-    // Based on _mi_segment_page_start_from_slice
     if block_size >= INTPTR_SIZE as int && block_size <= 1024 {
         3 * MAX_ALIGN_GUARANTEE
     } else {
@@ -4680,29 +4295,21 @@ pub open spec fn is_block_ptr(ptr: *mut u8, block_id: BlockId) -> bool {
 
 #[verifier::opaque]
 pub open spec fn is_block_ptr1(ptr: int, block_id: BlockId) -> bool {
-    // ptr should be in the range (segment start, segment end]
-    // Yes, that's open at the start and closed at the end
-    //  - segment start is invalid since that's where the SegmentHeader is
-    //  - segment end is valid because there might be a huge block there
     &&& segment_start(block_id.page_id.segment_id) < ptr
         <= segment_start(block_id.page_id.segment_id) + (SEGMENT_SIZE as int)
         < usize::MAX
 
-    // Has valid slice_idx (again this is <= to account for the huge slice)
     &&& 0 <= block_id.slice_idx <= SLICES_PER_SEGMENT
 
-    // It also has to be in the right slice
     &&& segment_start(block_id.page_id.segment_id) + (block_id.slice_idx * SLICE_SIZE)
         <= ptr
         < segment_start(block_id.page_id.segment_id) + (block_id.slice_idx * SLICE_SIZE)
               + SLICE_SIZE
 
-    // the pptr should actually agree with the block_id
     &&& ptr == block_start(block_id)
 
     &&& 0 <= block_id.page_id.segment_id.id
 
-    // The block size must be a multiple of the word size
     &&& block_id.block_size >= size_of::<crate::linked_list::Node>()
     &&& block_id.block_size % size_of::<crate::linked_list::Node>() == 0
 }
@@ -4740,47 +4347,11 @@ pub proof fn block_start_at_diff(page_id: PageId, block_size: nat,
     unimplemented!()
 }
 
-// Bit lemmas
 
-/*proof fn bitmask_is_mod(t: usize)
-    ensures (t & (((1usize << 26usize) - 1) as usize)) == (t % (1usize << 26usize)),
-{
-    //assert((t & (sub(1usize << 26usize, 1) as usize)) == (t % (1usize << 26usize)))
-    //    by(bit_vector);
-}*/
 
-/*proof fn bitmask_is_rounded_down(t: usize)
-    ensures (t & !(((1usize << 26usize) - 1) as usize)) == t - (t % (1usize << 26usize))
-{
-    assert((t & !(sub((1usize << 26usize), 1) as usize)) == sub(t, (t % (1usize << 26usize))))
-        by(bit_vector);
-    assert((1usize << 26usize) >= 1usize) by(bit_vector);
-    assert(t >= (t % (1usize << 26usize))) by(bit_vector);
-}*/
 
-/*proof fn mod_removes_remainder(s: int, t: int, r: int)
-    requires
-        0 <= r < t,
-        0 <= s,
-    ensures (s*t + r) - ((s*t + r) % t) == s*t
-{
-    /*
-    if s == 0 {
-        assert(r % t == r) by(nonlinear_arith)
-            requires 0 <= r < t;
-    } else {
-        let x = ((s-1)*t + r);
-        assert((x % t) == (x + t) % t) by(nonlinear_arith);
-    }
-    */
-    //assert(((s*t + r) % t) == r) by(nonlinear_arith)
-    //  requires 0 <= r < t, 0 < t;
 
-    //let x = s*t + r;
-    //assert((x / t) * t + x % t == x) by(nonlinear_arith);
-}*/
 
-// Executable calculations
 
 pub fn calculate_segment_ptr_from_block(ptr: *mut u8, Ghost(block_id): Ghost<BlockId>) -> (res: *mut SegmentHeader)
     requires is_block_ptr(ptr, block_id),
@@ -4793,12 +4364,7 @@ pub fn calculate_segment_ptr_from_block(ptr: *mut u8, Ghost(block_id): Ghost<Blo
         const_facts();
         assert(block_p > 0);
 
-        //bitmask_is_rounded_down((block_p - 1) as usize);
-        //mod_removes_remainder(block_id.page_id.segment_id.id as int, SEGMENT_SIZE as int,
-        //    block_p - 1 - segment_start(block_id.page_id.segment_id));
 
-        //assert(SEGMENT_SHIFT == 26);
-        //assert(SEGMENT_SIZE >= 1);
 
         let id = block_id.page_id.segment_id.id as usize;
         assert(id == block_id.page_id.segment_id.id);
@@ -4813,38 +4379,14 @@ pub fn calculate_segment_ptr_from_block(ptr: *mut u8, Ghost(block_id): Ghost<Blo
         assert(add(mul(id, 0x2000000), 0x2000000) == id * 0x2000000 + 0x2000000);
     }
 
-    // Based on _mi_ptr_segment
     let segment_p = (block_p - 1) & (!((SEGMENT_SIZE - 1) as usize));
 
-    /*proof {
-        let s = block_id.page_id.segment_id.id;
-        let t = SEGMENT_SIZE as int;
-        let r = block_p - 1 - segment_start(block_id.page_id.segment_id);
 
-        assert(block_p as int - 1 == s*t + r);
-        assert(segment_p as int ==
-            (block_p - 1) as int - ((block_p - 1) as int % SEGMENT_SIZE as int));
-        assert(segment_p as int == (s*t + r) - ((s*t + r) % t));
-    }*/
 
     ptr.with_addr(segment_p) as *mut SegmentHeader
 }
 
-/*
-pub fn calculate_slice_idx_from_block(block_ptr: PPtr<u8>, segment_ptr: PPtr<SegmentHeader>, Ghost(block_id): Ghost<BlockId>) -> (slice_idx: usize)
-    requires
-        is_block_ptr(block_ptr.id(), block_id),
-        is_segment_ptr(segment_ptr.id(), block_id.page_id.segment_id)
-    ensures slice_idx as int == block_id.slice_idx,
-{
-    let block_p = block_ptr.addr();
-    let segment_p = segment_ptr.addr();
 
-    // Based on _mi_segment_page_of
-    let diff = segment_p - block_p;
-    diff >> (SLICE_SHIFT as usize)
-}
-*/
 
 pub fn calculate_slice_page_ptr_from_block(block_ptr: *mut u8, segment_ptr: *mut SegmentHeader, Ghost(block_id): Ghost<BlockId>) -> (page_ptr: *mut Page)
     requires
@@ -4889,29 +4431,7 @@ pub fn calculate_page_ptr_subtract_offset(
     page_ptr.with_addr(q)
 }
 
-/*
-pub fn calculate_page_ptr_add_offset(
-    page_ptr: *mut Page, offset: u32, Ghost(page_id): Ghost<PageId>) -> (result: *mut Page)
-    requires
-        is_page_ptr(page_ptr as int, page_id),
-        offset <= 0x1_0000,
-    ensures
-        is_page_ptr(result as int, PageId { idx: (page_id.idx + offset) as nat, ..page_id }),
-{
-    todo(); loop { }
-}
-*/
 
-/*
-pub fn calculate_segment_page_start(
-    segment_ptr: SegmentPtr,
-    page_ptr: PagePtr)
-) -> (p: PPtr<u8>)
-    ensures
-        p as int == page_start(page_ptr.page_id)
-{
-}
-*/
 
 pub fn calculate_page_start(page_ptr: PagePtr, block_size: usize) -> (addr: usize)
     requires block_size > 0, page_ptr.wf(),
@@ -4967,7 +4487,7 @@ pub fn segment_page_start_from_slice(
     segment_ptr: SegmentPtr,
     slice: PagePtr,
     xblock_size: usize)
-  -> (res: usize) // start_offset
+  -> (res: usize) 
     requires
         segment_ptr.wf(), slice.wf(), slice.page_id@.segment_id == segment_ptr.segment_id@
     ensures ({ let start_offset = res; {
@@ -5036,8 +4556,6 @@ pub fn align_down(x: usize, y: usize) -> (res: usize)
         assert(0 <= (x / y) * y <= x) by(nonlinear_arith)
             requires y > 0, x >= 0;
 
-        //assert((y & mask) == 0usize ==> (x & !mask) == sub(x, x % y)) by(bit_vector)
-        //    requires mask == sub(y, 1), y >= 1usize;
         if y & mask == 0usize {
             bitand_with_mask_gives_rounding(x, y);
             assert((x & !mask) == (x / y) * y);
@@ -5050,12 +4568,11 @@ pub fn align_down(x: usize, y: usize) -> (res: usize)
         assert(0 <= x % y < y);
         let t = x / y;
         mul_mod_right(t as int, y as int);
-        // (t*y) % y == 0 (from mul_mod_right) plus fundamental div-mod gives (t*y)/y*y == t*y.
         vstd::arithmetic::div_mod::lemma_fundamental_div_mod(t as int * y as int, y as int);
         vstd::arithmetic::mul::lemma_mul_is_commutative(y as int, (t as int * y as int) / y as int);
     }
 
-    if ((y & mask) == 0) { // power of two?
+    if ((y & mask) == 0) { 
         x & !mask
     } else {
         (x / y) * y
@@ -5085,19 +4602,17 @@ pub fn align_up(x: usize, y: usize) -> (res: usize)
 
         let t = (x + y - 1) / y as int;
         mul_mod_right(t, y as int);
-        // (t*y) % y == 0 (from mul_mod_right) plus fundamental div-mod gives (t*y)/y*y == t*y.
         vstd::arithmetic::div_mod::lemma_fundamental_div_mod(t * y as int, y as int);
         vstd::arithmetic::mul::lemma_mul_is_commutative(y as int, (t * y as int) / y as int);
     }
 
-    if ((y & mask) == 0) { // power of two?
+    if ((y & mask) == 0) { 
         (x + mask) & !mask
     } else {
         ((x + mask) / y) * y
     }
 }
 
-// #[verifier::integer_ring]
 #[verifier::external_body]
 pub proof fn mod_trans(a: int, b: int, c: int)
     requires b != 0, c != 0, a % b == 0, b % c == 0,
@@ -5106,7 +4621,6 @@ pub proof fn mod_trans(a: int, b: int, c: int)
     unimplemented!()
 }
 
-// #[verifier::integer_ring]
 #[verifier::external_body]
 pub proof fn mod_mul(a: int, b: int, c: int)
     requires b % c == 0, c != 0
@@ -5115,7 +4629,6 @@ pub proof fn mod_mul(a: int, b: int, c: int)
     unimplemented!()
 }
 
-// #[verifier::integer_ring]
 #[verifier::external_body]
 pub proof fn mul_mod_right(a: int, b: int)
     requires b != 0,
@@ -5235,42 +4748,31 @@ pub proof fn sub_distribute(a: int, b: int, c: int)
 }
 
 }
-// ===== END INLINED DEPENDENCY: layout.rs =====
 }
 mod config {
-// ===== BEGIN INLINED DEPENDENCY: config.rs =====
 use vstd::prelude::*;
 
 verus!{
 
 
-// Log of the (pointer-size in bytes) // TODO make configurable
 pub const INTPTR_SHIFT: u64 = 3;
 pub const INTPTR_SIZE: u64 = 8;
 global size_of usize == 8;
 
-// Log of the size of a 'slice'
 pub const SLICE_SHIFT: u64 = 13 + INTPTR_SHIFT;
 
-// Size of a slice
-pub const SLICE_SIZE: u64 = 65536; //(1 << SLICE_SHIFT);
+pub const SLICE_SIZE: u64 = 65536; 
 
-// Log of the size of a 'segment'
 pub const SEGMENT_SHIFT: u64 = 9 + SLICE_SHIFT;
 
-// Log of the size of a 'segment'
 pub const SEGMENT_SIZE: u64 = (1 << SEGMENT_SHIFT);
 
-// Log of the size of a 'segment'
 pub const SEGMENT_ALIGN: u64 = SEGMENT_SIZE;
 
-// Size of a 'segment'
 pub const SLICES_PER_SEGMENT: u64 = (SEGMENT_SIZE / SLICE_SIZE);
 
 pub const BIN_HUGE: u64 = 73;
 
-// Fake bin that contains the "full" list. This is not a valid bin idx
-// according to the valid_bin_idx spec in bin_sizes.rs.
 pub const BIN_FULL: u64 = BIN_HUGE + 1;
 
 pub const SMALL_PAGE_SHIFT: u64 = SLICE_SHIFT;
@@ -5284,8 +4786,6 @@ pub const MEDIUM_OBJ_SIZE_MAX: u64 = MEDIUM_PAGE_SIZE / 4;
 pub const MEDIUM_OBJ_WSIZE_MAX: u64 = MEDIUM_OBJ_SIZE_MAX / (usize::BITS as u64 / 8);
 pub const LARGE_OBJ_SIZE_MAX: u64 = (SEGMENT_SIZE / 2);
 
-// maximum alloc size the user is allowed to request
-// note: mimalloc use ptrdiff_t max here
 pub const MAX_ALLOC_SIZE: usize = isize::MAX as usize;
 
 pub const SMALL_WSIZE_MAX: usize = 128;
@@ -5311,17 +4811,14 @@ global layout Heap is size == 2904, align == 8;
 global layout Tld is size == 552, align == 8;
 
 
-// commit mask
 
 pub const COMMIT_SIZE: u64 = SLICE_SIZE;
 pub const COMMIT_MASK_BITS: u64 = SLICES_PER_SEGMENT;
 pub const COMMIT_MASK_FIELD_COUNT: u64 = COMMIT_MASK_BITS / (usize::BITS as u64);
 
-// huge
 
-pub const HUGE_BLOCK_SIZE: u32 = 0x80000000; // 2 GiB
+pub const HUGE_BLOCK_SIZE: u32 = 0x80000000; 
 
-// Helpers
 
 #[verifier::external_body]
 pub proof fn const_facts()
@@ -5358,146 +4855,38 @@ pub fn option_eager_commit() -> bool { true }
 pub fn option_allow_decommit() -> bool { true }
 pub fn option_page_reset() -> bool { false }
 
-//pub fn option_decommit_delay() -> i64 { assume(false); 1 /*25*/ }
-//pub fn option_decommit_extend_delay() -> i64 { assume(false); 0 /*1*/ }
 
 pub fn option_decommit_delay() -> i64 { 25 }
 pub fn option_decommit_extend_delay() -> i64 { 1 }
 
 
 }
-// ===== END INLINED DEPENDENCY: config.rs =====
 }
 mod bin_sizes {
-// ===== BEGIN INLINED DEPENDENCY: bin_sizes.rs =====
 use vstd::prelude::*;
 use vstd::assert_by_contradiction;
 use vstd::calc;
 use vstd::std_specs::bits::u64_leading_zeros;
 use crate::config::*;
 
-//fn main() {}
 
-// BLOCK SIZE BINS
-//
-// For a given allocation size, what bin does it fit in?
-// Based off of logic in mi_bin
-//
-// First  compute wsize = ceil(size / (word size))
-//
-// Now, each wsize up to 8 gets its own bin.
-// After that, each number is rounded up to a number such that
-// all its 1s in the binary representation are of the 3 most significant
-//
-//
-// wsize      bin size                        bin #
-//
-// 0, 1       1                               1
-// 2          2                               2
-// 3          3                               3
-// 4          4                               4
-// 5          5                               5
-// 6          6                               6
-// 7          7                               7
-// 8          8                               8
-//
-// 9, 10      10      (10 = 1010)             9
-// 11, 12     12      (12 = 1100)             10
-// 13, 14     14      (14 = 1010)             11
-// 15, 16     16      (16 = 10000)            12
-//
-// 17-20      20      (20 = 10100)            13
-// 21-24      24      (24 = 11000)            14
-// 25-28      28      (28 = 11100)            15
-// 29-32      32      (32 = 100000)           16
-//
-// ...
-//
-// This goes up to MEDIUM_OBJ_WSIZE_MAX, and after that, everything goes in the "huge bin"
-// which has bin # BIN_HUGE.
-//
-// The bin # should fit in a u8.
-//
-// -----------------------------------------------------------------------------------
-//
-// SLICE BINS (SBINS)
-//
-// When we allocate a page spanning a given # of slices, the '# of slices' also goes
-// into a bin. To keep things straight, I'm going to call this binning method
-// "sbins", while the above is just normal "bins".
-//
-// The algorithm here is a similar, though for some reason size 8 is lumped in with
-// the bin [9, 10], and everything from that point is shifted down an index.
-//
-// slices     bin size                        bin #
-//
-// 0          0                               0         (unused)
-// 1          1                               1
-// 2          2                               2
-// 3          3                               3
-// 4          4                               4
-// 5          5                               5
-// 6          6                               6
-// 7          7                               7
 
-// 8, 9, 10   10      (10 = 1010)             8
 
-// 11, 12     12      (12 = 1100)             9
-// 13, 14     14      (14 = 1010)             10
-// 15, 16     16      (16 = 10000)            11
-//
-// 17-20      20      (20 = 10100)            11
-// 21-24      24      (24 = 11000)            13
-// 25-28      28      (28 = 11100)            14
-// 29-32      32      (32 = 100000)           15
-//
-// ...
-//
-// 449-512    512                             31
-//
-// The max # of slices is SLICES_PER_SEGMENT (512) which goes in bin 31.
 
 verus!{
 
 
-// TODO: Pulled in constants to make this a standalone file
-/*
-global size_of usize == 8;
 
-// Log of the (pointer-size in bytes) // TODO make configurable
-pub const INTPTR_SHIFT: u64 = 3;
-pub const INTPTR_SIZE: u64 = 8;
 
-// Log of the size of a 'slice'
-pub const SLICE_SHIFT: u64 = 13 + INTPTR_SHIFT;
 
-// Size of a slice
-pub const SLICE_SIZE: u64 = 65536; //(1 << SLICE_SHIFT);
 
-// Log of the size of a 'segment'
-pub const SEGMENT_SHIFT: u64 = 9 + SLICE_SHIFT;
 
-// Log of the size of a 'segment'
-pub const SEGMENT_SIZE: u64 = (1 << SEGMENT_SHIFT);
 
-// Log of the size of a 'segment'
-pub const SEGMENT_ALIGN: u64 = SEGMENT_SIZE;
 
-// Size of a 'segment'
-pub const SLICES_PER_SEGMENT: u64 = (SEGMENT_SIZE / SLICE_SIZE);
 
-pub const BIN_HUGE: u64 = 73;
 
-pub const PAGES_DIRECT: usize = SMALL_WSIZE_MAX + 1;
-pub const SMALL_SIZE_MAX: usize = SMALL_WSIZE_MAX * INTPTR_SIZE as usize;
-pub const SMALL_WSIZE_MAX: usize = 128;
 
-pub const SEGMENT_BIN_MAX: usize = 31;
 
-// maximum alloc size the user is allowed to request
-// note: mimalloc use ptrdiff_t max here
-pub const MAX_ALLOC_SIZE: usize = isize::MAX as usize;
-*/
 
 pub open spec fn valid_bin_idx(bin_idx: int) -> bool {
     1 <= bin_idx <= BIN_HUGE
@@ -5510,12 +4899,8 @@ pub open spec fn size_of_bin(bin_idx: int) -> nat
     if 1 <= bin_idx <= 8 {
        (usize::BITS / 8) as nat * (bin_idx as nat)
     } else if bin_idx == BIN_HUGE {
-        // the "real" upper bound on this bucket is infinite
-        // the lemmas on bin sizes assume each bin has a lower bound and upper bound
-        // so we pretend this is the upper bound
 
         8 * (524288 + 1)
-        //8 * (MEDIUM_OBJ_WSIZE_MAX as nat + 1)
     } else {
         let group = (bin_idx - 9) / 4;
         let inner = (bin_idx - 9) % 4;
@@ -5539,7 +4924,6 @@ pub proof fn size_of_bin_mult_word_size(bin_idx: int)
     unimplemented!()
 }
 
-// spec equivalent of bin
 pub open spec fn smallest_bin_fitting_size(size: int) -> int {
     let bytes_per_word = (usize::BITS / 8) as int;
     let wsize = (size + bytes_per_word - 1) / bytes_per_word;
@@ -5551,7 +4935,6 @@ pub open spec fn smallest_bin_fitting_size(size: int) -> int {
         BIN_HUGE as int
     } else {
         let w = (wsize - 1) as u64;
-        //let lz = w.leading_zeros();
         let lz = u64_leading_zeros(w);
         let b = (usize::BITS - 1 - lz) as u8;
         let shifted = (w >> (b - 2) as u64) as u8;
@@ -5576,7 +4959,6 @@ pub open spec fn pfd_upper(bin_idx: int) -> nat
     size_of_bin(bin_idx) / INTPTR_SIZE as nat
 }
 
-// TODO: The assertions in this lemma are duplicated in init.rs
 #[verifier::external_body]
 pub proof fn lemma_bin_sizes_constants()
     ensures
@@ -5658,7 +5040,6 @@ pub proof fn lemma_bin_sizes_constants()
 }
 
 
-/** Put our desired property into a proof-by-compute-friendly form **/
 spec fn property_idx_out_of_range_has_different_bin_size(bin_idx: int, wsize:int) -> bool
 {
     valid_bin_idx(bin_idx) &&
@@ -5736,9 +5117,6 @@ pub proof fn idx_out_of_range_has_different_bin_size(bin_idx: int, wsize: int)
     unimplemented!()
 }
 
-/********************************************************
- * TODO: All of these should be standard library proofs
- ********************************************************/
 
 #[verifier::external_body]
 proof fn div2(x: u64, y:int) by (nonlinear_arith)
@@ -5834,9 +5212,6 @@ proof fn shift_is_div(x:u64, shift:u64)
     unimplemented!()
 }
 
-/********************************************************
- * END: All of these should be standard library proofs
- ********************************************************/
 
 #[verifier::external_body]
 proof fn leading_zeros_powers_of_2(i: u64, exp: nat)
@@ -5872,7 +5247,6 @@ proof fn log2(i:u64) -> (e:nat)
 }
 
 
-/** Put our desired property into a proof-by-compute-friendly form **/
 spec fn property_idx_in_range_has_bin_size(bin_idx: int, wsize:int) -> bool
 {
     valid_bin_idx(bin_idx) &&
@@ -5998,7 +5372,6 @@ pub open spec fn pow2(i: int) -> nat
     }
 }
 
-/** Put our desired property into a proof-by-compute-friendly form **/
 spec fn property_bounds_for_smallest_bitting_size(size:int) -> bool
 {
     valid_bin_idx(smallest_bin_fitting_size(size)) &&
@@ -6037,7 +5410,6 @@ pub proof fn bounds_for_smallest_bin_fitting_size(size: int)
     unimplemented!()
 }
 
-/** Put our desired property into a proof-by-compute-friendly form **/
 spec fn property_smallest_bin_fitting_size_size_of_bin(bin_idx:int) -> bool
 {
     smallest_bin_fitting_size(size_of_bin(bin_idx) as int) == bin_idx
@@ -6090,7 +5462,6 @@ proof fn leading_zeros_between(lo:u64, mid:u64, hi:u64)
     unimplemented!()
 }
 
-/** Put our desired property into a proof-by-compute-friendly form **/
 spec fn property_bin(size:int) -> bool
 {
     131072 >= size_of_bin(smallest_bin_fitting_size(size)) >= size
@@ -6125,7 +5496,7 @@ proof fn result_bin(size_start:int, size_end:int)
 #[verifier::external_body]
 pub proof fn bin_size_result(size: usize)
     requires
-        size <= 131072, //  == MEDIUM_OBJ_SIZE_MAX
+        size <= 131072, 
         valid_bin_idx(smallest_bin_fitting_size(size as int)),
     ensures
         131072 >= size_of_bin(smallest_bin_fitting_size(size as int) as int) >= size,
@@ -6134,15 +5505,11 @@ pub proof fn bin_size_result(size: usize)
     unimplemented!()
 }
 
-// The "proof" is below is broken into chunks,
-// so (a) we don't exceed the interpreter's stack limit,
-// and (b) because the interpreter time seems to scale
-// non-linearly with recursion depth
 #[verifier::external_body]
 pub proof fn bin_size_result_mul8(size: usize)
     requires
         size % 8 == 0,
-        size <= 131072, //  == MEDIUM_OBJ_SIZE_MAX
+        size <= 131072, 
         valid_bin_idx(smallest_bin_fitting_size(size as int)),
     ensures
         131072 >= size_of_bin(smallest_bin_fitting_size(size as int) as int) >= size,
@@ -6150,12 +5517,11 @@ pub proof fn bin_size_result_mul8(size: usize)
     unimplemented!()
 }
 
-// Used to compute a bin for a given size
 #[verifier::external_body]
 pub fn bin(size: usize) -> (bin_idx: u8)
     requires
         size <= MAX_ALLOC_SIZE,
-        size <= 131072, //  == MEDIUM_OBJ_SIZE_MAX
+        size <= 131072, 
     ensures
         valid_bin_idx(bin_idx as int),
         size_of_bin(bin_idx as int) >= size,
@@ -6164,7 +5530,6 @@ pub fn bin(size: usize) -> (bin_idx: u8)
    unimplemented!()
 }
 
-//////// Segment bins
 
 pub open spec fn valid_sbin_idx(sbin_idx: int) -> bool {
     0 <= sbin_idx <= SEGMENT_BIN_MAX
@@ -6191,7 +5556,6 @@ pub open spec fn smallest_sbin_fitting_size(i: int) -> int
         i
     } else {
         let w = (i - 1) as u64;
-        //let lz = w.leading_zeros();
         let lz = u64_leading_zeros(w);
         let b = (usize::BITS - 1 - lz) as u8;
         let sbin_idx = ((b << 2u8) as u64 | ((w >> (b as u64 - 2) as u64) & 0x03)) - 4;
@@ -6199,7 +5563,6 @@ pub open spec fn smallest_sbin_fitting_size(i: int) -> int
     }
 }
 
-/** Put our desired property into a proof-by-compute-friendly form **/
 spec fn property_sbin_idx_smallest_sbin_fitting_size(size:int) -> bool
 {
     valid_sbin_idx(smallest_sbin_fitting_size(size))
@@ -6235,12 +5598,10 @@ pub proof fn valid_sbin_idx_smallest_sbin_fitting_size(i: int)
     unimplemented!()
 }
 
-/** Put our desired property into a proof-by-compute-friendly form **/
 spec fn property_sbin_bounds(size:int) -> bool
 {
     let lz = u64_leading_zeros(size as u64);
     let b = (63 - lz) as u8;
-    // Satisfy various type requirements
     (b  >= 2) &&
     (((b << 2u8) as u64 | ((size as u64 >> (b as u64 - 2) as u64) & 0x03)) >= 4)
 }
@@ -6267,7 +5628,6 @@ proof fn result_sbin_bounds(size_start:int, size_end:int)
     unimplemented!()
 }
 
-/** Put our desired property into a proof-by-compute-friendly form **/
 spec fn property_sbin(slice_count:int) -> bool
 {
     let sbin_idx = smallest_sbin_fitting_size(slice_count as int);
@@ -6308,10 +5668,8 @@ pub fn slice_bin(slice_count: usize) -> (sbin_idx: usize)
    unimplemented!()
 }
 }
-// ===== END INLINED DEPENDENCY: bin_sizes.rs =====
 }
 mod dealloc_token {
-// ===== BEGIN INLINED DEPENDENCY: dealloc_token.rs =====
 #![allow(unused_imports)]
 use vstd::raw_ptr::*;
 use crate::tokens::{Mim, BlockId, DelayState};
@@ -6325,10 +5683,8 @@ verus!{
 pub tracked struct MimDealloc {
     pub(crate) tracked padding: PointsToRaw,
 
-    // Size of the allocation from the user perspective, <= the block size
     pub(crate) ghost _size: int,
 
-    // Memory to make up the difference between user size and block size
     pub(crate) tracked inner: MimDeallocInner,
 }
 
@@ -6343,9 +5699,7 @@ pub open spec fn valid_block_token(block: Mim::block, instance: Mim::Instance) -
     &&& block.key().wf()
     &&& block.instance_id() == instance.id()
 
-    // TODO factor this stuff into wf predicates
 
-    // Valid segment
 
     &&& is_segment_ptr(
         block.value().segment_shared_access.points_to.ptr(),
@@ -6354,7 +5708,6 @@ pub open spec fn valid_block_token(block: Mim::block, instance: Mim::Instance) -
     &&& block.value().segment_shared_access.points_to.value()
         .wf(instance, block.key().page_id.segment_id)
 
-    // Valid slice page
 
     &&& is_page_ptr(
         block.value().page_slice_shared_access.points_to.ptr(),
@@ -6363,7 +5716,6 @@ pub open spec fn valid_block_token(block: Mim::block, instance: Mim::Instance) -
     &&& block.value().page_slice_shared_access.points_to.value().offset as int
           == (block.key().slice_idx - block.key().page_id.idx) * crate::config::SIZEOF_PAGE_HEADER
 
-    // Valid main page
 
     &&& block.value().page_shared_access.wf(
         block.key().page_id,
@@ -6425,7 +5777,6 @@ impl MimDealloc {
     #[verifier::type_invariant]
     spec fn wf(&self) -> bool {
         self.inner.wf()
-          // PAPER CUT: is_range should probably have this condition in it
           && self.block_id().block_size - self._size >= 0
           && self._size >= 0
           && self.padding.is_range(self.inner.ptr as int + self._size,
@@ -6456,10 +5807,8 @@ impl MimDealloc {
 
 
 }
-// ===== END INLINED DEPENDENCY: dealloc_token.rs =====
 }
 mod page_organization {
-// ===== BEGIN INLINED DEPENDENCY: page_organization.rs =====
 #![allow(unused_imports)]
 
 use vstd::prelude::*;
@@ -6488,7 +5837,6 @@ pub ghost enum PageHeaderKind {
 }
 
 pub ghost struct PageData {
-    // Option means unspecified (i.e., does not constrain the physical value)
     pub dlist_entry: Option<DlistEntry>,
     pub count: Option<nat>,
     pub offset: Option<nat>,
@@ -6505,34 +5853,30 @@ pub ghost struct SegmentData {
 #[is_variant]
 pub ghost enum Popped {
     No,
-    Ready(PageId, bool),            // set up the offsets   (all pages have offsets set)
-    Used(PageId, bool),             // everything is set to 'used'
+    Ready(PageId, bool),            
+    Used(PageId, bool),             
 
-    SegmentCreating(SegmentId),     // just created
-    VeryUnready(SegmentId, int, int, bool),      // no pages are set, not even first or last
+    SegmentCreating(SegmentId),     
+    VeryUnready(SegmentId, int, int, bool),      
 
     SegmentFreeing(SegmentId, int),
 
     ExtraCount(SegmentId),
 }
 
-// {page_id | page_id.segment_id == segment_id && lo <= page_id.idx < hi}
 pub open spec fn page_id_range(segment_id: SegmentId, lo: nat, hi: nat) -> Set<PageId> {
     vstd::contrib::set_build!{ PageId { segment_id, idx }: PageId | idx: nat in lo..hi }
 }
 
 state_machine!{ PageOrg {
     fields {
-        // Roughly corresponds to physical state
-        pub unused_dlist_headers: Seq<DlistHeader>,     // indices are sbin
-        pub used_dlist_headers: Seq<DlistHeader>,       // indices are bin
+        pub unused_dlist_headers: Seq<DlistHeader>,     
+        pub used_dlist_headers: Seq<DlistHeader>,       
         pub pages: Map<PageId, PageData>,
         pub segments: Map<SegmentId, SegmentData>,
 
-        // Actor state
         pub popped: Popped,
 
-        // Internals
         pub unused_lists: Seq<Seq<PageId>>,
         pub used_lists: Seq<Seq<PageId>>,
     }
@@ -6728,35 +6072,12 @@ state_machine!{ PageOrg {
     #[invariant]
     pub closed spec fn ll_inv_valid_unused(&self) -> bool {
         forall |i| 0 <= i < self.unused_lists.len() ==> valid_ll(self.pages, self.unused_dlist_headers[i], self.unused_lists[i])
-        /*
-          0 <= i < self.unused_lists.len() ==>
-            forall |j| #![triggers self.unused_lists.index(i).index(j)]
-              0 <= j < self.unused_lists[i].len() ==>
-                self.pages.dom().contains(self.unused_lists[i][j])
-                  && is_unused_header(self.pages[self.unused_lists[i][j]])
-                  && self.pages[self.unused_lists[i][j]].dlist_entry.is_some()
-                  && self.pages[self.unused_lists[i][j]].dlist_entry.unwrap().prev
-                        == get_prev(self.unused_lists[i], j)
-                  && self.pages[self.unused_lists[i][j]].dlist_entry.unwrap().next
-                        == get_next(self.unused_lists[i], j)*/
     }
 
 
     #[invariant]
     pub closed spec fn ll_inv_valid_used(&self) -> bool {
         forall |i| 0 <= i < self.used_lists.len() ==> valid_ll(self.pages, self.used_dlist_headers[i], self.used_lists[i])
-        /*
-        forall |i| #![triggers self.used_lists.index(i)]
-          0 <= i < self.used_lists.len() ==>
-            forall |j| #![triggers self.used_lists.index(i).index(j)]
-              0 <= j < self.used_lists[i].len() ==>
-                self.pages.dom().contains(self.used_lists[i][j])
-                  && is_used_header(self.pages[self.used_lists[i][j]])
-                  && self.pages[self.used_lists[i][j]].dlist_entry.is_some()
-                  && self.pages[self.used_lists[i][j]].dlist_entry.unwrap().prev
-                        == get_prev(self.used_lists[i], j)
-                  && self.pages[self.used_lists[i][j]].dlist_entry.unwrap().next
-                        == get_next(self.used_lists[i], j)*/
     }
 
     #[invariant]
@@ -6800,7 +6121,6 @@ state_machine!{ PageOrg {
                 ==> is_in_lls(page_id, self.used_lists) || is_in_lls(page_id, self.unused_lists)
     }
 
-    ///////
 
     #[invariant]
     pub closed spec fn attached_ranges(&self) -> bool {
@@ -6927,7 +6247,6 @@ state_machine!{ PageOrg {
         }
     }
 
-    ///////
 
     pub open spec fn valid_unused_page(&self, page_id: PageId, sbin_idx: int, list_idx: int) -> bool {
         self.pages.dom().contains(page_id)
@@ -7153,10 +6472,6 @@ state_machine!{ PageOrg {
     pub open spec fn valid_used_page(&self, page_id: PageId, bin_idx: int, list_idx: int) -> bool {
         self.pages.dom().contains(page_id)
           && self.pages[page_id].is_used == true
-          //&& (match self.pages[page_id].count {
-          //    Some(count) => 0 <= count <= SLICES_PER_SEGMENT,
-          //    None => false,
-          //})
           && self.pages[page_id].dlist_entry.is_some()
           && self.pages[page_id].offset == Some(0nat)
           && (crate::bin_sizes::valid_bin_idx(bin_idx) || bin_idx == BIN_FULL)
@@ -7322,7 +6637,6 @@ state_machine!{ PageOrg {
             init segments = Map::empty();
             init popped = Popped::No;
 
-            // TODO internals
             init unused_lists = Seq::new((SEGMENT_BIN_MAX + 1) as nat, |i| Seq::empty());
             init used_lists = Seq::new((BIN_FULL + 1) as nat, |i| Seq::empty());
         }
@@ -7344,7 +6658,6 @@ state_machine!{ PageOrg {
                 .. pre.pages[page_id]
             };
 
-            // Update prev to point to next
             match dlist_entry.prev {
                 Some(prev_page_id) => {
                     assert prev_page_id != page_id
@@ -7365,7 +6678,6 @@ state_machine!{ PageOrg {
                 Option::None => { }
             }
 
-            // Update next to point to prev
             match dlist_entry.next {
                 Some(next_page_id) => {
                     assert next_page_id != page_id
@@ -7386,7 +6698,6 @@ state_machine!{ PageOrg {
                 Option::None => { }
             }
 
-            // Workaround for not begin able to do `update unused_dlist_headers[sbin_idx].first = ...`
             if dlist_entry.prev.is_none() && dlist_entry.next.is_none() {
                 update unused_dlist_headers[sbin_idx] = DlistHeader {
                     first: dlist_entry.next,
@@ -7448,8 +6759,6 @@ state_machine!{ PageOrg {
 
     transition!{
         split_page(page_id: PageId, current_count: int, target_count: int, sbin_idx: int) {
-            // Require that `page_id` is currently popped
-            // and that it has has count equal to `current_count`
             require pre.popped == Popped::VeryUnready(page_id.segment_id, page_id.idx as int, current_count, false);
             assert pre.pages.dom().contains(page_id);
             assert pre.pages[page_id].count.is_none();
@@ -7459,16 +6768,6 @@ state_machine!{ PageOrg {
             require 0 <= sbin_idx <= SEGMENT_BIN_MAX;
             require sbin_idx == smallest_sbin_fitting_size(current_count - target_count);
 
-            //  |------------current_count---------------|
-            //
-            //  |--------------|-------------------------|
-            //    target_count
-            //
-            //                   ^                      ^
-            //                   |                      |
-            //    ^           next_page_id          last_page_id
-            //    |
-            //  page_id
 
             let next_page_id = PageId { idx: (page_id.idx + target_count) as nat, .. page_id };
             let last_page_id = PageId { idx: (page_id.idx + current_count - 1) as nat, .. page_id };
@@ -7487,17 +6786,14 @@ state_machine!{ PageOrg {
                 .. pre.pages[next_page_id]
             };
 
-            // If the 'last page' is distinct from the 'next page'
-            // we have to update it too
             if current_count - target_count > 1 {
                 update pages[last_page_id] = PageData {
-                    count: None, //Some((current_count - target_count) as nat),
+                    count: None, 
                     offset: Some((current_count - target_count - 1) as nat),
                     .. pre.pages[last_page_id]
                 };
             }
 
-            // Insert into the queue
             update unused_dlist_headers[sbin_idx] = DlistHeader {
                 first: Some(next_page_id),
                 last:
@@ -7513,8 +6809,8 @@ state_machine!{ PageOrg {
                 assert !pre.pages[first_id].is_used                by { pre.first_last_ll_stuff_unused(sbin_idx); };
                 assert pre.pages[first_id].dlist_entry.is_some()   by { pre.first_last_ll_stuff_unused(sbin_idx); };
                 assert first_id != page_id                         by { pre.first_last_ll_stuff_unused(sbin_idx); };
-                assert first_id != next_page_id                    by { pre.first_last_ll_stuff_unused(sbin_idx); /*pre.lemma_range_not_header(page_id, next_page_id);*/ };
-                assert first_id != last_page_id                    by { pre.first_last_ll_stuff_unused(sbin_idx); /*pre.lemma_range_not_header(page_id, last_page_id);*/ };
+                assert first_id != next_page_id                    by { pre.first_last_ll_stuff_unused(sbin_idx);                                                        };
+                assert first_id != last_page_id                    by { pre.first_last_ll_stuff_unused(sbin_idx);                                                        };
                 update pages[first_id] = PageData {
                     dlist_entry: Some(DlistEntry {
                         prev: Some(next_page_id),
@@ -7574,10 +6870,8 @@ state_machine!{ PageOrg {
                 page_id_range(page_id.segment_id, page_id.idx, page_id.idx + count as nat),
                 |pid: PageId| PageData {
                     count: if pid == page_id { Some(count as nat) } else { pre.pages[pid].count },
-                    offset: Some((pid.idx - page_id.idx) as nat), // set offset
+                    offset: Some((pid.idx - page_id.idx) as nat), 
                     dlist_entry: pre.pages[pid].dlist_entry,
-                    // keep is_used=false for now
-                    // instead, we mark that this operation is done by setting popped=Ready
                     is_used: false,
                     page_header_kind: None,
                     full: None,
@@ -7620,7 +6914,7 @@ state_machine!{ PageOrg {
                 page_id_range(segment_id, 0, count as nat),
                 |pid: PageId| PageData {
                     count: if pid == page_id { Some(count as nat) } else { pre.pages[pid].count },
-                    offset: Some((pid.idx - page_id.idx) as nat), // set offset
+                    offset: Some((pid.idx - page_id.idx) as nat), 
                     dlist_entry: pre.pages[pid].dlist_entry,
                     is_used: false,
                     page_header_kind: None,
@@ -7743,11 +7037,6 @@ state_machine!{ PageOrg {
         }
     }
 
-    /*transition!{
-        original_free_in_segment_creation() {
-            require let Popped::SegmentCreatingSkipped(segment_id, skip_count) = pre.popped;
-        }
-    }*/
 
     transition!{
         set_range_to_used(page_header_kind: PageHeaderKind) {
@@ -8017,12 +7306,12 @@ state_machine!{ PageOrg {
 
             update used_dlist_headers[bin_idx] = DlistHeader {
                 first: if prev_page_id_opt.is_some() {
-                    pre.used_dlist_headers[bin_idx].first // no change
+                    pre.used_dlist_headers[bin_idx].first 
                 } else {
                     next_page_id_opt
                 },
                 last: if next_page_id_opt.is_some() {
-                    pre.used_dlist_headers[bin_idx].last // no change
+                    pre.used_dlist_headers[bin_idx].last 
                 } else {
                     prev_page_id_opt
                 }
@@ -8201,7 +7490,7 @@ state_machine!{ PageOrg {
             let last_id = PageId { segment_id, idx: (cur_start - 1) as nat };
             assert pre.pages[last_id].offset.is_some()    by { pre.get_stuff_before(); };
             let offset = pre.pages[last_id].offset.unwrap();
-            require last_id.idx - offset > 0; // exclude very first page
+            require last_id.idx - offset > 0; 
             let page_id = PageId { segment_id, idx: (last_id.idx - offset) as nat };
             require !pre.pages[page_id].is_used;
             assert !pre.pages[last_id].is_used            by { pre.get_stuff_before(); };
@@ -8313,7 +7602,6 @@ state_machine!{ PageOrg {
 
         assert(post.popped_basics());
 
-        //Self::ucount_preserve_except(pre, post, page_id.segment_id);
         Self::ucount_preserve_all(pre, post);
         assert(post.count_is_right());
         Self::unchanged_used_ll(pre, post);
@@ -8368,7 +7656,6 @@ state_machine!{ PageOrg {
           0 <= sbin_idx < pre.unused_lists.len(),
           0 <= list_idx < pre.unused_lists[sbin_idx].len(),
           pre.ll_inv_exists_in_some_list(),
-          //post.expect_out_of_lists(page_id),
           State::take_page_from_unused_queue_strong(pre, post, page_id, sbin_idx, list_idx),
       ensures
           post.ll_inv_exists_in_some_list(),
@@ -8415,19 +7702,6 @@ state_machine!{ PageOrg {
         Self::ucount_preserve_all(pre, post);
         Self::unchanged_used_ll(pre, post);
         Self::unchanged_unused_ll(pre, post);
-        //let page_id = pre.popped.get_Popped_0();
-        /*assert forall |pid: PageId|
-                    pid.segment_id == page_id.segment_id
-                      && page_id.idx <= pid.idx < page_id.idx + post.pages[page_id].count.unwrap()
-                    &&
-                        post.pages.dom().contains(pid) implies
-                        !(#[trigger] post.pages[pid]).is_used
-                        && post.pages[pid].offset == Some((pid.idx - page_id.idx) as nat)
-                        && (post.pages[pid].count.is_some() <==> pid == page_id)
-                        && post.pages[pid].page_header_kind.is_none()
-                        && post.pages[pid].dlist_entry.is_none()
-                        && post.pages[pid].full.is_none()
-        by { }*/
         assert(post.inv_ready());
 
         assert(post.ll_inv_exists_in_some_list()) by {
@@ -8531,19 +7805,6 @@ state_machine!{ PageOrg {
         assert(post.attached_ranges()) by {
             reveal_with_fuel(State::attached_rec);
             let page_id = PageId { segment_id, idx: 0 };
-            /*assert forall |pid: PageId|
-              pid.segment_id == page_id.segment_id
-              && page_id.idx <= pid.idx < page_id.idx + count implies
-                post.pages.dom().contains(pid)
-                && post.pages[pid].is_used == false
-                && post.pages[pid].full.is_none()
-                && post.pages[pid].page_header_kind.is_none()
-                && (post.pages[pid].count.is_some() <==> pid == page_id)
-                && post.pages[pid].dlist_entry.is_none()
-                && post.pages[pid].offset ==
-                            Some((pid.idx - page_id.idx) as nat)
-            by {
-            }*/
             assert(post.good_range0(segment_id));
             assert(post.popped_for_seg(segment_id));
 
@@ -8667,7 +7928,6 @@ state_machine!{ PageOrg {
           State::merge_with_after_strong(pre, post),
           pre.attached_rec(pre.popped.get_VeryUnready_0(), idx, sp),
           idx >= 0,
-          //sp ==> idx <= pre.popped.get_VeryUnready_1(),
           !sp ==> idx >= pre.popped.get_VeryUnready_1() + post.popped_len(),
       ensures
           post.attached_rec(pre.popped.get_VeryUnready_0(), idx, sp)
@@ -8683,7 +7943,6 @@ state_machine!{ PageOrg {
           State::merge_with_before_strong(pre, post),
           pre.attached_rec(pre.popped.get_VeryUnready_0(), idx, sp),
           idx >= 0,
-          //sp ==> idx <= pre.popped.get_VeryUnready_1(),
           idx != pre.popped.get_VeryUnready_1(),
           !sp ==> idx >= pre.popped.get_VeryUnready_1() + pre.popped_len(),
       ensures
@@ -9030,35 +8289,6 @@ state_machine!{ PageOrg {
         unimplemented!()
     }
 
-    /*pub proof fn lemma_range_not_header(&self, page_id: PageId, next_id: PageId)
-        requires
-            self.invariant(),
-            self.popped.is_VeryUnready(),
-            page_id.segment_id == next_id.segment_id,
-            self.pages.dom().contains(page_id),
-            page_id.idx == self.popped.get_VeryUnready_1(),
-            next_id.segment_id == page_id.segment_id,
-            page_id.idx < next_id.idx < page_id.idx + self.popped.get_VeryUnready_2(),
-        ensures
-            self.pages[next_id].offset != Some(0nat)
-    {
-        if page_id.segment_id == self.popped.get_VeryUnready_0()
-            && page_id.idx == self.popped.get_VeryUnready_1()
-        {
-            assert(self.pages[next_id].offset != Some(0nat));
-        } else if page_id.idx == 0 {
-            assert(self.pages[next_id].offset != Some(0nat));
-        } else {
-            assert(self.pages[next_id].offset != Some(0nat));
-            /*if self.pages[page_id].is_used {
-                self.lemma_range_used(page_id);
-                assert(self.pages[next_id].offset != Some(0nat));
-            } else {
-                self.lemma_range_not_used(page_id);
-                assert(self.pages[next_id].offset != Some(0nat));
-            }*/
-        }
-    }*/
 
     #[verifier::external_body]
     pub proof fn lemma_range_not_used(&self, page_id: PageId)
@@ -9066,8 +8296,6 @@ state_machine!{ PageOrg {
             is_unused_header(self.pages[page_id]),
             page_id.idx != 0,
             match self.popped {
-                //Popped::SegmentFreeing(sid, idx) =>
-                //    page_id.segment_id == sid ==> idx <= page_id.idx,
                 Popped::Ready(pid, _) => pid != page_id,
                 _ => true,
             }
@@ -9119,8 +8347,6 @@ state_machine!{ PageOrg {
             0 <= idx <= page_id.idx,
             page_id.idx != SLICES_PER_SEGMENT,
             match self.popped {
-                //Popped::SegmentFreeing(sid, idx) =>
-                //    page_id.segment_id == sid ==> idx <= page_id.idx,
                 Popped::Ready(pid, _) => pid != page_id,
                 _ => true,
             },
@@ -9187,25 +8413,6 @@ state_machine!{ PageOrg {
         unimplemented!()
     }
 
-    /*
-    #[verifier::external_body]
-    pub proof fn lemma_range_not_used_very_unready(&self)
-        requires self.invariant(), self.popped.is_VeryUnready(),
-        ensures match self.popped {
-            Popped::VeryUnready(segment_id, start, count, _) => {
-                (forall |pid| #![trigger self.pages.dom().contains(pid)]
-                    #![trigger self.pages.index(pid)]
-                  pid.segment_id == segment_id
-                  && start <= pid.idx < start + count ==>
-                    self.pages.dom().contains(pid)
-                    && self.pages[pid].is_used == false)
-            }
-            _ => false,
-        }
-    {
-        unimplemented!()
-    }
-    */
 
     pub closed spec fn good_range_very_unready(&self, page_id: PageId) -> bool
     {
@@ -9293,7 +8500,6 @@ state_machine!{ PageOrg {
                 self.pages.dom().contains(pid)
                 && self.pages[pid].is_used == true
                 && self.pages[pid].offset == Some((pid.idx - page_id.idx) as nat)
-                //&& (self.pages[pid].count.is_some() <==> pid == page_id)
                 && (self.pages[pid].page_header_kind.is_some() <==> pid == page_id)
                 && (self.pages[pid].dlist_entry.is_some() <==> pid == page_id)
                 && (self.pages[pid].full.is_some() <==> pid == page_id)
@@ -9325,8 +8531,6 @@ state_machine!{ PageOrg {
           forall |pid: PageId| #![all_triggers] pid.segment_id != esid ==>
             (pre.pages.dom().contains(pid) <==> post.pages.dom().contains(pid))
             && (pre.pages.dom().contains(pid) ==> pre.pages[pid] == post.pages[pid]),
-          //pre.if_popped_then_for(esid),
-          //post.if_popped_then_for(esid),
         ensures
           forall |sid: SegmentId| sid != esid ==> pre.ucount(sid) == post.ucount(sid)
     {
@@ -9696,17 +8900,6 @@ state_machine!{ PageOrg {
 
 
 
-    /*pub proof fn good_range_disjoint_two(&self, page_id1: PageId, page_id2: PageId)
-        requires self.invariant(),
-            self.good_range_unused(page_id1),
-            self.good_range_unused(page_id2),
-            page_id1 != page_id2,
-        ensures
-            page_id1.segment_id != page_id2.segment_id
-              || page_id1.idx + self.pages[page_id1].count.unwrap() <= page_id2.idx
-              || page_id2.idx + self.pages[page_id2].count.unwrap() <= page_id1.idx
-    {
-    }*/
 
     #[verifier::external_body]
     pub proof fn ll_unused_distinct(&self, i1: int, j1: int, i2: int, j2: int)
@@ -9829,10 +9022,8 @@ pub open spec fn is_in_lls(page_id: PageId, s: Seq<Seq<PageId>>) -> bool {
 }
 
 }
-// ===== END INLINED DEPENDENCY: page_organization.rs =====
 }
 mod os_mem_util {
-// ===== BEGIN INLINED DEPENDENCY: os_mem_util.rs =====
 use vstd::prelude::*;
 use vstd::set_lib::*;
 use vstd::raw_ptr::*;
@@ -10014,11 +9205,6 @@ impl Local {
         self.page_organization.pages.dom().map(
             |page_id| self.segment_page_range(segment_id, page_id)
         ).flatten()
-        /* The following old way of building the set isn't evidently finite:
-        Set::<int>::new(|addr| exists |page_id|
-            self.segment_page_range(segment_id, page_id).contains(addr)
-        )
-        */
     }
 
     #[verifier::external_body]
@@ -10067,11 +9253,6 @@ impl Local {
         self.page_organization.pages.dom().map(
             |page_id| self.segment_page_used(segment_id, page_id)
         ).flatten()
-        /* The following old way of building the set isn't evidently finite:
-        Set::<int>::new(|addr| exists |page_id|
-            self.segment_page_used(segment_id, page_id).contains(addr)
-        )
-        */
     }
 
     #[verifier::external_body]
@@ -10105,23 +9286,7 @@ impl Local {
         unimplemented!()
     }
 
-    /*spec fn segment_page_range_reserved(&self, segment_id: SegmentId, page_id: PageId) -> Set<int> {
-        if page_id.segment_id == segment_id && self.is_used_primary(page_id) {
-            set_int_range(
-                page_start(page_id) + start_offset(self.block_size(page_id)),
-                page_start(page_id) + start_offset(self.block_size(page_id))
-                    + self.page_reserved(page_id) * self.block_size(page_id)
-            )
-        } else {
-            Set::empty()
-        }
-    }
 
-    spec fn segment_pages_range_reserved_total(&self, segment_id: SegmentId) -> Set<int> {
-        Set::<int>::new(|addr| exists |page_id|
-            self.segment_page_range_reserved(segment_id, page_id).contains(addr)
-        )
-    }*/
 
     pub open spec fn mem_chunk_good(&self, segment_id: SegmentId) -> bool {
         self.segments.dom().contains(segment_id)
@@ -10186,10 +9351,6 @@ pub proof fn very_unready_range_okay_to_decommit(local: Local)
 #[verifier::external_body]
 pub proof fn preserves_mem_chunk_good(local1: Local, local2: Local)
     requires
-        //local2.page_organization == local1.page_organization,
-        //local2.pages == local1.pages,
-        //local2.commit_mask(sid).bytes(sid) == local1.commit_mask(sid).bytes(sid),
-        //local2.segments[sid].mem.has_new_pointsto(&local1.segments[sid].mem),
         local1.segments.dom() == local2.segments.dom(),
         forall |sid| local1.segments.dom().contains(sid) ==>
             local2.commit_mask(sid).bytes(sid) == local1.commit_mask(sid).bytes(sid),
@@ -10215,10 +9376,6 @@ pub proof fn preserves_mem_chunk_good(local1: Local, local2: Local)
 #[verifier::external_body]
 pub proof fn preserves_mem_chunk_good_except(local1: Local, local2: Local, esegment_id: SegmentId)
     requires
-        //local2.page_organization == local1.page_organization,
-        //local2.pages == local1.pages,
-        //local2.commit_mask(sid).bytes(sid) == local1.commit_mask(sid).bytes(sid),
-        //local2.segments[sid].mem.has_new_pointsto(&local1.segments[sid].mem),
         local1.segments.dom().subset_of(local2.segments.dom()),
         forall |sid| sid != esegment_id ==> #[trigger] local1.segments.dom().contains(sid) ==> local2.commit_mask(sid).bytes(sid) == local1.commit_mask(sid).bytes(sid),
         forall |sid| sid != esegment_id ==> #[trigger] local1.segments.dom().contains(sid) ==> local2.decommit_mask(sid).bytes(sid) == local1.decommit_mask(sid).bytes(sid),
@@ -10320,7 +9477,6 @@ pub proof fn preserves_mem_chunk_good_on_decommit(local1: Local, local2: Local, 
         (local1.segments[sid].mem.os_rw_bytes() - local2.segments[sid].mem.os_rw_bytes())
           <= (local1.decommit_mask(sid).bytes(sid) - local2.decommit_mask(sid).bytes(sid)),
 
-              //(local1.decommit_mask(sid).bytes(sid) - local2.decommit_mask(sid).bytes(sid)),
 
         local2.segments[sid].mem.os.dom() =~= local1.segments[sid].mem.os.dom(),
     ensures local2.mem_chunk_good(sid),
@@ -10390,7 +9546,6 @@ pub proof fn preserves_mem_chunk_good_on_transfer_to_capacity(local1: Local, loc
             );
           local2.segments[page_id.segment_id].mem.points_to.dom() =~=
               local1.segments[page_id.segment_id].mem.points_to.dom() - sr
-          //&& local2.decommit_mask(page_id.segment_id).bytes(page_id.segment_id).disjoint(sr)
         }),
     ensures local2.mem_chunk_good(page_id.segment_id),
 {
@@ -10442,10 +9597,6 @@ pub proof fn preserves_mem_chunk_good_on_transfer_back(local1: Local, local2: Lo
 pub proof fn preserves_mem_chunk_on_set_used(local1: Local, local2: Local, page_id: PageId)
     requires
         local1.mem_chunk_good(page_id.segment_id),
-        //local2.page_organization == local1.page_organization,
-        //local2.pages == local1.pages,
-        //local2.commit_mask(sid).bytes(sid) == local1.commit_mask(sid).bytes(sid),
-        //local2.segments[sid].mem.has_new_pointsto(&local1.segments[sid].mem),
         local1.segments.dom() == local2.segments.dom(),
         forall |sid| local1.segments.dom().contains(sid) ==>
             local2.commit_mask(sid).bytes(sid) == local1.commit_mask(sid).bytes(sid),
@@ -10482,7 +9633,6 @@ pub proof fn segment_mem_has_reserved_range(local: Local, page_id: PageId, new_c
     unimplemented!()
 }
 
-///////
 
 pub open spec fn page_init_is_committed(page_id: PageId, local: Local) -> bool {
     let count = local.page_organization.pages[page_id].count.unwrap() as int;
@@ -10497,13 +9647,10 @@ pub open spec fn page_init_is_committed(page_id: PageId, local: Local) -> bool {
 }
 
 }
-// ===== END INLINED DEPENDENCY: os_mem_util.rs =====
 }
 
-// utilities
 
 mod pigeonhole {
-// ===== BEGIN INLINED DEPENDENCY: pigeonhole.rs =====
 #![allow(unused_imports)]
 
 use vstd::prelude::*;
@@ -10512,7 +9659,6 @@ use vstd::assert_by_contradiction;
 
 verus!{
 
-// TODO: This belongs in set_lib
 #[verifier::external_body]
 proof fn singleton_set_unique_elt<T>(s: Set<T>, a:T, b:T)
     requires
@@ -10539,16 +9685,11 @@ proof fn set_mismatch(s1:Set<nat>, s2:Set<nat>, missing:nat)
     unimplemented!()
 }
 
-/* TODO: These next two should be derived from the set_int_range and lemma_int_range in
- *       set_lib.rs, but it's surprisingly painful to do so */
 
-/// Creates a finite set of nats in the range [lo, hi).
 pub open spec fn set_nat_range(lo: nat, hi: nat) -> Set<nat> {
     Set::range(lo, hi)
 }
 
-/// If a set solely contains nats in the range [a, b), then its size is
-/// bounded by b - a.
 #[verifier::external_body]
 pub proof fn lemma_nat_range(lo: nat, hi: nat)
     requires
@@ -10591,7 +9732,6 @@ pub proof fn pigeonhole_missing_idx_implies_double_helper(
         0 <= missing < len,
         0 <= k < len,
         prev_vals.len() == k,
-        //forall |j| 0 <= j < k ==> #[trigger] prev_vals.contains(m[j]),
         forall |elt| #[trigger] prev_vals.contains(elt) ==> exists |j| 0 <= j < k && m[j] == elt,
     ensures
         m.dom().contains(dup2),
@@ -10642,13 +9782,10 @@ pub proof fn pigeonhole_too_many_elements_implies_double(
 }
 
 }
-// ===== END INLINED DEPENDENCY: pigeonhole.rs =====
 }
 
-// implementation
 
 mod linked_list {
-// ===== BEGIN INLINED DEPENDENCY: linked_list.rs =====
 #![allow(unused_imports)]
 
 use verus_state_machines_macros::*;
@@ -10668,23 +9805,6 @@ use core::intrinsics::unlikely;
 
 verus!{
 
-// Originally I wanted to do a linked list here in the proper Rust-idiomatic
-// way, something like:
-//
-//    struct LL { next: Option<Box<LL>> }
-//
-// However, there were a couple of problems:
-//
-//  1. We need to pad each node out to the block size, which isn't statically fixed.
-//     This problem isn't too hard to work around though, we just need to make our
-//     own Box-like type that manages the size of the allocation.
-//
-//  2. Because of the way the thread-safe atomic linked list works, we need to
-//     split the 'ownership' from the 'physical pointer', so we can write the pointer
-//     into a node without the ownership.
-//
-// Problem (2) seems more annoying to work around. At any rate, I've decided to just
-// give up on the recursive datatype and do a flat list of pointers and pointer permissions.
 
 #[repr(C)]
 #[derive(Copy)]
@@ -10710,9 +9830,9 @@ pub proof fn size_of_node()
 
 pub ghost struct LLData {
     ghost fixed_page: bool,
-    ghost block_size: nat,   // only used if fixed_page=true
-    ghost page_id: PageId,   // only used if fixed_page=true
-    ghost heap_id: Option<HeapId>, // if set, then all blocks must have this HeapId
+    ghost block_size: nat,   
+    ghost page_id: PageId,   
+    ghost heap_id: Option<HeapId>, 
 
     ghost instance: Mim::Instance,
     ghost len: nat,
@@ -10723,7 +9843,6 @@ pub struct LL {
 
     data: Ghost<LLData>,
 
-    // first to be popped off goes at the end
     perms: Tracked<Map<nat, (PointsTo<Node>, PointsToRaw, Mim::block, IsExposed)>>,
 }
 
@@ -10749,25 +9868,21 @@ impl LL {
             self.perms@.dom().contains(i) && {
                   let (perm, padding, block_token, is_exposed) = self.perms@.index(i);
 
-                  // Each node points to the next node
                   perm.is_init()
                   && perm.value().ptr.addr() == next_ptr.addr()
 
-                  // The PointsToRaw makes up the rest of the block size allocation
                   && block_token.key().block_size - size_of::<Node>() >= 0
                   && padding.is_range(perm.ptr().addr() + size_of::<Node>(),
                       block_token.key().block_size - size_of::<Node>())
                   && padding.provenance() == perm.ptr()@.provenance
                   && is_exposed.provenance() == padding.provenance()
 
-                  // block_token is correct
                   && block_token.instance_id() == self.data@.instance.id()
                   && is_block_ptr(perm.ptr() as *mut u8, block_token.key())
 
                   && (self.data@.fixed_page ==> (
                       block_token.key().page_id == self.data@.page_id
                       && block_token.key().block_size == self.data@.block_size
-                      //&& padding.provenance() == self.data@.page_id.segment_id.provenance
                   ))
 
                   && (match self.data@.heap_id {
@@ -10812,18 +9927,12 @@ impl LL {
         self.first
     }
 
-    /*spec fn is_valid_page_address(&self, ptr: int) -> bool {
-        // We need this to save a ptr at this address
-        // this is probably redundant since we also have is_block_ptr
-        ptr as int % size_of::<Node>() as int == 0
-    }*/
 
     #[inline(always)]
     pub fn insert_block(&mut self, ptr: *mut u8, Tracked(points_to_raw): Tracked<PointsToRaw>, Tracked(block_token): Tracked<Mim::block>)
         requires old(self).wf(),
             points_to_raw.is_range(ptr as int, block_token.key().block_size as int),
             points_to_raw.provenance() == ptr@.provenance,
-            //old(self).is_valid_page_address(points_to_raw.ptr()),
             block_token.instance_id() == old(self).instance().id(),
             is_block_ptr(ptr, block_token.key()),
             old(self).fixed_page() ==> (
@@ -10842,7 +9951,7 @@ impl LL {
     {
         let tracked mut mem1;
         let tracked mut mem2;
-        vstd::layout::layout_for_type_is_valid::<Node>(); // $line_count$Proof$
+        vstd::layout::layout_for_type_is_valid::<Node>(); 
         proof {
             block_size_ge_word();
             block_ptr_aligned_to_word();
@@ -10878,27 +9987,10 @@ impl LL {
                     let j = (i - 1) as nat;
                     assert(old(self).valid_node(j, old(self).next_ptr(j)));
                 }
-                /*if i < len {
-                    if i != 0 {
-                        assert(self.perms@.index((i - 1) as nat)
-                          == old(self).perms@.index((i - 1) as nat));
-                    }
-                    assert(old(self).next_ptr(i) == self.next_ptr(i));
-                    if i + 1 == len {
-                        assert(self.valid_node(i, self.next_ptr(i)));
-                    } else {
-                        assert(self.valid_node(i, self.next_ptr(i)));
-                    }
-                }*/
             }
         }
     }
 
-    // This is like insert_block but it only does the operation "ghostily".
-    // This is used by the ThreadLL
-    //
-    // It requires the pointer writer has already been done, so it's just arranging
-    // ghost data in a ghost LL.
 
     #[verifier::external_body]
     pub proof fn ghost_insert_block(
@@ -10913,12 +10005,10 @@ impl LL {
             block_token.instance_id() == old(self_).instance().id(),
             is_block_ptr(ptr as *mut u8, block_token.key()),
 
-            // Require that the pointer has already been written:
             points_to_ptr.ptr() == ptr,
             points_to_ptr.is_init(),
             points_to_ptr.value().ptr.addr() == old(self_).ptr().addr(),
 
-            // Require the padding to be correct
             points_to_raw.is_range(
                 ptr as int + size_of::<Node>(),
                 block_token.key().block_size - size_of::<Node>()),
@@ -11005,8 +10095,6 @@ impl LL {
         let tracked (mut points_to_node, points_to_raw, block, is_exposed) = self.perms.borrow_mut().tracked_remove((self.data@.len - 1) as nat);
 
         let ptr: *mut Node = with_exposed_provenance(self.first.addr(), Tracked(is_exposed));
-        //assert(ptr.addr() == points_to_node.ptr().addr());
-        //assert(ptr@.provenance == points_to_node.ptr()@.provenance);
         let node = ptr_mut_read(ptr, Tracked(&mut points_to_node));
         self.first = node.ptr;
 
@@ -11027,14 +10115,6 @@ impl LL {
             assert(old(self).valid_node(j, old(self).next_ptr(j)));
             assert(old(self).valid_node((j-1) as nat, old(self).next_ptr((j-1) as nat)));
             assert((forall |i: nat| self.perms@.dom().contains(i) ==> 0 <= i < self.data@.len));
-            /*if j > 0 {
-                //assert(old(self).perms@.dom().contains(j - 1));
-                //assert(self.perms@.dom().contains(j - 1));
-                assert(self.next_ptr(j) == old(self).next_ptr(j));
-                assert(self.first.id() == self.next_ptr(self.data@.len));
-            } else {
-                assert(self.first.id() == self.next_ptr(self.data@.len));
-            }*/
             assert(self.wf());
         }
 
@@ -11043,7 +10123,6 @@ impl LL {
         return (ptru, Tracked(points_to_raw), Tracked(block))
     }
 
-    // helper for clients using ghost_insert_block
 
     #[inline(always)]
     pub fn block_write_ptr(ptr: *mut Node, Tracked(perm): Tracked<PointsToRaw>, next: *mut Node)
@@ -11065,7 +10144,7 @@ impl LL {
     {
         let tracked (points_to, rest) = perm.split(set_int_range(ptr as int, ptr as int + size_of::<Node>()));
 
-        vstd::layout::layout_for_type_is_valid::<Node>(); // $line_count$Proof$
+        vstd::layout::layout_for_type_is_valid::<Node>(); 
         let tracked mut points_to_node = points_to.into_typed::<Node>(ptr.addr());
         ptr_mut_write(ptr, Tracked(&mut points_to_node), Node { ptr: next });
         (Tracked(points_to_node), Tracked(rest))
@@ -11133,9 +10212,6 @@ impl LL {
     }
 
 
-    // Traverse `other` to find the tail, append `self`,
-    // and leave the resulting list in `self`.
-    // Returns the # of entries in `other`
 
     #[inline(always)]
     pub fn append(&mut self, other: &mut LL) -> (other_len: u32)
@@ -11149,7 +10225,6 @@ impl LL {
             old(other).heap_id().is_none(),
             old(other).len() < u32::MAX,
         ensures
-            // Book-keeping junk:
             final(self).wf() && final(other).wf(),
             final(self).page_id() == old(self).page_id(),
             final(self).block_size() == old(self).block_size(),
@@ -11162,7 +10237,6 @@ impl LL {
             final(other).instance() == old(other).instance(),
             final(other).heap_id() == old(other).heap_id(),
 
-            // What you're here for:
             final(self).len() == old(self).len() + old(other).len(),
             final(other).len() == 0,
 
@@ -11273,23 +10347,6 @@ impl LL {
         return count;
     }
 
-    // don't need this?
-    /*// Despite being 'exec', this function is a no-op
-    #[inline(always)]
-    pub fn mark_each_block_allocated(&mut self, tracked thread_token: &mut ThreadToken)
-        requires
-            self.wf(),
-            self.fixed_page(),
-            self.page_id() == old(self).page_id(),
-        ensures
-            // Book-keeping junk:
-            final(self).wf()
-            final(self).page_id() == old(self).page_id(),
-            final(self).block_size() == old(self).block_size(),
-            final(self).fixed_page() == old(self).fixed_page(),
-            final(self).instance() == old(self).instance(),
-    {
-    } */
 
     #[inline(always)]
     pub fn prepend_contiguous_blocks(
@@ -11298,8 +10355,8 @@ impl LL {
         last: *mut u8,
         bsize: usize,
 
-        Ghost(cap): Ghost<nat>,     // current capacity
-        Ghost(extend): Ghost<nat>,  // spec we're extending to
+        Ghost(cap): Ghost<nat>,     
+        Ghost(extend): Ghost<nat>,  
 
         Tracked(points_to_raw_r): Tracked<&mut PointsToRaw>,
         Tracked(tokens): Tracked<&mut Map<int, Mim::block>>,
@@ -11343,12 +10400,9 @@ impl LL {
 
             final(self).len() == old(self).len() + extend,
 
-            //points_to_raw.ptr() == old(points_to_raw).ptr() + extend * (bsize as int),
-            //points_to_raw@.size == old(points_to_raw)@.size - extend * (bsize as int),
             *final(tokens) == old(tokens).remove_keys(
                 set_int_range(cap as int, cap as int + extend)),
     {
-        // based on mi_page_free_list_extend
 
         let tracked mut points_to_raw = PointsToRaw::empty(start@.provenance);
         let tracked mut new_map: Map<nat, (PointsTo<Node>, PointsToRaw, Mim::block, IsExposed)> = Map::tracked_empty();
@@ -11417,7 +10471,7 @@ impl LL {
 
             let tracked (points_to, rest) = points_to_raw.split(set_int_range(block as int, block as int + bsize as int));
             let tracked (points_to1, points_to2) = points_to.split(set_int_range(block as int, block as int + size_of::<Node>() as int));
-            vstd::layout::layout_for_type_is_valid::<Node>(); // $line_count$Proof$
+            vstd::layout::layout_for_type_is_valid::<Node>(); 
             let tracked mut points_to_node = points_to1.into_typed::<Node>(block);
 
             let block_ptr = next.with_addr(block);
@@ -11435,43 +10489,6 @@ impl LL {
                     (points_to_node, points_to2, block, exposed));
                 i = i + 1;
 
-                /*assert forall
-                      #![trigger new_map.dom().contains(j)]
-                      #![trigger new_map.index(j)]
-                      |j|
-                    (self.data@.len + extend - i <= j < self.data@.len + extend)
-                        implies ({ let k = self.data@.len + extend - 1 - j; {
-                          &&& new_map[j].2 == tokens_snap[cap + k]
-                          &&& new_map[j].0.ptr() == start.id() + k * bsize
-                          &&& new_map[j].0@.value.is_some()
-                          &&& new_map[j].0@.value.unwrap().ptr.id() == start.id() + (k+1) * bsize
-                          &&& new_map[j].1.ptr() == start.id() + k * bsize + size_of::<Node>()
-                          &&& new_map[j].1@.size == bsize - size_of::<Node>()
-                    }})
-                by
-                {
-                    let k = self.data@.len + extend - 1 - j;
-                    if j == self.data@.len + extend - i {
-                        assert(j == the_key);
-                        assert(i-1 == k);
-                        assert(new_map[j].2 == block);
-                        assert(new_map[j].2 == old_tokens[cap + i - 1]);
-                        assert(old_tokens[cap + i - 1] == tokens_snap[cap + i - 1]);
-                        assert(new_map[j].2 == tokens_snap[cap + k]);
-                        assert(new_map[j].0.ptr() == start.id() + k * bsize);
-                        assert(new_map[j].0@.value.is_some());
-                        assert(new_map[j].0@.value.unwrap().ptr.id() == start.id() + (k+1) * bsize);
-                        assert(new_map[j].1.ptr() == start.id() + k * bsize + size_of::<Node>());
-                        assert(new_map[j].1@.size == bsize - size_of::<Node>());
-                    } else {
-                        assert(new_map[j].2 == tokens_snap[cap + k]);
-                        assert(new_map[j].0.ptr() == start.id() + k * bsize);
-                        assert(new_map[j].0@.value.is_some());
-                        assert(new_map[j].0@.value.unwrap().ptr.id() == start.id() + (k+1) * bsize);
-                        assert(new_map[j].1.ptr() == start.id() + k * bsize + size_of::<Node>());
-                        assert(new_map[j].1@.size == bsize - size_of::<Node>());
-                    }
-                }*/
             }
         }
 
@@ -11493,7 +10510,7 @@ impl LL {
         let tracked (points_to, rest) = points_to_raw.split(set_int_range(block as int, block as int + bsize as int));
         let tracked (points_to1, points_to2) = points_to.split(set_int_range(block as int, block as int + size_of::<Node>() as int));
         proof { points_to_raw = rest; }
-        vstd::layout::layout_for_type_is_valid::<Node>(); // $line_count$Proof$
+        vstd::layout::layout_for_type_is_valid::<Node>(); 
         let tracked mut points_to_node = points_to1.into_typed::<Node>(block);
 
         let block_ptr = start.with_addr(block) as *mut Node;
@@ -11530,18 +10547,8 @@ impl LL {
                     }
                     assert(old(self).next_ptr(j) == self.next_ptr(j));
 
-                    /*if self.fixed_page() {
-                        assert(old(self).fixed_page());
-                        assert(self.data@.page_id == old(self).data@.page_id);
 
-                        assert(block_token == old(self).perms@.index(j).2);
-                        assert(0 <= j < old(self).data@.len);
-                        assert(old(self).perms@.dom().contains(j));
-                        assert(old(self).data@.page_id ==
-                            old(self).perms@.index(j).2@.key.page_id);
 
-                        assert(block_token.key().page_id == self.data@.page_id);
-                    }*/
 
                     assert(self.valid_node(j, self.next_ptr(j)));
                 } else if j < self.data@.len {
@@ -11554,18 +10561,8 @@ impl LL {
                         crate::layout::get_block_start_defn(block_id);
                         let k = old_len + extend - 1 - j;
                         crate::layout::block_start_at_diff(block_id.page_id, bsize as nat, cap as nat, (cap + k) as nat);
-                        //assert(perm.ptr() == block_start(old(tokens).index(k)@.key));
-                        //assert(is_block_ptr(
-                            //block_start(old(tokens).index(i)@.key),
-                            //old(tokens).index(i)@.key)
-                        //)
 
-                        //assert(block_token.key().page_id == self.page_id());
 
-                        //let ptr = perm.ptr() as *mut u8;
-                        //let block_id = block_token.key();
-                        //assert(ptr@.provenance == block_id.page_id.segment_id.provenance);
-                        //assert(is_block_ptr1(ptr as int, block_id));
                     }
 
                     if j == old_len {
@@ -11580,7 +10577,6 @@ impl LL {
                         assert(perm.value().ptr.addr() == next_ptr.addr());
                     }
 
-                    //assert(padding@.size + size_of::<Node>() == block_token.key().block_size);
                     assert(self.valid_node(j, self.next_ptr(j)));
                 }
             }
@@ -11619,25 +10615,11 @@ impl LL {
             tracked_swap(&mut m, self.perms.borrow_mut());
 
             assert forall |i: nat| (#[trigger] m.dom().contains(i) <==> 0 <= i < len)
-              /*&& (m.dom().contains(i) ==> ({
-                  let (perm, padding, block_token) = m[i];
-                    perm@.value.is_some()
-                    && block_token.key().block_size - size_of::<Node>() >= 0
-                    && padding.is_range(perm.ptr() + size_of::<Node>(),
-                        block_token.key().block_size - size_of::<Node>())
-                    && block_token@.instance == instance
-                    && is_block_ptr(perm.ptr(), block_token.key())
-                    && block_token.key().page_id == page_id
-                    && block_token.key().block_size == block_size
-              }))*/
             by {
                 if 0 <= i < len {
                     assert(old(self).valid_node(i, old(self).next_ptr(i)));
                     assert(m.dom().contains(i));
                 }
-                /*if m.dom().contains(i) {
-                    assert(0 <= i < len);
-                }*/
             }
 
             map = Self::convene_pt_map(m, len, instance, page_id, block_size);
@@ -11918,8 +10900,6 @@ pub proof fn bound_on_2_lists(
         old(ll1).instance() == instance,
         old(ll2).instance() == instance,
         old(ll1).page_id() == old(ll2).page_id(),
-        // shouldn't really be necessary, but I'm reusing llgstr_merge
-        // which requires it
         old(ll1).block_size() == old(ll2).block_size(),
         thread_token.value().pages.dom().contains(old(ll1).page_id()),
     ensures *final(ll1) == *old(ll1), *final(ll2) == *old(ll2),
@@ -11961,14 +10941,12 @@ struct_with_invariants!{
             with (instance, heap_id)
             is (v: *mut Node, ll: Tracked<LL>)
         {
-            // Valid linked list
 
             ll.wf()
             && ll.instance() == instance
             && !ll.fixed_page()
             && ll.heap_id() == Some(heap_id@)
 
-            // The usize value stores the pointer and the delay state
 
             && v == ll.ptr()
         }
@@ -11990,9 +10968,6 @@ impl ThreadLLSimple {
         }
     }
 
-    // Oughta have a similar spec as LL:insert_block except that
-    //  (i) self argument is a & reference so we don't need to talk about how it updates
-    //  (ii) is we don't expose the length
 
     #[inline(always)]
     pub fn atomic_insert_block(&self, ptr: *mut Node,
@@ -12151,12 +11126,7 @@ struct_with_invariants!{
     pub struct ThreadLLWithDelayBits {
         pub instance: Tracked<Mim::Instance>,
 
-        // In order to make an 'atomic' LL, we store a ghost LL with the atomic usize.
-        // Note that the only physical field in an LL is the pointer, so we can obtain
-        // a real LL by combining the 'ghost LL' with the pointer value.
 
-        // The pointer value is stored in the usize of the atomic.
-        // We also use the lower 2 bits of the usize to store the delay state.
 
         pub atomic: AtomicPtr<Node, _, (StuffAgree::y, Option<(Mim::delay, LL)>), _>,
 
@@ -12184,7 +11154,6 @@ struct_with_invariants!{
                     let page_id = stuff.page_id;
                     let block_size = stuff.block_size;
 
-                    // Valid linked list
 
                     ll.wf()
                     && ll.block_size() == block_size
@@ -12193,25 +11162,15 @@ struct_with_invariants!{
                     && ll.fixed_page()
                     && ll.heap_id().is_none()
 
-                    // Valid delay_token
 
                     && delay_token.instance_id() == instance@.id()
                     && delay_token.key() == page_id
 
-                    // The usize value stores the pointer and the delay state
 
                     && v as int == ll.ptr() as int + delay_token.value().to_int()
 
-                    // Verus should be smart enough to figure out the
-                    // encoding is injective from this:
                     && ll.ptr() as int % 4 == 0
 
-                    //&& (v as int != 0 ==> ({
-                    //  &&& ll.ptr()@.provenance == page_id.segment_id.provenance
-                    //}))
-                    //&& (v as int == 0 ==> ({
-                    //  &&& ll.ptr() == core::ptr::null_mut::<Node>()
-                    //}))
                 }
                 _ => false,
             })
@@ -12286,35 +11245,12 @@ impl ThreadLLWithDelayBits {
                 self.emp_inst.borrow().set(Some(bspi), self.emp.borrow_mut(), &mut y);
                 g = (y, Some((delay_token, new_ll)));
 
-                    /*let instance = self.instance;
-                    let emp = self.emp;
-                    let emp_inst = self.emp_inst;
-                    assert(g.1.is_some());
-                    assert(y@.value.is_some());
-                    assert(g.0@.instance == self.emp_inst@);
-                    assert(g.0@.instance == emp_inst@);
-                    let (delay_token, ll) = g.1.unwrap();
-                    let stuff = y@.value.unwrap();
-                    let page_id = stuff.page_id;
-                    let block_size = stuff.block_size;
 
-                    // Valid linked list
 
-                    assert(ll.wf());
-                    assert(ll.block_size() == block_size);
-                    assert(ll.instance() == instance@);
-                    assert(ll.page_id() == page_id);
-                    assert(ll.fixed_page());
 
-                    // Valid delay_token
 
-                    assert(delay_token@.instance == instance);
-                    assert(delay_token@.key == page_id);
 
-                    // The usize value stores the pointer and the delay state
 
-                    assert(v as int == ll.ptr() as int + delay_token@.value.to_int());
-                    assert(ll.ptr().id() % 4 == 0);*/
 
             }
         );
@@ -12345,39 +11281,10 @@ impl ThreadLLWithDelayBits {
         Tracked(g_opt.tracked_unwrap().0)
     }
 
-    /*#[inline(always)]
-    pub fn exit_delaying_state(
-        &self,
-        Tracked(delay_actor_token): Tracked<Mim::delay_actor>,
-    )
-        requires self.wf(),
-            !self.is_empty(),
-            delay_actor_token@.key == self.page_id,
-            delay_actor_token@.instance == self.instance,
-    {
-        // DelayState::Freeing -> DelayState::NoDelayedFree
 
-        // Note: the original implementation in _mi_free_block_mt
-        // uses a compare-and-swap loop. But we can just use fetch_xor so I thought
-        // I'd simplify it
 
-        atomic_with_ghost!(
-            &self.atomic => fetch_xor(3);
-            update v_old -> v_new;
-            ghost g => {
-                let tracked (mut delay_token, ll) = g;
-                delay_token = self.instance.borrow().delay_leave_freeing(self.page_id@,
-                    delay_token, delay_actor_token);
 
-                // TODO right now this only works for fixed-width architecture
-                //verus_proof_expr!{ { // TODO fix atomic_with_ghost
-                //    assert(v_old % 4 == 1usize ==> (v_old ^ 3) == add(v_old, 1)) by (bit_vector);
-                //} }
 
-                g = (delay_token, ll);
-            }
-        );
-    }*/
 
     #[inline(always)]
     pub fn check_is_good(
@@ -12427,7 +11334,7 @@ impl ThreadLLWithDelayBits {
             });
 
             let old_delay = masked_ptr_delay_get_delay(tfree, Ghost(the_delay), Ghost(the_ptr));
-            if unlikely(old_delay == 1) { // Freeing
+            if unlikely(old_delay == 1) { 
                 atomic_yield();
             } else {
                 return Tracked(tok0);
@@ -12442,7 +11349,7 @@ impl ThreadLLWithDelayBits {
         override_never: bool,
     ) -> (b: bool)
         requires self.wf(), !self.is_empty(),
-            !override_never && delay == 0, // UseDelayedFree
+            !override_never && delay == 0, 
     {
         let mut yield_count = 0;
         loop
@@ -12458,7 +11365,7 @@ impl ThreadLLWithDelayBits {
 
             let tfreex = masked_ptr_delay_set_delay(tfree, delay, Ghost(the_delay), Ghost(the_ptr));
             let old_delay = masked_ptr_delay_get_delay(tfree, Ghost(the_delay), Ghost(the_ptr));
-            if unlikely(old_delay == 1) { // Freeing
+            if unlikely(old_delay == 1) { 
                 if yield_count >= 4 {
                     return false;
                 }
@@ -12493,7 +11400,6 @@ impl ThreadLLWithDelayBits {
         }
     }
 
-    // Clears the list (but leaves the 'delay' bit intact)
     #[inline(always)]
     pub fn take(&self) -> (ll: LL)
         requires self.wf(), !self.is_empty(),
@@ -12535,9 +11441,6 @@ impl ThreadLLWithDelayBits {
                 assert(add(x, y) & !3 == x) by(bit_vector)
                     requires x % 4 == 0usize, 0usize <= y < 4usize;
 
-                //assert(new_v@.provenance == ll.ptr()@.provenance);
-                //assert((new_ll.ptr() as int != 0 ==> new_v@.provenance == new_ll.ptr()@.provenance));
-                //assert(new_v as int == new_ll.ptr() as int + delay@.value.to_int());
             }
         );
         let ret_ll = LL {
@@ -12642,69 +11545,15 @@ pub fn masked_ptr_delay_set_delay(v: *mut Node, new_delay: usize,
     v.with_addr((v.addr() & !3) | new_delay)
 }
 
-/*
-#[inline(always)]
-fn free_delayed_block(ll: &mut LL, Tracked(local): Tracked<&mut Local>) -> (b: bool)
-    requires old(local).wf(), old(ll).wf(), old(ll).len() != 0,
-        old(ll).instance() == old(local).instance,
-    ensures
-        local.wf(),
-        common_preserves(*old(local), *local),
-        ll.instance() == old(ll).instance(),
-{
-    let ghost i = (ll.data@.len - 1) as nat;
-    assert(ll.valid_node(i, ll.next_ptr(i)));
-    let tracked (points_to_node, points_to_raw, block) = self.perms.borrow_mut().tracked_remove(i);
-    let node = *ptr.borrow(Tracked(&points_to_node));
 
-    let ghost block_id = block@.key;
 
-    assert(crate::dealloc_token::valid_block_token(block, local.instance));
 
-    let ptr = PPtr::<u8>::from_usize(ll.first.to_usize());
-    let segment = crate::layout::calculate_segment_ptr_from_block(ptr, Ghost(block_id));
 
-    let slice_page_ptr = crate::layout::calculate_slice_page_ptr_from_block(ptr, segment, Ghost(block_id));
-    let tracked page_slice_shared_access: &PageSharedAccess =
-        local.instance.alloc_guards_page_slice_shared_access(
-            block_id,
-            &block,
-        );
-    let slice_page: &Page = slice_page_ptr.borrow(
-        Tracked(&page_slice_shared_access.points_to));
-    let offset = slice_page.offset;
-    let page_ptr = crate::layout::calculate_page_ptr_subtract_offset(
-        slice_page_ptr,
-        offset,
-        Ghost(block_id.page_id_for_slice()),
-        Ghost(block_id.page_id),
-    );
-    assert(crate::layout::is_page_ptr(page_ptr.id(), block_id.page_id));
 
-    let page = PageId { page_ptr: page_ptr, page_id: Ghost(block_id.page_id) };
-    if !crate::page::page_try_use_delayed_free(page, 0, false) {
-        proof {
-            self.perms.borrow_mut().tracked_insert((points_to_node, points_to_raw, block));
-        }
-        return false;
-    }
 
-    crate::alloc_generic::page_free_collect(page, false, Tracked(&mut *local));
 
-    proof { points_to_node.leak_contents(); }
-    let tracked points_to_raw = points_to_node.into_raw().join(points_to_raw);
-    let tracked dealloc = MimDeallocInner {
-        mim_instance: local.instance,
-        mim_block: block,
-        ptr: ptr.id(),
-    };
 
-    crate::free::free_block(page, true, ptr,
-        Tracked(points_to_raw), Tracked(dealloc), Tracked(&mut *local));
 
-    return true;
-}
-*/
 
 #[inline(always)]
 fn atomic_yield() {
@@ -12712,10 +11561,8 @@ fn atomic_yield() {
 }
 
 }
-// ===== END INLINED DEPENDENCY: linked_list.rs =====
 }
 mod bitmap {
-// ===== BEGIN INLINED DEPENDENCY: bitmap.rs =====
 #![allow(unused_imports)]
 
 use verus_state_machines_macros::*;
@@ -12726,313 +11573,50 @@ use vstd::set_lib::*;
 
 verus!{
 
-/*
-
-type G = crate::os_mem::MemChunk;
-type K = int;
-
-pub open spec fn entry_inv(k: K, user_idx: int, g: G) -> bool {
-    g.wf()
-      && g.os_exact_range(
-            k + user_idx * crate::arena::ARENA_BLOCK_SIZE,
-            crate::arena::ARENA_BLOCK_SIZE as int
-        )
-      && g.has_pointsto_for_all_read_write()
-}
-
-pub open spec fn map_has_range(m: Map<int, G>, start: int, end: int, k: K) -> bool {
-    (forall |i| start <= i < end ==> m.dom().contains(i))
-    && (forall |i| start <= i < end ==> entry_inv(k, i, #[trigger] m.index(i)))
-}
-
-// field_idx = index into the data array (0 <= field_idx < data.len())
-// bit_idx = index of a bit within a word (0 <= bit_idx < usize::BITS)
-// user_idx = index of object from user perspective
-//      (user_idx = field_idx * usize::BITS + bit_idx)
-
-struct_with_invariants!{
-    pub struct Bitmap {
-        data: Vec<AtomicUsize<_, Map<int, G>, _>>,
-        ghost k: K,
-    }
-
-    pub closed spec fn wf(&self) -> bool {
-        predicate {
-            self.data.len() < 0x1000000
-        }
-
-        invariant
-            on data
-            with (k)
-            forall |field_idx: int|
-            where (0 <= field_idx < self.data@.len())
-            specifically (self.data@.index(field_idx))
-            is (v: usize, gmap: Map<int, G>)
-        {
-            forall |bitidx: int|
-                ! #[trigger] has_bit(v, bitidx)
-                ==> gmap.dom().contains(field_idx * usize::BITS + bitidx)
-                    && entry_inv(k,
-                        field_idx * usize::BITS + bitidx,
-                        gmap.index(field_idx * usize::BITS + bitidx))
-        }
-    }
-}
-
-pub closed spec fn has_bit(v: usize, i: int) -> bool {
-    (0 <= i < usize::BITS && ((v >> (i as usize)) & 1usize) != 0)
-}
-
-impl Bitmap {
-    pub closed spec fn len(&self) -> nat {
-        self.data@.len()
-    }
-
-    pub closed spec fn constant(&self) -> int {
-        self.k
-    }
-
-    pub fn bitmap_try_find_from_claim_across(&self, start_field_idx: usize, count: usize)
-        -> (res: (bool, usize, Tracked<Map<int, G>>))
-    requires
-        self.wf(),
-        0 <= start_field_idx < self.len(),
-        ensures ({
-            let (success, user_idx, tr_map) = res;
-            success ==> {
-                &&& map_has_range(tr_map@, user_idx as int, user_idx + count, self.constant())
-            }
-        }),
-    {
-        if count == 1 {
-            return self.bitmap_try_find_from_claim(start_field_idx, count);
-        }
-
-        assume(false); loop { }
-    }
-
-    fn bitmap_try_find_from_claim(&self, start_field_idx: usize, count: usize)
-        -> (res: (bool, usize, Tracked<Map<int, G>>))
-    requires
-        self.wf(),
-        0 <= start_field_idx < self.data@.len(),
-        1 <= count < usize::BITS,
-    ensures ({
-        let (success, user_idx, tr_map) = res;
-        success ==> {
-            &&& map_has_range(tr_map@, user_idx as int, user_idx + count, self.constant())
-        }
-    }),
-    {
-        let mut idx = start_field_idx;
-        let mut visited = 0;
-        let bitmap_fields = self.data.len();
-        while visited < bitmap_fields
-            invariant
-                self.wf(),
-                0 <= start_field_idx < self.data@.len(),
-                1 <= count < usize::BITS,
-                visited <= bitmap_fields,
-                bitmap_fields == self.data@.len(),
-        {
-            if idx >= bitmap_fields {
-                idx = 0;
-            }
-
-            let (success, user_idx, tr_map) =
-                self.bitmap_try_find_claim_field(idx, count);
-            if success {
-                return (true, user_idx, tr_map);
-            }
-
-            visited = visited + 1;
-            idx = idx + 1;
-        }
-
-        return (false, 0, Tracked(Map::tracked_empty()));
-    }
-
-    fn bitmap_try_find_claim_field(&self, field_idx: usize, count: usize)
-        -> (res: (bool, usize, Tracked<Map<int, G>>))
-    requires
-        self.wf(),
-        0 <= field_idx < self.data@.len(),
-        1 <= count < usize::BITS,
-    ensures ({
-        let (success, user_idx, tr_map) = res;
-        success ==> {
-            &&& usize::BITS * field_idx <= user_idx
-            &&& user_idx + count <= usize::BITS * (field_idx + 1)
-            &&& map_has_range(tr_map@, user_idx as int, user_idx + count, self.constant())
-        }
-    }),
-    {
-        let atomic = &self.data[field_idx];
-
-        let mut map = atomic.load();
-        if map == !(0usize) {
-            return (false, 0, Tracked(Map::tracked_empty()));
-        }
-
-        assert((1usize << count) >= 1usize) by(bit_vector)
-            requires count < 64usize { }
-
-        let mask = (1usize << count) - 1;
-        let bitidx_max = usize::BITS as usize - count;
-
-        let mut bitidx = crate::bin_sizes::trailing_zeros(map) as usize;
-        let mut m = mask << bitidx;
-
-        while bitidx <= bitidx_max
-            invariant
-                self.wf(),
-                atomic == self.data@.index(field_idx as int),
-                0 <= field_idx < self.data@.len(),
-                1 <= count <= usize::BITS,
-                bitidx_max == usize::BITS - count,
-                m == mask << bitidx,
-                mask == (1usize << count) - 1,
-        {
-            let mapm = map & m;
-            if mapm == 0 {
-                let tracked mut res_map: Map<int, G>;
-                proof { res_map = Map::tracked_empty(); }
-
-                let newmap = map | m;
-                let res = my_atomic_with_ghost!(
-                    atomic => compare_exchange_weak(map, newmap);
-                    update old_v -> new_v;
-                    returning res;
-                    ghost gmap =>
-                {
-                    if res.is_Ok() {
-                        let range = set_int_range(
-                            usize::BITS * field_idx + bitidx,
-                            usize::BITS * field_idx + bitidx + count);
-
-                        verus_proof_expr!({
-                        assert forall |i| range.contains(i) implies #[trigger] gmap.dom().contains(i)
-                        by {
-                            assume(!has_bit(old_v, i - usize::BITS * field_idx));
-                        }
-                        });
-
-                        res_map = gmap.tracked_remove_keys(range);
-
-                        assume(bitidx + count < usize::BITS);
-
-                        let bit = bitidx;
-
-                        verus_proof_expr!({
-                        assert forall |bitidx0: int|
-                            ! #[trigger] has_bit(new_v, bitidx0)
-                            implies gmap.dom().contains(field_idx * usize::BITS + bitidx0)
-                                && entry_inv(self.k,
-                                    field_idx * usize::BITS + bitidx0,
-                                    gmap.index(field_idx * usize::BITS + bitidx0))
-                        by {
-                            assert(m == sub(1usize << count,  1) << bitidx);
-                            assert(new_v == old_v | m);
-                            assert(old_v & m == 0);
-
-                            if bitidx <= bitidx0 < bitidx + count {
-                                let bi = bitidx0 as usize;
-
-                                assert(((new_v >> bi) & 1usize) != 0usize)
-                                  by(bit_vector)
-                                requires
-                                  bitidx <= bi < add(bitidx, count) < 64usize,
-                                  new_v == old_v | m,
-                                  m == sub(1usize << count, 1) << bitidx,
-                                  old_v & m == 0usize,
-                                  1usize <= count <= (64usize)
-                                { }
-
-                                assert(false);
-                            } else {
-                                if bitidx0 >= usize::BITS || bitidx0 < 0 {
-                                    assert(!has_bit(old_v, bitidx0));
-                                } else {
-                                    let bi = bitidx0 as usize;
-                                    assert(add(bitidx, count) == bitidx + count);
-
-                                    if bit > bi {
-                                        assert(((new_v >> bi) & 1usize) == ((old_v >> bi) & 1usize))
-                                          by(bit_vector)
-                                        requires
-                                          bitidx > bi,
-                                          add(bitidx, count) <= 64usize,
-                                          bitidx <= 64usize,
-                                          count <= 64usize,
-                                          new_v == old_v | (sub(1usize << count, 1) << bitidx),
-                                          1usize <= count <= (64usize)
-                                        { }
-                                    } else {
-                                        assert(((new_v >> bi) & 1usize) == ((old_v >> bi) & 1usize))
-                                          by(bit_vector)
-                                        requires
-                                          bi >= add(bitidx, count),
-                                          add(bitidx, count) <= 64usize,
-                                          bitidx <= 64usize,
-                                          count <= 64usize,
-                                          new_v == old_v | (sub(1usize << count, 1) << bitidx),
-                                          1usize <= count <= (64usize)
-                                        { }
-                                    }
-                                    assert(!has_bit(old_v, bitidx0));
-                                }
-                            }
-                        }
-                        });
-                    }
-                });
-
-                match res {
-                    Result::Ok(_) => {
-                        let user_idx = usize::BITS as usize * field_idx + bitidx;
-                        return (true, user_idx, Tracked(res_map));
-                    }
-                    Result::Err(updated_map) => {
-                        map = updated_map;
-                    }
-                }
-            } else {
-                let shift = if count == 1 {
-                    1
-                } else {
-                    let tz = crate::bin_sizes::trailing_zeros(mapm) as usize;
-                    assume(tz + 1 >= bitidx);
-                    tz + 1 - bitidx
-                };
-
-                assert(((mask << bitidx) << shift) == mask << add(bitidx, shift))
-                  by(bit_vector)
-                    requires
-                        bitidx <= 64usize,
-                        shift <= 64usize,
-                        add(bitidx, shift) <= 64usize,
-                    { }
-
-                bitidx = bitidx + shift;
-                m = m << shift;
-
-            }
-        }
-
-        return (false, 0, Tracked(Map::tracked_empty()));
-    }
 
 
-    //pub bitmap_try_find_claim_field_across(&self, idx: usize,
-}
 
-*/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 }
-// ===== END INLINED DEPENDENCY: bitmap.rs =====
 }
 mod commit_mask {
-// ===== BEGIN INLINED DEPENDENCY: commit_mask.rs =====
 use vstd::prelude::*;
 use crate::config::*;
 use crate::tokens::*;
@@ -13057,7 +11641,6 @@ proof fn lemma_map_distribute_auto<S,T>()
     unimplemented!()
 }
 
-// used for triggering
 spec fn mod64(x: usize) -> usize { x % 64 }
 spec fn div64(x: usize) -> usize { x / 64 }
 
@@ -13149,8 +11732,6 @@ proof fn lemma_obtain_bit_index_1(a: usize) -> (b: usize)
     unimplemented!()
 }
 
-// I don't think there's a good reason that some of these would need `j < 64` and others don't but
-// for some the bitvector assertions without it succeeds and for others it doesn't.
 #[verifier::external_body]
 proof fn lemma_is_bit_set()
     ensures
@@ -13159,17 +11740,15 @@ proof fn lemma_is_bit_set()
         forall|a: usize, b: usize, j: usize| #[trigger] is_bit_set(a | b, j)  <==> is_bit_set(a, j) || is_bit_set(b, j),
         forall|a: usize, b: usize, j: usize| j < 64 ==> (#[trigger] is_bit_set(a & !b, j) <==> is_bit_set(a, j) && !is_bit_set(b, j)),
         forall|a: usize, b: usize, j: usize| #[trigger] is_bit_set(a & b, j)  <==> is_bit_set(a, j) && is_bit_set(b, j),
-        // Implied by previous properties, possibly too aggressive trigger
         forall|a: usize, b: usize, j: usize| j < 64 ==> (a & b == 0) ==> !(#[trigger] is_bit_set(a, j) && #[trigger] is_bit_set(b, j)),
 {
     unimplemented!()
 }
 
 pub struct CommitMask {
-    mask: [usize; 8],     // size = COMMIT_MASK_FIELD_COUNT
+    mask: [usize; 8],     
 }
 
-// {(x, y) | 0 <= x < 8 && y < 64}
 spec fn set_8_64() -> Set<(int, usize)> {
     set_build!{ (x, y): (int, usize) | x: int in 0..8, y: usize in 0..64 }
 }
@@ -13184,8 +11763,6 @@ impl CommitMask {
     #[verifier::external_body]
     proof fn lemma_view(&self)
         ensures
-        // forall|i: int| self@.contains(i) ==> i < 512,
-        // TODO: this isn't currently used but probably will need it (-> check later)
         (forall|i: int| self@.contains(i) ==> {
             let a = i / usize::BITS as int;
             let b = (i % usize::BITS as int) as usize;
@@ -13200,7 +11777,6 @@ impl CommitMask {
 
     #[verifier::opaque]
     pub open spec fn bytes(&self, segment_id: SegmentId) -> Set<int> {
-        // {addr | self@.contains((addr - segment_start(segment_id)) / COMMIT_SIZE)}
         let start = segment_start(segment_id);
         self@.map_flatten_by(
             |i: int| Set::range(start + i * COMMIT_SIZE, start + (i + 1) * COMMIT_SIZE),
@@ -13415,9 +11991,7 @@ impl CommitMask {
                     lemma_is_bit_set();
                     old_self@.lemma_change_one_entry(self, oi as int);
                     assert(self@ == old_self@@.union(Set::range(0, 64). filter(|b: usize| is_bit_set(self.mask[oi as int], b)).map(|b: usize| 64 * oi + b)));
-                    // TODO: a lot of duplicated proof structure here, should be able to
-                    // somehow lift that structure out of the if-else
-                    if oofs > 0 { // first iteration
+                    if oofs > 0 { 
                         assert(Set::range(idx as int, idx + (count - bitcount))
                                =~= Set::range(idx + (count - obc), idx + (count - bitcount)));
                         if obc < 64 {
@@ -13444,14 +12018,14 @@ impl CommitMask {
                             by {
                                 let s1 = Set::range(idx + (count - obc), idx + (count - bitcount));
                                 let s2 = Set::range(0, 64).filter(|b: usize| is_bit_set(self.mask[oi as int], b)).map(|b: usize| 64 * oi + b);
-                                assert forall|x: int| s1.contains(x) implies s2.contains(x) by { // unstable
+                                assert forall|x: int| s1.contains(x) implies s2.contains(x) by { 
                                     assert(Set::range(0, 64).filter(|b: usize| is_bit_set(self.mask[oi as int], b)).contains((x % 64) as usize));
                                 }
                             }
                             assert(Set::range(idx + (count - obc), idx + (count - bitcount))
                                    =~= Set::range(0, 64).filter(|b: usize| is_bit_set(self.mask[oi as int], b)).map(|b: usize| 64 * oi + b));
                         }
-                    } else if obc < 64 { // last iteration
+                    } else if obc < 64 { 
                         assert(Set::range(idx as int, idx + (count - bitcount))
                                =~= Set::range(idx as int, idx + (count - obc))
                                    .union(Set::range(idx + (count - obc), idx + count)));
@@ -13544,12 +12118,8 @@ impl CommitMask {
             next_idx + count <= COMMIT_MASK_BITS
             && (forall |t| next_idx <= t < next_idx + count ==> self@.contains(t))
         }),
-        // This should be true, but isn't strictly needed to prove safety:
-        //forall |t| idx <= t < next_idx ==> !self@.contains(t),
-        // Likewise we could have a condition that `count` is not smaller than necessary
     {
         proof { const_facts(); }
-        // Starting at idx, scan to find the first bit.
 
         let mut i: usize = idx / usize::BITS as usize;
         let mut ofs: usize = idx % usize::BITS as usize;
@@ -13557,8 +12127,6 @@ impl CommitMask {
 
         assert(ofs < 64) by (nonlinear_arith)
             requires ofs == idx % usize::BITS as usize;
-        // Changed loop condition to use 8 rather than COMMIT_MASK_FIELD_COUNT due to
-        // https://github.com/verus-lang/verus/issues/925
         while i < 8
             invariant
                 ofs < 64,
@@ -13593,7 +12161,6 @@ impl CommitMask {
         if i >= COMMIT_MASK_FIELD_COUNT as usize {
             (COMMIT_MASK_BITS as usize, 0)
         } else {
-            // Count 1 bits in this run
             let mut count: usize = 0;
             let next_idx = i * usize::BITS as usize + ofs;
             assert((i * 64 + ofs) % 64 == ofs) by (nonlinear_arith)
@@ -13738,11 +12305,9 @@ pub proof fn set_int_range_commit_size(sid: SegmentId, mask: CommitMask)
 
 
 }
-// ===== END INLINED DEPENDENCY: commit_mask.rs =====
 }
 
 mod arena {
-// ===== BEGIN INLINED DEPENDENCY: arena.rs =====
 #![allow(unused_imports)]
 
 use verus_state_machines_macros::*;
@@ -13790,13 +12355,7 @@ pub fn arena_alloc_aligned(
             && (alignment != 0 ==> (addr as int + align_offset as int) % alignment as int == 0)
         )
     })
-    // commit: bool
-    // large: bool
-    // is_pinned: bool
-    // is_zero: bool
-    // mem_id: usize
 {
-    // TODO arena allocation
     let (p, is_large, Tracked(mem)) = os_alloc_aligned_offset(size, alignment, align_offset, request_commit, allow_large);
     let did_commit = request_commit;
     let is_pinned = is_large;
@@ -13810,100 +12369,20 @@ pub fn arena_alloc_aligned(
     (p, Tracked(mem), did_commit, is_large, is_pinned, is_zero, memid_os)
 }
 
-/*
 
-pub const ARENA_BLOCK_SIZE: usize = SEGMENT_SIZE as usize;
 
-pub struct Arena {
-    start: PPtr<u8>,
-    bitmap: Bitmap,
-}
 
-impl Arena {
-    pub closed spec fn wf(&self) -> bool {
-        &&& self.bitmap.wf()
-        &&& self.bitmap.constant() == self.start.id()
-        &&& self.bitmap.len() >= 1
-    }
 
-/*
-    // TODO mimalloc's actual segment allocation is much more complicated
-    pub fn arena_alloc_segment(&self) -> (res: (PPtr<u8>, Tracked<PointsToRaw>))
-        requires self.wf(),
-        ensures ({
-            let (ptr, points_to_raw) = res;
-            ptr.id() != 0 ==> (
-                points_to_raw@@.pptr == ptr.id()
-                && points_to_raw@@.size == ARENA_BLOCK_SIZE
-            )
-        })
-    {
-        let (success, idx, tr_map) = self.bitmap.bitmap_try_find_from_claim_across(0, 1);
-        if success {
-            let tracked points_to_raw;
-            proof {
-                points_to_raw = points_to_raw_map_to_singleton(
-                    tr_map.get(), self.start.id(), ARENA_BLOCK_SIZE as int,
-                    idx as int, idx as int + 1);
-                points_to_raw.is_in_bounds();
-                assert(idx * ARENA_BLOCK_SIZE >= 0) by(nonlinear_arith)
-                    requires idx >= 0, ARENA_BLOCK_SIZE >= 0 { }
-            }
 
-            let ptr = PPtr::from_usize(
-                self.start.to_usize() + idx * ARENA_BLOCK_SIZE);
 
-            (ptr, Tracked(points_to_raw))
-        } else {
-            (PPtr::from_usize(0), Tracked(PointsToRaw::empty()))
-        }
-    }
-    */
-}
 
-#[verifier::external_body]
-proof fn points_to_raw_map_to_singleton(tracked m: Map<int, PointsToRaw>, start: int, block_size: int, block_idx_start: int, block_idx_end: int) -> (tracked res: PointsToRaw)
-    requires
-        forall |i: int| block_idx_start <= i < block_idx_end ==> m.dom().contains(i),
-        forall |i: int| block_idx_start <= i < block_idx_end ==> m.index(i)@.size == block_size,
-        forall |i: int| block_idx_start <= i < block_idx_end ==> m.index(i)@.pptr == start + i * block_size,
-    ensures
-        res@.pptr == start + block_idx_start * block_size,
-        res@.size == (block_idx_end - block_idx_start) * block_size,
-        block_idx_start * block_size + (block_idx_end - block_idx_start) * block_size
-            == block_idx_end * block_size,
-{
-    unimplemented!()
-}
 
-// TODO this would make a good fn for vstd?
-/*
-#[verifier::external_body]
-proof fn points_to_raw_map_to_singleton(tracked m: Map<int, PointsToRaw>, start: int, block_size: int, n_blocks: int) -> (res: PointsToRaw)
-    requires
-        forall |i: int| 0 <= i < n_blocks ==> m.dom().contains(i),
-        forall |i: int| 0 <= i < n_blocks ==> m.index(i)@.size == block_size,
-        forall |i: int| 0 <= i < n_blocks ==> m.index(i)@.pptr == start + i * block_size,
-    ensures
-        res.pptr == start,
-        res.size == n_blocks * block_size,
-{
-    unimplemented!()
-}
-*/
 
-//fn arena_alloc_aligned(
-//    size: usize,
-//    alignment: usize,
-//    align_offset: usize,
 
-*/
 
 }
-// ===== END INLINED DEPENDENCY: arena.rs =====
 }
 mod alloc_fast {
-// ===== BEGIN INLINED DEPENDENCY: alloc_fast.rs =====
 #![allow(unused_imports)]
 
 use core::intrinsics::{unlikely, likely};
@@ -13926,32 +12405,28 @@ use crate::bin_sizes::*;
 
 verus!{
 
-// Implements the "fast path"
 
-// malloc -> heap_malloc -> heap_malloc_zero -> heap_malloc_zero_ex
-//  -> heap_malloc_small_zero
-//  -> heap_get_free_small_page & page_malloc
 
 #[inline]
-pub fn heap_malloc(heap: HeapPtr, size: usize, Tracked(local): Tracked<&mut Local>)  // $line_count$Trusted$
-    -> (t: (*mut u8, Tracked<PointsToRaw>, Tracked<MimDealloc>)) // $line_count$Trusted$
-    requires // $line_count$Trusted$
-        old(local).wf(), // $line_count$Trusted$
-        heap.wf(), // $line_count$Trusted$
-        heap.is_in(*old(local)), // $line_count$Trusted$
-    ensures // $line_count$Trusted$
-        final(local).wf(), // $line_count$Trusted$
-        final(local).inst() == old(local).inst(), // $line_count$Trusted$
-        forall |heap: HeapPtr| heap.is_in(*old(local)) ==> heap.is_in(*final(local)), // $line_count$Trusted$
-        ({ // $line_count$Trusted$
-            let (ptr, points_to_raw, dealloc) = t; // $line_count$Trusted$
+pub fn heap_malloc(heap: HeapPtr, size: usize, Tracked(local): Tracked<&mut Local>)  
+    -> (t: (*mut u8, Tracked<PointsToRaw>, Tracked<MimDealloc>)) 
+    requires 
+        old(local).wf(), 
+        heap.wf(), 
+        heap.is_in(*old(local)), 
+    ensures 
+        final(local).wf(), 
+        final(local).inst() == old(local).inst(), 
+        forall |heap: HeapPtr| heap.is_in(*old(local)) ==> heap.is_in(*final(local)), 
+        ({ 
+            let (ptr, points_to_raw, dealloc) = t; 
 
-            points_to_raw@.is_range(ptr as int, size as int)  // $line_count$Trusted$
-              && points_to_raw@.provenance() == ptr@.provenance  // $line_count$Trusted$
-              && ptr == dealloc@.ptr()  // $line_count$Trusted$
-              && dealloc@.inst() == final(local).inst()  // $line_count$Trusted$
-              && dealloc@.size() == size  // $line_count$Trusted$
-        })  // $line_count$Trusted$
+            points_to_raw@.is_range(ptr as int, size as int)  
+              && points_to_raw@.provenance() == ptr@.provenance  
+              && ptr == dealloc@.ptr()  
+              && dealloc@.inst() == final(local).inst()  
+              && dealloc@.size() == size  
+        })  
 {
     heap_malloc_zero(heap, size, false, Tracked(&mut *local))
 }
@@ -14023,11 +12498,6 @@ pub fn heap_get_free_small_page(heap: HeapPtr, size: usize, Tracked(local): Trac
         local.page_organization.used_dlist_headers[bin_idx].first.unwrap();
     proof {
         bounds_for_smallest_bin_fitting_size((size + 7) / 8 * 8);
-        //if page_ptr.page_ptr.addr() != local.page_empty_global@.s.points_to.ptr().addr() {
-            //assert(local.heap.pages_free_direct@.value.unwrap()@[idx as int].id()
-            //    == local.heap.pages@.value.unwrap()@[bin_idx].first.id());
-            //assert(local.heap.pages@.value.unwrap()@[bin_idx].first.id() != 0);
-        //}
     }
     let ptr = with_exposed_provenance(ptr.addr(), Tracked(if ptr as int == local.page_empty_global@.s.points_to.ptr() as int { local.page_empty_global.borrow().s.exposed } else { local.instance.thread_local_state_guards_page(local.thread_id, page_id, &local.thread_token).exposed }));
     let page_ptr = PagePtr { page_ptr: ptr, page_id: Ghost(page_id) };
@@ -14059,12 +12529,6 @@ pub fn heap_malloc_small_zero(
         }),
         common_preserves(*old(local), *final(local)),
 {
-    /*let mut size = size;
-    if PADDING {
-        if size == 0 {
-            size = INTPTR_SIZE;
-        }
-    }*/
 
     let page = heap_get_free_small_page(heap, size, Tracked(&*local));
 
@@ -14073,9 +12537,6 @@ pub fn heap_malloc_small_zero(
         bounds_for_smallest_bin_fitting_size((size + 7) / 8 * 8);
         local.page_organization.used_first_is_in(bin_idx);
 
-        //assert(local.page_organization.used_dlist_headers[bin_idx].first == Some(page.page_id@));
-        //assert(local.page_organization.pages.dom().contains(page.page_id@));
-        //assert(local.pages.dom().contains(page.page_id@));
     }
 
     let (p, Tracked(points_to_raw), Tracked(mim_dealloc)) = page_malloc(heap, page, size, zero, Tracked(&mut *local));
@@ -14116,14 +12577,12 @@ pub fn page_malloc(
     if unlikely(page_ptr.get_inner_ref_maybe_empty(Tracked(&*local)).free.is_empty()) {
         return malloc_generic(heap, size, zero, 0, Tracked(&mut *local));
     }
-    //assert(!page_ptr.is_empty_global(*local));
 
     let popped;
 
     page_get_mut_inner!(page_ptr, local, page_inner => {
         popped = page_inner.free.pop_block();
 
-        //assert(page_inner.used < 1000000);
         page_inner.used = page_inner.used + 1;
     });
 
@@ -14135,37 +12594,14 @@ pub fn page_malloc(
         let tracked points_to_r = popped.1.get();
         let tracked block = popped.2.get();
 
-        //const_facts();
-        //reveal(is_block_ptr);
         local.instance.get_block_properties(
             local.thread_token.key(),
             block.key(),
             &local.thread_token,
             &block);
-        /*assert(block@.key.slice_idx >= block@.key.page_id.idx);
-        assert(block@.value.page_shared_access == local.thread_token@.value.pages[block@.key.page_id].shared_access);
-        assert(local.thread_token@.value.pages.dom().contains(block@.key.page_id_for_slice()));
-        assert(block@.value.page_slice_shared_access == local.thread_token@.value.pages[block@.key.page_id_for_slice()].shared_access);
-        assert(block@.value.segment_shared_access == local.thread_token@.value.segments[block@.key.page_id.segment_id].shared_access);
 
-        assert(block@.value.page_shared_access.wf(block@.key.page_id,
-            block@.key.block_size, local.instance));
-        assert(valid_block_token(block, local.instance));*/
-        //assert(!block@.value.allocated);
 
-        // Mark the block as 'allocated' in the token system
-        // let tracked thread_token = local.take_thread_token();
-        //assert(thread_token@.instance == local.instance);
-        //assert(block@.instance == local.instance);
-        //assert(block@.key.page_id == page_ptr.page_id);
-        //#[spec] let ot = thread_token;
-        // let tracked (Tracked(thread_token), Tracked(block)) = local.instance.alloc_block(
-        //    block@.key, local.thread_id,
-        //    thread_token, block);
-        //local.thread_token = thread_token;
 
-        //assert(thread_token@.value.pages.index(page_ptr.page_id).len + 1 ==
-        //       ot@.value.pages.index(page_ptr.page_id).len);
 
         let tracked dealloc_inner = MimDeallocInner {
             mim_instance: local.instance.clone(),
@@ -14177,17 +12613,8 @@ pub fn page_malloc(
         dealloc = dealloc0;
         points_to_raw = points_to_raw0;
 
-        // Mark the block as 'allocated' in the token system
-        //let Local { thread_id, instance, thread_token, heap_id, heap, pages, segments }
-        //    = local;
 
-        /*assert(local.pages.index(page_ptr.page_id@).wf(
-                    page_ptr.page_id@,
-                    local.thread_token@.value.pages.index(page_ptr.page_id@),
-                    local.instance,
-                  ));*/
         preserves_mem_chunk_good(*old(local), *local);
-        //assert(local.wf());
     }
 
     (ptr, Tracked(points_to_raw), Tracked(dealloc))
@@ -14195,10 +12622,8 @@ pub fn page_malloc(
 
 
 }
-// ===== END INLINED DEPENDENCY: alloc_fast.rs =====
 }
 mod alloc_generic {
-// ===== BEGIN INLINED DEPENDENCY: alloc_generic.rs =====
 #![allow(unused_imports)]
 
 use core::intrinsics::{unlikely, likely};
@@ -14244,9 +12669,7 @@ pub fn malloc_generic(
         common_preserves(*old(local), *final(local)),
 
 {
-    // TODO heap initialization
 
-    // TODO deferred free?
 
     heap_delayed_free_partial(heap, Tracked(&mut *local));
 
@@ -14287,7 +12710,6 @@ pub fn page_free_collect(
     page_get_mut_inner!(page_ptr, local, page_inner => {
         if !page_inner.local_free.is_empty() {
             if likely(page_inner.free.is_empty()) {
-                // Move local_free to free
                 let mut ll = LL::new(Ghost(page_inner.local_free.page_id()), Ghost(page_inner.local_free.fixed_page()), Ghost(page_inner.local_free.instance()), Ghost(page_inner.local_free.block_size()), Ghost(None));
                 core::mem::swap(&mut ll, &mut page_inner.local_free);
                 page_inner.free = ll;
@@ -14325,12 +12747,10 @@ fn page_thread_free_collect(
         }
         let count = page_inner.local_free.append(&mut ll);
 
-        // this relies on counting the block tokens
         proof {
             bound_on_2_lists(local.instance, &local.thread_token,
                 &mut page_inner.local_free, &mut page_inner.free);
         }
-        //assert(page_inner.used >= count);
 
         page_inner.used = page_inner.used - count;
     });
@@ -14352,7 +12772,6 @@ fn page_free_list_extend(
 
         old(local).page_capacity(page_ptr.page_id@) + extend as int
             <= old(local).page_reserved(page_ptr.page_id@),
-        // TODO this should have a special case for huge-page handling:
         bsize == old(local).page_inner(page_ptr.page_id@).xblock_size,
         bsize % 8 == 0,
         extend >= 1,
@@ -14370,17 +12789,13 @@ fn page_free_list_extend(
         let count = local.page_organization.pages[page_id].count.unwrap();
 
         local.page_organization.get_count_bound(page_id);
-        //assert(local.page_organization.pages.dom().contains(page_id));
         local.page_organization.used_offset0_has_count(page_id);
-        //assert(count + page_id.idx <= SLICES_PER_SEGMENT);
         assert(capacity * bsize <= reserved * bsize) by(nonlinear_arith)
             requires capacity <= reserved, bsize >= 0;
         assert((capacity + extend - 1) * bsize <= reserved * bsize) by(nonlinear_arith)
             requires capacity + extend - 1 <= reserved, bsize >= 0;
         assert((capacity + extend) * bsize <= reserved * bsize) by(nonlinear_arith)
             requires capacity + extend <= reserved, bsize >= 0;
-        //assert(bsize == local.thread_token.value().pages[page_id].block_size);
-        //assert(count == local.pages[page_id].count@.value.unwrap());
     }
 
     let capacity = page_ptr.get_inner_ref(Tracked(&*local)).capacity;
@@ -14390,7 +12805,6 @@ fn page_free_list_extend(
         Ghost(page_ptr.page_id@));
     let start = page_ptr.page_ptr.with_addr(start) as *mut u8;
 
-    //assert((capacity + extend) as usize as int == capacity + extend);
     let x = capacity as usize + extend - 1;
 
     let last = calculate_page_block_at(pag_start, bsize, x,
@@ -14415,9 +12829,6 @@ fn page_free_list_extend(
     let ghost mut cap_nat;
     let ghost mut extend_nat;
 
-    //assert(page_inner.wf(page_ptr.page_id@,
-    //    local.thread_token.value().pages.index(page_ptr.page_id@),
-    //    local.instance));
 
     proof {
         cap_nat = capacity as nat;
@@ -14425,7 +12836,6 @@ fn page_free_list_extend(
 
         let reserved = local.page_reserved(page_id);
 
-        // PAPER CUT: this kind of assert is flaky
         sub_distribute(reserved as int - capacity as int, extend as int, bsize as int);
 
         assert((reserved as int - capacity as int) * bsize as int
@@ -14435,24 +12845,6 @@ fn page_free_list_extend(
 
         assert((capacity as int) * (bsize as int) + (extend as int - 1) * (bsize as int)
             == (capacity as int + extend as int - 1) * (bsize as int)) by (nonlinear_arith);
-        /*assert(capacity as int + extend as int - 1
-            == capacity as int + (extend as int - 1));
-        assert(start.id() == pag_start.id() + capacity as int * bsize as int);
-        assert(last.id() == pag_start.id() + (x as int) * bsize as int);
-        assert(x as int == (capacity as int + extend as int - 1));
-        assert(last.id() - start.id() ==
-            (x as int) * (bsize as int)
-            - (capacity as int) * (bsize as int));
-        assert(last.id() - start.id() ==
-            (x as int) * (bsize as int)
-            - (capacity as int) * (bsize as int));
-        assert(last.id() - start.id() ==
-            (x as int) * (bsize as int)
-            - (capacity as int) * (bsize as int));
-        assert(last.id() - start.id() ==
-            (capacity as int + extend as int - 1) * (bsize as int)
-            - (capacity as int) * (bsize as int));
-        assert(last.id() == start.id() + ((extend as int - 1) * bsize as int));*/
 
         block_start_at_diff(page_ptr.page_id@, bsize as nat, cap_nat, cap_nat + extend_nat);
 
@@ -14473,31 +12865,20 @@ fn page_free_list_extend(
             let capacity = local.page_capacity(page_id);
             assert(i * block_size < reserved * block_size) by(nonlinear_arith)
                 requires i < reserved, block_size > 0;
-            //assert(page_id.idx <= slice_id.idx);
             let count = local.page_organization.pages[page_id].count.unwrap();
-            //assert(slice_id.idx < page_id.idx + count);
 
             local.page_organization.get_count_bound(page_id);
-            //assert(page_id.idx + count <= SLICES_PER_SEGMENT);
             local.page_organization.get_offset_for_something_in_used_range(page_id, slice_id);
-            //assert(local.page_organization.pages.dom().contains(slice_id));
-            //assert(local.page_organization.pages[slice_id].is_used);
-            //assert(local.page_organization.pages[slice_id].offset.is_some());
-            //assert(local.page_organization.pages[slice_id].offset.unwrap()
-            //    == slice_id.idx - page_id.idx);
 
-            //assert(ts.pages.dom().contains(slice_id));
         }
     }
 
     let tracked (Tracked(_thread_token), Tracked(block_tokens), Ghost(_s), Tracked(_checked_token)) = local.instance.page_mk_block_tokens(
-        // params
         local.thread_id,
         page_ptr.page_id@,
         cap_nat as nat,
         cap_nat as nat + extend_nat as nat,
         bsize as nat,
-        // input ghost state
         thread_token,
         checked_token,
     );
@@ -14514,7 +12895,6 @@ fn page_free_list_extend(
           }
         ));
 
-    // TODO
 
     proof {
         assert(start.addr() % 8 == 0) by {
@@ -14522,13 +12902,10 @@ fn page_free_list_extend(
             crate::linked_list::size_of_node();
             segment_start_mult8(page_id.segment_id);
             start_offset_le_slice_size(bsize as int);
-            //assert(segment_start(page_id.segment_id) % 8 == 0);
             assert(page_start(page_id) % 8 == 0);
             assert(start_offset(bsize as int) % 8 == 0);
             assert(pag_start % 8 == 0);
             mod_mul(capacity as int, bsize as int, 8);
-            //assert((capacity * bsize) % 8 == 0) by(nonlinear_arith)
-            //    requires bsize % 8 == 0;
         }
         assert forall |i: int| cap_nat <= i < cap_nat + extend_nat
             implies is_block_ptr1(
@@ -14542,25 +12919,10 @@ fn page_free_list_extend(
             get_block_start_defn(block_id);
             crate::linked_list::size_of_node();
             start_offset_le_slice_size(block_size);
-            //assert(block_size >= 8);
-            //assert(block_id.page_id == page_id);
-            //assert(block_id.block_size == block_size);
-            //assert(page_id.segment_id == segment_id);
             let reserved = local.page_reserved(page_id);
             let capacity = local.page_capacity(page_id);
             assert(i * block_size <= reserved * block_size) by(nonlinear_arith)
                 requires i <= reserved, block_size >= 0;
-            //assert(i * block_size <= capacity * block_size);
-            //assert(block_start_at(page_id, block_size, block_id.idx as int) >
-            //    segment_start(segment_id));
-            //assert(block_start_at(page_id, block_size, block_id.idx as int) <=
-            //    segment_start(segment_id) + SEGMENT_SIZE as int);
-            //assert(segment_start(segment_id) + (block_id.slice_idx * SLICE_SIZE)
-            //    <= block_start_at(page_id, block_size, block_id.idx as int));
-            //assert(i * block_size <
-            //  i * block_size / SLICE_SIZE as int * SLICE_SIZE + SLICE_SIZE);
-            //assert(block_start_at(page_id, block_size, block_id.idx as int)
-            //  < segment_start(segment_id) + (block_id.slice_idx * SLICE_SIZE) + SLICE_SIZE);
 
         }
     }
@@ -14568,52 +12930,16 @@ fn page_free_list_extend(
     page_get_mut_inner!(page_ptr, local, page_inner => {
         page_inner.free.prepend_contiguous_blocks(
             start, last, bsize,
-            // ghost args:
             Ghost(cap_nat), Ghost(extend_nat),
-            // tracked args:
             Tracked(&mut pt),
             Tracked(&mut block_tokens));
 
-        // note: mimalloc has this line in the parent function, mi_page_extend_free,
-        // but it's easier to just do it here to preserve local.wf()
         page_inner.capacity = page_inner.capacity + extend as u16;
     });
 
 
     proof {
-        /*assert forall |pid|
-            #[trigger] local.pages.dom().contains(pid) &&
-              local.thread_token.value().pages.dom().contains(pid) implies
-                local.pages.index(pid).wf(
-                  pid,
-                  local.thread_token.value().pages.index(pid),
-                  local.instance,
-                )
-        by {
-            if pid.idx == page_ptr.page_id@.idx {
-                assert(local.pages.index(pid).wf(pid, local.thread_token.value().pages.index(pid), local.instance));
-            } else {
-                assert(old(local).pages.index(pid).wf(pid, old(local).thread_token.value().pages.index(pid), old(local).instance));
-                assert(old(local).pages.index(pid) == local.pages.index(pid));
-                assert(old(local).thread_token.value().pages.index(pid)
-                    == local.thread_token.value().pages.index(pid));
-                assert(local.pages.index(pid).wf(pid, local.thread_token.value().pages.index(pid), local.instance));
-            }
-        }*/
 
-        /*let blocksize = bsize as int;
-        assert((capacity + extend) * blocksize == capacity * blocksize + extend * blocksize);
-        assert(local.page_capacity(page_id) == capacity + extend);
-        assert(block_start_at(page_id, bsize as int, capacity as int + extend as int)
-            == rng_start + rng_size);
-        assert(rng_start ==
-                page_start(page_id)
-                    + start_offset(old(local).block_size(page_id))
-                    + old(local).page_capacity(page_id) * old(local).block_size(page_id));
-        assert(rng_start + rng_size ==
-                page_start(page_id)
-                    + start_offset(old(local).block_size(page_id))
-                    + local.page_capacity(page_id) * old(local).block_size(page_id));*/
         block_start_at_diff(page_id, bsize as nat, capacity as nat, (capacity + extend) as nat);
 
         preserves_mem_chunk_good_on_transfer_to_capacity(*old(local), *local, page_id);
@@ -14644,32 +12970,15 @@ pub fn page_extend_free(
 {
     let page_inner = page_ptr.get_inner_ref(Tracked(&*local));
 
-    /*proof {
-        assert(page_inner.wf(page_ptr.page_id@,
-            local.thread_token.value().pages.index(page_ptr.page_id@),
-            local.instance));
-    }*/
 
     let reserved = page_inner.reserved;
     let capacity = page_inner.capacity;
 
     if capacity >= reserved { return; }
 
-    // Calculate the block size
-    // TODO should have special handling for huge blocks
     let bsize: usize = page_ptr.get_inner_ref(Tracked(&*local)).xblock_size as usize;
 
-    /*proof {
-        let ghost page_id = page_ptr.page_id@;
-        assert(local.page_organization.pages.dom().contains(page_id));
-        assert(page_organization_matches_token_page(
-            local.page_organization.pages[page_id],
-            local.thread_token.value().pages[page_id]));
-        assert(local.is_used_primary(page_id));
-        assert(bsize != 0);
-    }*/
 
-    // Calculate extend amount
 
     let mut max_extend: usize = if bsize >= MAX_EXTEND_SIZE as usize {
         MIN_EXTEND
@@ -14687,7 +12996,6 @@ pub fn page_extend_free(
 
     page_free_list_extend(page_ptr, bsize, extend, Tracked(local));
 
-    // page capacity is modified in page_free_list_extend, no need to do it here
 }
 
 fn heap_delayed_free_partial(heap: HeapPtr, Tracked(local): Tracked<&mut Local>) -> (b: bool)
@@ -14710,14 +13018,12 @@ fn heap_delayed_free_partial(heap: HeapPtr, Tracked(local): Tracked<&mut Local>)
     {
         let (ptr, Tracked(perm), Tracked(block)) = ll.pop_block();
         proof {
-            //assert(block@.value.heap_id == Some(local.thread_token.value().heap_id));
             local.instance.block_in_heap_has_valid_page(
                 local.thread_token.key(), block.key(),
                 &local.thread_token, &block);
             local.instance.get_block_properties(
                 local.thread_token.key(), block.key(),
                 &local.thread_token, &block);
-            //assert(valid_block_token(block, local.instance));
         }
         let tracked dealloc_inner = MimDeallocInner {
             mim_instance: local.instance.clone(),
@@ -14741,10 +13047,8 @@ fn heap_delayed_free_partial(heap: HeapPtr, Tracked(local): Tracked<&mut Local>)
 }
 
 }
-// ===== END INLINED DEPENDENCY: alloc_generic.rs =====
 }
 mod free {
-// ===== BEGIN INLINED DEPENDENCY: free.rs =====
 #![allow(unused_imports)]
 
 use vstd::prelude::*;
@@ -14762,44 +13066,8 @@ use crate::dealloc_token::*;
 
 verus!{
 
-// The algorithm for `free` is this:
-//
-//  1. Given the ptr, compute the segment and page it is on.
-//
-//  2. Check the 'thread_id' on the page. If it matches the thread we're on, then
-//      this is a 'local' transition (the common case).
-//      Otherwise, it's a 'thread' transition.
-//
-// If it's a LOCAL transition:
-//
-//   Update the local_free list.
-//
-// If it's a THREAD transition:
-//
-//   Attempt to update the thread_free list by first reading the atomic, then performing
-//   a CAS (repeating if necessary). The thread_free contains both the linked_list pointer
-//   and a 'delay' state.
-//
-//   If the 'delay' state is NOT in 'UseDelayedFree' (the usual case):
-//
-//     Update the thread_free atomically by inserting the new block to the front of the list.
-//
-//   If the 'delay' state is in 'UseDelayedFree' (the unusual case):
-//
-//     Set 'delay' to Freeing
-//     Follow the heap pointer to access the Heap
-//     Atomically add to the delayed free list.
-//     Set 'delay' to NoDelaying
-//
-//     (The purpose of setting the 'Freeing' state is to ensure that the Heap remains
-//     valid while we perform this operation.)
-//
-//     (Also note that setting the 'Freeing' state does not prevent the next thread that
-//     comes along from adding to the thread_free list.)
 
 pub fn free(ptr: *mut u8, Tracked(user_perm): Tracked<PointsToRaw>, Tracked(user_dealloc): Tracked<Option<MimDealloc>>, Tracked(local): Tracked<&mut Local>)
-    // According to the Linux man pages, `ptr` is allowed to be NULL,
-    // in which case no operation is performed.
     requires
         old(local).wf(),
         ptr.addr() != 0 ==> user_dealloc.is_some(),
@@ -14826,7 +13094,6 @@ pub fn free(ptr: *mut u8, Tracked(user_perm): Tracked<PointsToRaw>, Tracked(user
         perm = y;
     }
 
-    // Calculate the pointer to the segment this block is in.
 
     let segment_ptr = calculate_segment_ptr_from_block(ptr, Ghost(dealloc.block_id()));
 
@@ -14839,7 +13106,6 @@ pub fn free(ptr: *mut u8, Tracked(user_perm): Tracked<PointsToRaw>, Tracked(user
     let segment: &SegmentHeader = ptr_ref(segment_ptr,
         Tracked(&segment_shared_access.points_to));
 
-    // Determine if this operation is thread local or not
 
     let segment_thread_id_u64 = atomic_with_ghost!(
         &segment.thread_id => load();
@@ -14861,8 +13127,6 @@ pub fn free(ptr: *mut u8, Tracked(user_perm): Tracked<PointsToRaw>, Tracked(user
     proof { local.is_thread.agrees(is_thread); }
     let is_local = thread_id.thread_id == segment_thread_id_u64;
 
-    // Calculate the pointer to the PageHeader for the *slice* that this block is in.
-    // Remember this might not be the "main" PageHeader for this Page.
 
     let slice_page_ptr = calculate_slice_page_ptr_from_block(ptr, segment_ptr, Ghost(dealloc.block_id()));
 
@@ -14875,7 +13139,6 @@ pub fn free(ptr: *mut u8, Tracked(user_perm): Tracked<PointsToRaw>, Tracked(user
     let slice_page: &Page = ptr_ref(slice_page_ptr,
         Tracked(&page_slice_shared_access.points_to));
 
-    // Use the 'offset' to calculate a pointer to the main PageHeader for this page.
 
     let offset = slice_page.offset;
 
@@ -14886,16 +13149,7 @@ pub fn free(ptr: *mut u8, Tracked(user_perm): Tracked<PointsToRaw>, Tracked(user
         Ghost(dealloc.block_id().page_id),
     );
 
-    //assert(is_page_ptr(page_ptr, dealloc.block_id().page_id));
 
-    /*
-    let tracked page_shared_access: &PageSharedAccess;
-    proof {
-        page_shared_access = dealloc.mim_instance.alloc_guards_page_shared_access(
-            dealloc.block_id(), &dealloc.mim_block);
-    }
-    let page: &Page = page_ptr.borrow(Tracked(&page_shared_access.points_to));
-    */
 
     let ghost page_id = dealloc.block_id().page_id;
     let page = PagePtr {
@@ -14904,30 +13158,20 @@ pub fn free(ptr: *mut u8, Tracked(user_perm): Tracked<PointsToRaw>, Tracked(user
     };
     assert(page_ptr.addr() != 0) by { is_page_ptr_nonzero(page_ptr, page_id); }
 
-    // Case based on whether this is thread local or not
 
     if likely(is_local) {
-        //assert(local.pages.dom().contains(page_id));
-        //assert(page.is_in(*local));
-        //assert(page.wf());
-        //assert(local.is_used_primary(page_id));
 
         if likely(page.get_inner_ref(Tracked(&*local)).not_full_nor_aligned()) {
             let used;
             page_get_mut_inner!(page, local, page_inner => {
                 let tracked mim_block = dealloc.mim_block;
 
-                //proof {
-                    //assert(mim_block.key().page_id == page_inner.free.page_id());
-                    //assert(mim_block.key().block_size == page_inner.free.block_size());
-                //}
 
                 page_inner.free.insert_block(ptr, Tracked(perm), Tracked(mim_block));
 
                 proof {
                     bound_on_2_lists(local.instance, &local.thread_token, &mut page_inner.free, &mut page_inner.local_free);
                 }
-                //assert(page_inner.used >= 1);
 
                 used = page_inner.used - 1;
                 page_inner.used = used;
@@ -14935,7 +13179,6 @@ pub fn free(ptr: *mut u8, Tracked(user_perm): Tracked<PointsToRaw>, Tracked(user
 
             proof {
                 crate::os_mem_util::preserves_mem_chunk_good(*old(local), *local);
-                //assert(local.wf());
             }
 
             if unlikely(used == 0) {
@@ -14968,10 +13211,6 @@ fn free_generic(segment: *mut SegmentHeader, page: PagePtr, is_local: bool, p: *
         final(local).wf(),
         common_preserves(*old(local), *final(local)),
 {
-    // this has_aligned check could be a data race??
-    //if page.get_inner_ref(Tracked(&*local)).get_has_aligned() {
-    //    todo();
-    //}
 
     free_block(page, is_local, p, Tracked(perm), Tracked(dealloc), Tracked(&mut *local));
 }
@@ -14998,17 +13237,12 @@ fn free_block(page: PagePtr, is_local: bool, ptr: *mut u8, Tracked(perm): Tracke
         page_get_mut_inner!(page, local, page_inner => {
             let tracked mim_block = dealloc.mim_block;
 
-            //proof {
-            //    assert(mim_block.key().page_id == page_inner.free.page_id());
-            //    assert(mim_block.key().block_size == page_inner.free.block_size());
-            //}
 
             page_inner.free.insert_block(ptr, Tracked(perm), Tracked(mim_block));
 
             proof {
                 bound_on_2_lists(local.instance, &local.thread_token, &mut page_inner.free, &mut page_inner.local_free);
             }
-            //assert(page_inner.used >= 1);
 
             used = page_inner.used - 1;
             page_inner.used = used;
@@ -15016,7 +13250,6 @@ fn free_block(page: PagePtr, is_local: bool, ptr: *mut u8, Tracked(perm): Tracke
 
         proof {
             crate::os_mem_util::preserves_mem_chunk_good(*old(local), *local);
-            //assert(local.wf());
         }
 
         if unlikely(used == 0) {
@@ -15043,9 +13276,7 @@ fn free_block_mt(page: PagePtr, ptr: *mut u8, Tracked(perm): Tracked<PointsToRaw
         final(local).wf(),
         common_preserves(*old(local), *final(local)),
 {
-    // Based on _mi_free_block_mt
 
-    // TODO check the segment kind
 
     let tracked mut perm = perm;
     let tracked mut delay_actor_token_opt: Option<Mim::delay_actor> = None;
@@ -15067,14 +13298,6 @@ fn free_block_mt(page: PagePtr, ptr: *mut u8, Tracked(perm): Tracked<PointsToRaw
             local.wf(),
             common_preserves(*old(local), *local),
 
-            //*page ==
-            //    dealloc.mim_block.value().page_shared_access.points_to@.value.get_Some_0(),
-        //ensures
-        //    use_delayed ==> (match delay_actor_token_opt {
-        //        None => false,
-        //        Some(tok) => tok@.instance == dealloc.mim_instance
-        //            && tok@.key == dealloc.block_id().page_id
-        //    }),
     {
         let tracked page_shared_access: &PageSharedAccess =
             mim_instance.alloc_guards_page_shared_access(
@@ -15087,7 +13310,7 @@ fn free_block_mt(page: PagePtr, ptr: *mut u8, Tracked(perm): Tracked<PointsToRaw
         let mask = atomic_with_ghost!(&pag.xthread_free.atomic => load(); ghost g => {
             pag.xthread_free.emp_inst.borrow().agree(pag.xthread_free.emp.borrow(), &g.0);
             next_ptr = g.1.unwrap().1.ptr();
-            delay = g.1.unwrap().0.value(); // TODO fix macro syntax in atomic_with_ghost
+            delay = g.1.unwrap().0.value(); 
         });
 
         use_delayed = masked_ptr_delay_get_is_use_delayed(mask, Ghost(delay), Ghost(next_ptr));
@@ -15106,12 +13329,10 @@ fn free_block_mt(page: PagePtr, ptr: *mut u8, Tracked(perm): Tracked<PointsToRaw
                 is_block_ptr_mult4(ptr as *mut u8, dealloc.block_id());
             }
 
-            // *ptr = mask.next_ptr
             let (ptr_mem0, raw_mem0) = LL::block_write_ptr(
                 ptr,
                 Tracked(perm),
                 masked_ptr_delay_get_ptr(mask, Ghost(delay), Ghost(next_ptr)));
-            //assert(ptr_mem0@.ptr() == ptr);
 
             let Tracked(exposed0) = expose_provenance(ptr);
 
@@ -15122,13 +13343,10 @@ fn free_block_mt(page: PagePtr, ptr: *mut u8, Tracked(perm): Tracked<PointsToRaw
                 exposed = Some(exposed0);
             }
 
-            //assert(ptr_mem.unwrap().ptr() == ptr);
 
-            // mask1 = mask (set next_ptr to ptr)
             mask1 = masked_ptr_delay_set_ptr(mask, ptr, Ghost(delay), Ghost(next_ptr));
         }
 
-        //assert(pag.xthread_free.instance == mim_instance);
 
         let cas_result = atomic_with_ghost!(
             &pag.xthread_free.atomic => compare_exchange_weak(mask, mask1);
@@ -15153,12 +13371,10 @@ fn free_block_mt(page: PagePtr, ptr: *mut u8, Tracked(perm): Tracked<PointsToRaw
                     delay_token = delay_token0;
                     delay_actor_token_opt = Some(delay_actor_token);
                 } else {
-                    // do nothing
                 }
             } else {
                 if ok {
                     let tracked mim_block = mim_block_opt.tracked_unwrap();
-                    //assert(ptr_mem.unwrap().ptr() == ptr);
                     LL::ghost_insert_block(mut_ref_tracked(&mut ghost_ll), ptr, ptr_mem.tracked_unwrap(),
                         raw_mem.tracked_unwrap(), mim_block, exposed.tracked_unwrap());
 
@@ -15166,10 +13382,7 @@ fn free_block_mt(page: PagePtr, ptr: *mut u8, Tracked(perm): Tracked<PointsToRaw
 
                     is_block_ptr_mult4(ptr as *mut u8, dealloc.block_id());
                 } else {
-                    // do nothing
 
-                    // okay, actually do 1 thing: reset the 'perm' variable
-                    // for the next loop.
                     let tracked mut ptr_mem = ptr_mem.tracked_unwrap();
                     let tracked raw_mem = raw_mem.tracked_unwrap();
                     ptr_mem.leak_contents();
@@ -15179,22 +13392,12 @@ fn free_block_mt(page: PagePtr, ptr: *mut u8, Tracked(perm): Tracked<PointsToRaw
 
             g = (emp_token, Some((delay_token, ghost_ll)));
 
-            //assert(ghost_ll.wf());
-            //assert(ghost_ll.block_size() == pag.xthread_free.block_size());
-            //assert(ghost_ll.instance() == pag.xthread_free.instance@);
-            //assert(ghost_ll.page_id() == pag.xthread_free.page_id());
-            //assert(ghost_ll.fixed_page());
-            //assert(delay_token@.instance == pag.xthread_free.instance@);
-            //assert(delay_token@.key == pag.xthread_free.page_id());
-            //assert(v_new as int == ghost_ll.ptr() as int + delay_token@.value.to_int());
-            //assert(ghost_ll.ptr() as int % 4 == 0);
         });
 
         match cas_result {
             Result::Err(_) => { }
             Result::Ok(_) => {
                 if unlikely(use_delayed) {
-                    // Lookup the heap ptr
 
                     let tracked mut delay_actor_token;
                     let ghost mut heap_id;
@@ -15209,10 +13412,7 @@ fn free_block_mt(page: PagePtr, ptr: *mut u8, Tracked(perm): Tracked<PointsToRaw
                         ghost g =>
                     {
                         delay_actor_token = delay_actor_token_opt.tracked_unwrap();
-                        //assert(!pag.xheap.is_empty());
-                        //assert(pag.xheap.wf(pag.xheap.instance@, pag.xheap.page_id@));
                         pag.xheap.emp_inst.borrow().agree(pag.xheap.emp.borrow(), &g.0);
-                        //assert(g.0@.value == false);
                         let tracked (Tracked(tok), _) = mim_instance.delay_lookup_heap(
                             dealloc.block_id(),
                             &local.my_inst,
@@ -15229,7 +13429,6 @@ fn free_block_mt(page: PagePtr, ptr: *mut u8, Tracked(perm): Tracked<PointsToRaw
                             dealloc.block_id().page_id,
                             &delay_actor_token,
                         );
-                        //assert(heap_shared_access.wf2(heap_id, mim_instance));
                     }
                     let heap: &Heap = ptr_ref(heap_ptr,
                         Tracked(&heap_shared_access.points_to));
@@ -15244,9 +13443,7 @@ fn free_block_mt(page: PagePtr, ptr: *mut u8, Tracked(perm): Tracked<PointsToRaw
                             dealloc.block_id().page_id, &delay_actor_token);
                     let pag: &Page = ptr_ref(page.page_ptr, Tracked(&page_shared_access.points_to));
 
-                    //pag.xthread_free.exit_delaying_state(Tracked(delay_actor_token));
 
-                    // have to inline this bc of lifetimes
                     atomic_with_ghost!(
                         &pag.xthread_free.atomic => fetch_xor(3);
                         update v_old -> v_new;
@@ -15259,10 +13456,6 @@ fn free_block_mt(page: PagePtr, ptr: *mut u8, Tracked(perm): Tracked<PointsToRaw
                             delay_token = mim_instance.delay_leave_freeing(dealloc.block_id().page_id,
                                 delay_token, delay_actor_token);
 
-                            // TODO right now this only works for fixed-width architecture
-                            //verus_proof_expr!{ { // TODO fix atomic_with_ghost
-                            //    assert(v_old % 4 == 1usize ==> (v_old ^ 3) == add(v_old, 1)) by (bit_vector);
-                            //} }
 
                             g = (emp_token, Some((delay_token, ll)));
 
@@ -15315,7 +13508,6 @@ pub fn free_delayed_block(ptr: *mut u8,
         Ghost(block_id.page_id_for_slice()),
         Ghost(block_id.page_id),
     );
-    //assert(crate::layout::is_page_ptr(page_ptr, block_id.page_id));
     let ghost page_id = dealloc.block_id().page_id;
     assert(page_ptr as int != 0) by { is_page_ptr_nonzero(page_ptr, page_id); }
 
@@ -15327,9 +13519,6 @@ pub fn free_delayed_block(ptr: *mut u8,
             &local.thread_token,
             &dealloc.mim_block);
     }
-    //assert(page.is_in(*local));
-    //assert(page.is_used_and_primary(*local));
-    //assert(local.thread_token.value().pages[page.page_id@].block_size == dealloc.block_id().block_size);
 
     if !crate::page::page_try_use_delayed_free(page, 0, false, Tracked(&*local)) {
         return (false, Tracked(Some(perm)), Tracked(Some(dealloc)));
@@ -15337,7 +13526,6 @@ pub fn free_delayed_block(ptr: *mut u8,
 
     crate::alloc_generic::page_free_collect(page, false, Tracked(&mut *local));
 
-    //assert(local.thread_token.value().pages[page.page_id@].block_size == dealloc.block_id().block_size);
 
     crate::free::free_block(page, true, ptr,
         Tracked(perm), Tracked(dealloc), Tracked(&mut *local));
@@ -15346,10 +13534,8 @@ pub fn free_delayed_block(ptr: *mut u8,
 }
 
 }
-// ===== END INLINED DEPENDENCY: free.rs =====
 }
 mod realloc {
-// ===== BEGIN INLINED DEPENDENCY: realloc.rs =====
 #![allow(unused_imports)]
 
 use vstd::prelude::*;
@@ -15367,76 +13553,22 @@ use crate::dealloc_token::*;
 
 verus!{
 
-/*
-#[inline(always)]
-fn usable_size(p: PPtr<u8>,
-    Tracked(user_perm): Tracked<&ptr::PointsToRaw>,
-    Tracked(user_dealloc): Tracked<&MimDealloc>,
-    Tracked(local): Tracked<&Local>,
-)
-    requires
-        old(local).wf(),
-        user_dealloc.wf(),
-        ptr.id() == user_perm@.pptr,
-        ptr.id() == user_dealloc.ptr(),
-        user_perm@.size == user_dealloc.size,
-        old(local).instance == user_dealloc.instance()
-    ensures
-        local.wf(),
-        local.instance == old(local).instance,
-{
-    let segment_ptr = calculate_segment_ptr_from_block(ptr, Ghost(dealloc.block_id()));
 
-    let tracked segment_shared_access: &SegmentSharedAccess =
-        dealloc.mim_instance.alloc_guards_segment_shared_access(
-            dealloc.block_id(),
-            &dealloc.mim_block,
-        );
 
-    let segment: &SegmentHeader = segment_ptr.borrow(
-        Tracked(&segment_shared_access.points_to));
 
-    let slice_page_ptr = calculate_slice_page_ptr_from_block(ptr, segment_ptr, Ghost(dealloc.block_id()));
 
-    let tracked page_slice_shared_access: &PageSharedAccess =
-        dealloc.mim_instance.alloc_guards_page_slice_shared_access(
-            dealloc.block_id(),
-            &dealloc.mim_block,
-        );
 
-    let slice_page: &Page = slice_page_ptr.borrow(
-        Tracked(&page_slice_shared_access.points_to));
 
-    // Use the 'offset' to calculate a pointer to the main PageHeader for this page.
 
-    let offset = slice_page.offset;
 
-    let page_ptr = calculate_page_ptr_subtract_offset(
-        slice_page_ptr,
-        offset,
-        Ghost(dealloc.block_id().page_id_for_slice()),
-        Ghost(dealloc.block_id().page_id),
-    );
 
-    assert(is_page_ptr(page_ptr.id(), dealloc.block_id().page_id));
 
-    let ghost page_id = dealloc.block_id().page_id;
-    let page = PagePtr {
-        page_ptr,
-        page_id: Ghost(page_id),
-    };
-    assert(page_ptr.id() != 0) by { is_page_ptr_nonzero(page_ptr.id(), page_id); }
 
-    // TODO check aligned
-}
-*/
 
 
 }
-// ===== END INLINED DEPENDENCY: realloc.rs =====
 }
 mod segment {
-// ===== BEGIN INLINED DEPENDENCY: segment.rs =====
 #![allow(unused_imports)]
 
 use core::intrinsics::{unlikely, likely};
@@ -15561,16 +13693,6 @@ fn segments_page_alloc(
     let slices_needed = page_size / SLICE_SIZE as usize;
 
     proof {
-        /*let b = (block_size as int) <= (SMALL_OBJ_SIZE_MAX as int);
-        if b {
-            assert(alignment == SLICE_SIZE);
-            assert(page_size == SLICE_SIZE);
-            assert(page_size < block_size * 0x10000);
-        } else if block_size as int <= MEDIUM_OBJ_SIZE_MAX as int {
-            assert(page_size < block_size * 0x10000);
-        } else {
-            assert(page_size < block_size * 0x10000);
-        }*/
         assert(good_count_for_block_size(block_size as int, slices_needed as int));
     }
 
@@ -15619,7 +13741,6 @@ fn segment_reclaim_or_alloc(
         common_preserves(*old(local), *final(local)),
 
 {
-    // TODO reclaiming
 
     let arena_id = heap.get_arena_id(Tracked(&*local));
     segment_alloc(0, 0, arena_id, tld, Tracked(&mut *local))
@@ -15643,7 +13764,6 @@ fn segments_page_find_and_allocate(
         (page_ptr.page_ptr.addr() != 0 ==>
             page_ptr.wf()
             && page_ptr.is_in(*final(local))
-            //&& allocated_block_tokens(blocks@, page_ptr.page_id@, block_size, n_blocks, local.instance)
             && final(local).page_organization.popped == Popped::Ready(page_ptr.page_id@, true)
             && page_init_is_committed(page_ptr.page_id@, *final(local))
             && (slice_count0 > 0 ==> final(local).page_organization.pages[page_ptr.page_id@].count == Some(slice_count0 as nat))
@@ -15708,20 +13828,6 @@ fn segments_page_find_and_allocate(
                 assert(tld_ptr.is_in(*local));
 
                 if found_slice_count > slice_count {
-                    /*proof {
-                        let current_slice_count = found_slice_count;
-                        let target_slice_count = slice_count;
-                        assert((local).wf_main());
-                        assert(tld_ptr.wf());
-                        assert(tld_ptr.is_in(*local));
-                        assert(slice.wf());
-                        assert((local).page_organization.popped == Some(Popped { page_id: slice.page_id@ }));
-                        assert((local).page_organization.pages[slice.page_id@].countunwrap()
-                            == current_slice_count);
-                        assert(SLICES_PER_SEGMENT >= current_slice_count);
-                        assert(current_slice_count > target_slice_count);
-                        assert(target_slice_count > 0);
-                    }*/
 
                     segment_slice_split(
                         slice,
@@ -15743,10 +13849,6 @@ fn segments_page_find_and_allocate(
                     todo();
                 }
 
-                //assert(local.wf_main());
-                //assert(slice.is_in(*local));
-                //assert(allocated_block_tokens(block_tokens, slice.page_id@, block_size, n_blocks, local.instance));
-                //assert(tld_ptr.is_in(*local));
                 return slice;
             }
 
@@ -15804,8 +13906,6 @@ fn span_queue_delete(
         old(local).pages[slice.page_id@]
           == final(local).pages[slice.page_id@],
         final(local).page_organization.pages[slice.page_id@].is_used == false,
-        //old(local).page_organization.pages[slice.page_id@]
-        //    == final(local).page_organization.pages[slice.page_id@],
 {
     unimplemented!()
 }
@@ -15826,7 +13926,6 @@ fn segment_slice_split(
         slice.wf(),
         old(local).page_organization.popped == Popped::VeryUnready(slice.page_id@.segment_id, slice.page_id@.idx as int, current_slice_count as int, false),
         old(local).page_organization.pages.dom().contains(slice.page_id@),
-        //old(local).page_organization.pages[slice.page_id@].count.is_some(),
         old(local).page_organization.pages[slice.page_id@].is_used == false,
         SLICES_PER_SEGMENT >= current_slice_count > target_slice_count,
         target_slice_count > 0,
@@ -15840,13 +13939,9 @@ fn segment_slice_split(
 {
     proof {
         local.page_organization.get_count_bound_very_unready();
-        //assert(local.page_organization.pages[slice.page_id@].count == Some(current_slice_coun
-        //assert(slice.page_id@.idx + current_slice_count <= SLICES_PER_SEGMENT + 1);
-        //assert(slice.page_id@.idx + target_slice_count <= SLICES_PER_SEGMENT);
     }
     let next_slice = slice.add_offset(target_slice_count);
 
-    //let count_being_returned = target_slice_count - current_slice_count;
     let bin_idx = slice_bin(current_slice_count - target_slice_count);
 
     let ghost mut next_state;
@@ -15910,8 +14005,6 @@ fn segment_slice_split(
             assert(0 <= (current_slice_count - target_slice_count) as u32 <= 512);
             assert(SIZEOF_PAGE_HEADER as u32 == 80);
             assert(0 <= (current_slice_count - target_slice_count - 1) as u32 * 80 <= u32::MAX);
-            //assert((current_slice_count - target_slice_count) as u32 * (SIZEOF_PAGE_HEADER as u32)
-            //    == (current_slice_count - target_slice_count) as u32 * 32);
             page.offset = (current_slice_count - target_slice_count - 1) as u32
                 * (SIZEOF_PAGE_HEADER as u32);
         });
@@ -15920,92 +14013,21 @@ fn segment_slice_split(
     proof {
         local.page_organization = next_state;
 
-        /*let page_id = slice.page_id@;
-        let next_id = next_slice.page_id@;
-        let last_page_id = PageId { idx: (page_id.idx + current_slice_count - 1) as nat, .. page_id };
 
-        let old_org_pages = old(local).page_organization.pages;
-        let old_pages = old(local).pages;
-        let old_psa = old(local).psa;
 
-        let org_pages = local.page_organization.pages;
-        let pages = local.pages;*/
         local.psa = local.psa.union_prefer_right(local.unused_pages);
-        //let psa = local.psa;
 
-        //let old_org_queues = old(local).page_organization.unused_dlist_headers;
-        //let old_queues = old(local).tld@.value.unwrap().segments.span_queue_headers;
 
-        //assert(page_organization_pages_match_data(org_pages[slice.page_id@], pages[slice.page_id@], psa[slice.page_id@], slice.page_id@, local.page_organization.popped));
 
-        //assert(page_organization_pages_match_data(org_pages[next_slice.page_id@], pages[next_slice.page_id@], psa[next_slice.page_id@], next_slice.page_id@, local.page_organization.popped));
 
-        /*if current_slice_count > target_slice_count + 1 {
-            assert(last_page_id != next_id);
-            assert(last_page_id != page_id);
-            assert(page_organization_pages_match_data(org_pages[last_page_id], pages[last_page_id], psa[last_page_id], last_page_id, local.page_organization.popped));
-        } else {
-            assert(page_organization_pages_match_data(org_pages[last_page_id], pages[last_page_id], psa[last_page_id], last_page_id, local.page_organization.popped));
-        }*/
 
-        /*if first_in_queue.id() != 0 {
-            let first_page_id = local.page_organization.unused_dlist_headers[bin_idx as int].first.unwrap();
-            assert(page_organization_pages_match_data(org_pages[first_page_id], pages[first_page_id], psa[first_page_id]));
-        }*/
 
-        //let last_slice = slice.add_offset(current_slice_count - 1);
-        //assert(page_organization_pages_match_data(org_pages[last_slice.page_id@], pages[last_slice.page_id@], psa[last_slice.page_id@]));
 
-        /*assert forall |pid| #[trigger] org_pages.dom().contains(pid) implies
-            page_organization_pages_match_data(org_pages[pid], pages[pid], psa[pid], pid, local.page_organization.popped)
-        by {
-            let first_id = old(local).page_organization.unused_dlist_headers[bin_idx as int].first.unwrap();
-            if pid == page_id {
-                assert(page_organization_pages_match_data(org_pages[pid], pages[pid], psa[pid], pid, local.page_organization.popped));
-            } else if pid == next_id {
-                assert(page_organization_pages_match_data(org_pages[pid], pages[pid], psa[pid], pid, local.page_organization.popped));
-            } else if pid == last_page_id {
-                assert(page_organization_pages_match_data(org_pages[pid], pages[pid], psa[pid], pid, local.page_organization.popped));
-            } else if pid == first_id {
-                if old_org_queues[bin_idx as int].first.is_some() {
-                    assert(is_page_ptr_opt(old_queues@[bin_idx as int].first, old_org_queues[bin_idx as int].first));
-                    assert(Some(first_id) == old_org_queues[bin_idx as int].first);
-                    assert(first_in_queue == old_queues@[bin_idx as int].first);
 
-                    assert(is_page_ptr(first_in_queue.id(), first_id));
-                    assert(next_slice.page_id@ == next_id);
-                    assert(Some(next_slice.page_id@) == local.page_organization.pages[pid].dlist_entry.unwrap().prev);
-                    assert(is_page_ptr(next_slice.page_ptr.id(), next_slice.page_id@));
-                    assert(next_slice.page_ptr.id() != 0);
-                    assert(is_page_ptr_opt(next_slice.page_ptr, local.page_organization.pages[pid].dlist_entry.unwrap().prev));
-                    assert(page_organization_pages_match_data(org_pages[pid], pages[pid], psa[pid], pid, local.page_organization.popped));
-                } else {
-                    assert(page_organization_pages_match_data(org_pages[pid], pages[pid], psa[pid], pid, local.page_organization.popped));
-                }
-            } else {
-                assert(next_slice.page_id@ == next_id);
-                assert(page_organization_pages_match_data(old_org_pages[pid], old_pages[pid], old_psa[pid], pid, old(local).page_organization.popped));
-                assert(page_organization_pages_match_data(org_pages[pid], pages[pid], psa[pid], pid, local.page_organization.popped));
-            }
-        }*/
 
-        /*assert forall |page_id: PageId| (#[trigger] local.page_organization.pages.dom().contains(page_id) &&
-            !local.page_organization.pages[page_id].is_used) <==> local.unused_pages.dom().contains(page_id)
-        by {
-            if (local.page_organization.pages.dom().contains(page_id) && !local.page_organization.pages[page_id].is_used) {
-                assert(local.unused_pages.dom().contains(page_id));
-            }
-            if local.unused_pages.dom().contains(page_id) {
-                assert(local.page_organization.pages.dom().contains(page_id) && !local.page_organization.pages[page_id].is_used);
-            }
-        }*/
 
-        //assert(forall |page_id: PageId| #[trigger] local.unused_pages.dom().contains(page_id) ==>
-        //    local.unused_pages[page_id] == local.psa[page_id]);
 
-        //assert(local.page_organization_valid());
         preserves_mem_chunk_good(*old(local), *local);
-        //assert(local.wf_main());
     }
 }
 
@@ -16053,7 +14075,6 @@ fn segment_span_allocate(
 
     let p = segment_page_start_from_slice(segment, slice, 0);
 
-    //assert(slice_count * SLICE_SIZE <= SLICES_PER_SEGMENT * SLICE_SIZE);
     if !segment_ensure_committed(segment, p, slice_count * SLICE_SIZE as usize, Tracked(&mut *local)) {
         return false;
     }
@@ -16061,7 +14082,6 @@ fn segment_span_allocate(
     let ghost old_local = *local;
     let ghost first_page_id = slice.page_id@;
 
-    //assert(local.page_organization.pages.dom().contains(slice.page_id@));
 
     let ghost range = first_page_id.range_from(0, slice_count as int);
 
@@ -16078,26 +14098,16 @@ fn segment_span_allocate(
         local.unused_pages.tracked_insert(first_page_id, first_psa);
     }
     unused_page_get_mut_count!(slice, local, count => {
-        // this is usually already set. I think the one case where it actually needs to
-        // be set is when initializing the segment.
         count = slice_count as u32;
     });
     unused_page_get_mut_inner!(slice, local, inner => {
-        // Not entirely sure what the rationale for setting to bsize to this value is.
-        // In normal operation, we're going to set the block_size to something else soon.
-        // If we are currently setting up page 0 as part of segment initialization,
-        // we do need to set this to some nonzero value.
         let bsize = slice_count * SLICE_SIZE as usize;
         inner.xblock_size = if bsize >= HUGE_BLOCK_SIZE as usize { HUGE_BLOCK_SIZE } else { bsize as u32 };
-        //assert(inner.xblock_size != 0);
     });
 
-    // Set up the remaining pages
     let mut i: usize = 1;
     let ghost local_snapshot = *local;
     let extra = slice_count - 1;
-    // Establish the page-range invariant at loop entry: range_from(1, extra+1) is a subrange
-    // of range_from(0, slice_count), whose pages are all unused and well-formed.
     assert forall |page_id|
         #[trigger] first_page_id.range_from(1, extra + 1).contains(page_id) implies
             local.unused_pages.dom().contains(page_id)
@@ -16140,8 +14150,6 @@ fn segment_span_allocate(
         let this_slice = slice.add_offset(i);
         let ghost this_page_id = PageId { idx: (first_page_id.idx + i) as nat, .. first_page_id };
         assert(first_page_id.range_from(1, extra + 1).contains(this_page_id));
-        //assert(is_page_ptr(local.unused_pages[this_page_id].points_to@.pptr, this_page_id));
-        //assert(i * SIZEOF_PAGE_HEADER <= SLICES_PER_SEGMENT * SIZEOF_PAGE_HEADER);
 
         let tracked mut this_psa = local.unused_pages.tracked_remove(this_page_id);
         let mut page = ptr_mut_read(this_slice.page_ptr, Tracked(&mut this_psa.points_to));
@@ -16160,39 +14168,6 @@ fn segment_span_allocate(
 
         i = i + 1;
 
-        /*proof {
-            assert forall |page_id|
-              #[trigger] local.unused_pages.dom().contains(page_id) implies
-              (
-                  if first_page_id.range_from(1, i as int).contains(page_id) {
-                      psa_differ_only_in_offset(
-                          local.unused_pages[page_id],
-                          local_snapshot.unused_pages[page_id])
-                      && local.unused_pages[page_id].points_to.value().offset ==
-                          page_id.idx - first_page_id.idx
-                  } else {
-                      local.unused_pages[page_id] == local_snapshot.unused_pages[page_id]
-                  }
-              )
-           by {
-              if first_page_id.range_from(1, i as int).contains(page_id) {
-                      assert(psa_differ_only_in_offset(
-                          local.unused_pages[page_id],
-                          local_snapshot.unused_pages[page_id]));
-                      if page_id.idx - first_page_id.idx == i - 1 {
-                          assert(page_id == this_page_id);
-                          assert(local.unused_pages[this_page_id].points_to.value().offset == i - 1);
-                          assert(local.unused_pages[page_id].points_to.value().offset ==
-                              page_id.idx - first_page_id.idx);
-                      } else {
-                          assert(local.unused_pages[page_id].points_to.value().offset ==
-                              page_id.idx - first_page_id.idx);
-                      }
-                  } else {
-                      assert(local.unused_pages[page_id] == local_snapshot.unused_pages[page_id]);
-                  }
-           }
-        }*/
     }
 
     unused_page_get_mut_inner!(slice, local, inner => {
@@ -16210,45 +14185,12 @@ fn segment_span_allocate(
 
         preserves_mem_chunk_good(old_local, *local);
 
-        /*if old_po.popped.is_VeryUnready() {
-            assert(local.page_organization.pages[first_page_id].page_header_kind.is_none());
-            assert(page_organization_pages_match_data(local.page_organization.pages[first_page_id], local.pages[first_page_id], local.psa[first_page_id], first_page_id, local.page_organization.popped));
-            assert(page_organization_pages_match(local.page_organization.pages, local.pages, local.psa, local.page_organization.popped));
-            assert(page_organization_segments_match(local.page_organization.segments, local.segments));
-            assert(local.page_organization_valid());
-        } else {
-            let org_pages = local.page_organization.pages;
-            let pages = local.pages;
-            let psa = local.psa;
-            let popped = local.page_organization.popped;
-            assert forall |pid| #[trigger] org_pages.dom().contains(pid) implies
-              page_organization_pages_match_data(org_pages[pid], pages[pid], psa[pid], pid, popped)
-            by {
-                if pid == first_page_id {
-                    assert(page_organization_pages_match_data(org_pages[pid], pages[pid], psa[pid], pid, popped));
-                } else {
-                    assert(page_organization_pages_match_data(org_pages[pid], pages[pid], psa[pid], pid, popped));
-                }
-            }
-            assert(local.page_organization.pages[first_page_id].page_header_kind.is_none());
-            assert(page_organization_pages_match_data(local.page_organization.pages[first_page_id], local.pages[first_page_id], local.psa[first_page_id], first_page_id, local.page_organization.popped));
-            assert(page_organization_pages_match(local.page_organization.pages, local.pages, local.psa, local.page_organization.popped));
-            assert(page_organization_segments_match(local.page_organization.segments, local.segments));
-            assert(local.page_organization_valid());
-        }
-        assert(local.wf_main());*/
     }
 
     return true;
 }
 
-// segment_reclaim_or_alloc
-//  -> segment_alloc
-//  -> segment_os_alloc
-//  -> arena_alloc_aligned
 
-// For normal pages, required == 0
-// For huge pages, required == ?
 #[verifier::spinoff_prover]
 fn segment_alloc(
     required: usize,
@@ -16256,14 +14198,12 @@ fn segment_alloc(
     req_arena_id: ArenaId,
     tld: TldPtr,
     Tracked(local): Tracked<&mut Local>,
-    // os_tld,
-    // huge_page,
 ) -> (segment_ptr: SegmentPtr)
     requires
         old(local).wf(),
         tld.wf(),
         tld.is_in(*old(local)),
-        required == 0, // only handling non-huge-pages for now
+        required == 0, 
     ensures
         final(local).wf(),
         common_preserves(*old(local), *final(local)),
@@ -16321,19 +14261,14 @@ fn segment_alloc(
         local.thread_token = thread_state_tok;
         const_facts();
         segment_start_eq(segment_id, pre_segment_id);
-        //assert(commit_mask.bytes(segment_id) == commit_mask.bytes(pre_segment_id));
     }
 
-    // the C version skips this step if the bytes are all zeroed by the OS
-    // We would need a complex transmute operation to do the same thing
 
     let tracked seg_header_points_to_raw = mem_chunk.take_points_to_range(
         segment_start(segment_id), SIZEOF_SEGMENT_HEADER as int);
 
-    //assert(SIZEOF_SEGMENT_HEADER == vstd::layout::size_of::<SegmentHeader>());
     proof { segment_start_mult8(segment_id); }
-    //assert(segment_start(segment_id) % vstd::layout::align_of::<SegmentHeader>() as int == 0);
-    vstd::layout::layout_for_type_is_valid::<SegmentHeader>(); // $line_count$Proof$
+    vstd::layout::layout_for_type_is_valid::<SegmentHeader>(); 
 
     let tracked mut seg_header_points_to = seg_header_points_to_raw.into_typed::<SegmentHeader>(segment_start(segment_id) as usize);
     let allow_decommit = option_allow_decommit() && !is_pinned && !mem_large;
@@ -16362,7 +14297,6 @@ fn segment_alloc(
     });
     let (cur_thread_id, Tracked(is_thread)) = crate::thread::thread_id();
     proof { local.is_thread.agrees(is_thread); }
-    //assert(segment_ptr.segment_ptr@.provenance == seg_header_points_to.ptr()@.provenance);
     ptr_mut_write(segment_ptr.segment_ptr, Tracked(&mut seg_header_points_to), SegmentHeader {
         main: pcell_main,
         abandoned_next: 0,
@@ -16376,21 +14310,16 @@ fn segment_alloc(
         segment_id: Ghost(segment_id),
     });
 
-    //assert(segment_ptr.segment_ptr.id() + SEGMENT_SIZE < usize::MAX);
     let mut i: usize = 0;
     let mut cur_page_ptr = segment_ptr.segment_ptr.with_addr(
         segment_ptr.segment_ptr.addr() + SIZEOF_SEGMENT_HEADER
     ) as *mut Page;
-    //assert(i * SIZEOF_PAGE_HEADER == 0);
     let ghost old_mem_chunk = mem_chunk;
     let tracked mut psa_map = Map::<PageId, PageSharedAccess>::tracked_empty();
     let tracked mut pla_map = Map::<PageId, PageLocalAccess>::tracked_empty();
-    //assert(segment_ptr.segment_ptr@.provenance == segment_ptr.segment_id@.provenance);
     while i <= SLICES_PER_SEGMENT as usize
         invariant mem_chunk.os == old_mem_chunk.os,
             mem_chunk.wf(),
-            //mem_chunk.pointsto_has_range(segment_start(segment_id) + SIZEOF_SEGMENT_HEADER + i * SIZEOF_PAGE_HEADER,
-            //  COMMIT_SIZE - (SIZEOF_SEGMENT_HEADER + i * SIZEOF_PAGE_HEADER)),
             set_int_range(
                     segment_start(segment_id) + SIZEOF_SEGMENT_HEADER,
                     segment_start(segment_id) + COMMIT_SIZE) <= old_mem_chunk.points_to.dom(),
@@ -16445,22 +14374,16 @@ fn segment_alloc(
         let ghost page_id = PageId { segment_id, idx: i as nat };
         proof {
             const_facts();
-            //assert(SIZEOF_PAGE_HEADER as int == vstd::layout::size_of::<Page>());
             segment_start_mult8(segment_id);
-            //assert(cur_page_ptr.id() % vstd::layout::align_of::<Page>() as int == 0);
             assert(
                 COMMIT_SIZE - (SIZEOF_SEGMENT_HEADER + SLICES_PER_SEGMENT * SIZEOF_PAGE_HEADER)
                 <= COMMIT_SIZE - (SIZEOF_SEGMENT_HEADER + i * SIZEOF_PAGE_HEADER))
                 by(nonlinear_arith) requires i <= SLICES_PER_SEGMENT;
-            //assert(SIZEOF_PAGE_HEADER as int <=
-            //    COMMIT_SIZE - (SIZEOF_SEGMENT_HEADER + i * SIZEOF_PAGE_HEADER));
             assert(i * SIZEOF_PAGE_HEADER + SIZEOF_PAGE_HEADER == (i + 1) * SIZEOF_PAGE_HEADER) by(nonlinear_arith);
-            //assert(SIZEOF_SEGMENT_HEADER + i * SIZEOF_PAGE_HEADER < SEGMENT_SIZE);
-            //assert(is_page_ptr(cur_page_ptr.id(), page_id));
         }
 
         let ghost phstart = segment_start(segment_id) + SIZEOF_SEGMENT_HEADER + i * SIZEOF_PAGE_HEADER;
-        vstd::layout::layout_for_type_is_valid::<Page>(); // $line_count$Proof$
+        vstd::layout::layout_for_type_is_valid::<Page>(); 
         let tracked page_header_points_to_raw = mem_chunk.take_points_to_range(
             phstart, SIZEOF_PAGE_HEADER as int);
         let tracked mut page_header_points_to = page_header_points_to_raw.into_typed::<Page>(phstart as usize);
@@ -16502,31 +14425,11 @@ fn segment_alloc(
             pla_map.tracked_insert(page_id, pla);
         }
 
-        //assert(cur_page_ptr.id() + SIZEOF_PAGE_HEADER <= usize::MAX);
 
         i = i + 1;
         cur_page_ptr = cur_page_ptr.with_addr(cur_page_ptr.addr() + SIZEOF_PAGE_HEADER);
 
-        /*assert(psa_map.dom().contains(page_id));
-        assert( pla_map.dom().contains(page_id));
-        assert( pla_map[page_id].inner@.value.is_some());
-        assert( pla_map[page_id].count@.value.is_some());
-        assert( pla_map[page_id].prev@.value.is_some());
-        assert( pla_map[page_id].prev@.value.is_some());
-        assert( pla_map[page_id].inner@.value.unwrap().zeroed());
-        assert( pla_map[page_id].count@.value.unwrap() == 0);
-        assert( pla_map[page_id].prev@.value.unwrap().id() == 0);
-        assert( pla_map[page_id].next@.value.unwrap().id() == 0);
 
-        assert( is_page_ptr(psa_map[page_id].points_to@.pptr, page_id));
-        assert( psa_map[page_id].points_to.is_init());
-        assert( psa_map[page_id].points_to.value().count.id() == pla_map[page_id].count.id());
-        assert( psa_map[page_id].points_to.value().inner.id() == pla_map[page_id].inner.id());
-        assert( psa_map[page_id].points_to.value().prev.id() == pla_map[page_id].prev.id());
-        assert( psa_map[page_id].points_to.value().next.id() == pla_map[page_id].next.id());
-        assert( psa_map[page_id].points_to.value().offset == 0);
-        assert( psa_map[page_id].points_to.value().xthread_free.is_empty());
-        assert( psa_map[page_id].points_to.value().xheap.is_empty());*/
 
     }
 
@@ -16554,48 +14457,12 @@ fn segment_alloc(
                 ssa);
         local.thread_token = thread_state_tok;
 
-        ////////// Set up pages and stuff
 
         local.page_organization = PageOrg::take_step::create_segment(local.page_organization, segment_id);
 
-        /*assert forall |page_id|
-            #[trigger] local.pages.dom().contains(page_id) &&
-              local.unused_pages.dom().contains(page_id) implies
-                local.pages.index(page_id).wf_unused(page_id, local.unused_pages[page_id], local.page_organization.popped)
-        by {
-            if page_id.segment_id == segment_id {
-                assert(psa_map[page_id].points_to.value().wf_unused());
-                assert(psa_map[page_id].wf_unused(page_id));
-                assert(pla_map.dom().contains(page_id));
-                assert(local.pages.index(page_id).wf_unused(page_id, local.unused_pages[page_id], local.page_organization.popped));
-            } else {
-                assert(local.pages.index(page_id).wf_unused(page_id, local.unused_pages[page_id], local.page_organization.popped));
-            }
-        }*/
-        //assert(i == SLICES_PER_SEGMENT + 1);
-        //assert(local.segments[segment_id].points_to.value().thread_id.wf(
-        //    local.instance, segment_id));
-        /*assert(local.segments[segment_id].wf(segment_id,
-                local.thread_token.value().segments.index(segment_id),
-                local.instance));*/
         assert(local.thread_token.value().segments.dom() =~= local.segments.dom());
 
-        /*let org_pages = local.page_organization.pages;
-        let pages = local.pages;
-        let psa = local.psa;
-        assert forall |page_id| #[trigger] org_pages.dom().contains(page_id) implies
-            page_organization_pages_match_data(org_pages[page_id], pages[page_id], local.psa[page_id], page_id, local.page_organization.popped)
-        by {
-            if page_id.segment_id == segment_id {
-                assert(page_organization_pages_match_data(org_pages[page_id], pages[page_id], local.psa[page_id], page_id, local.page_organization.popped));
-            } else {
-                assert(page_organization_pages_match_data(org_pages[page_id], pages[page_id], local.psa[page_id], page_id, local.page_organization.popped));
-            }
-        }*/
 
-        /*assert(page_organization_pages_match(local.page_organization.pages,
-            local.pages, local.psa, local.page_organization.popped));
-        assert(local.page_organization_valid());*/
         preserves_mem_chunk_good_except(local_snap1, *local, segment_id);
         assert(mem_chunk_good1(
             local.segments[segment_id].mem,
@@ -16608,8 +14475,6 @@ fn segment_alloc(
             reveal(CommitMask::bytes);
             empty_segment_pages_used_total(*local, segment_id);
         }
-        //assert(local.mem_chunk_good(segment_id));
-        //assert(local.wf_main());
     }
 
     let first_slice = PagePtr {
@@ -16617,17 +14482,11 @@ fn segment_alloc(
             segment_ptr.segment_ptr.addr() + SIZEOF_SEGMENT_HEADER) as *mut Page,
         page_id: Ghost(PageId { segment_id, idx: 0 }),
     };
-    //assert(first_slice.wf());
     let success = segment_span_allocate(segment_ptr, first_slice, 1, tld, Tracked(&mut *local));
     if !success {
-        todo(); // TODO actually we don't need this check cause we can't fail
+        todo(); 
     }
-    //assert(local.wf_main());
 
-    /*let all_page_headers_points_to_raw = mem_chunk.take_points_to_range(
-        segment_start(segment_id) + SIZEOF_SEGMENT_HEADER,
-        (NUM_SLICES + 1) * SIZEOF_PAGE_HEADER,
-    );*/
 
     let ghost local_snap = *local;
     let ghost next_state = PageOrg::take_step::forget_about_first_page2(local.page_organization);
@@ -16638,7 +14497,6 @@ fn segment_alloc(
         local.page_organization = next_state;
         local.psa = local.psa.union_prefer_right(local.unused_pages);
         preserves_mem_chunk_good(local_snap, *local);
-        //assert(local.wf_main());
     }
 
     if required == 0 {
@@ -16664,17 +14522,6 @@ fn segment_os_alloc(
     request_commit: bool,
     tld: TldPtr,
     Tracked(local): Tracked<&mut Local>,
-// outparams
-// segment_ptr: SegmentPtr,
-// new_psegment_slices: usize
-// new_ppre_size: usize
-// new_pinfo_slices: usize,
-// is_zero: bool,
-// pcommit: bool,
-// memid: MemId,
-// mem_large: bool,
-// is_pinned: bool,
-// align_offset: usize,
 ) -> (res: (SegmentPtr, usize, usize, usize, bool, bool, MemId, bool, bool, usize, Tracked<MemChunk>))
     requires psegment_slices as int * SLICE_SIZE as int <= usize::MAX,
         pinfo_slices == 1,
@@ -16687,7 +14534,7 @@ fn segment_os_alloc(
         final(local).wf(),
         common_preserves(*old(local), *final(local)),
         final(local).page_organization == old(local).page_organization,
-        *final(pdecommit_mask) == *old(pdecommit_mask), // this is only modified if segment cache is used
+        *final(pdecommit_mask) == *old(pdecommit_mask), 
     ({
         let (segment_ptr, new_psegment_slices, new_ppre_size, new_pinfo_slices, is_zero, pcommit, mem_id, mem_large, is_pinned, align_offset, mem_chunk) = res; {
         &&& (segment_ptr.segment_ptr.addr() != 0 ==> {
@@ -16719,12 +14566,6 @@ fn segment_os_alloc(
     let tracked mut mem = MemChunk::empty();
 
     if page_alignment > 0 {
-        /*
-        assert(page_alignment >= SEGMENT_ALIGN);
-        alignment = page_alignment;
-        let info_size = pinfo_sizes * SLICE_SIZE;
-        align_offset = align_up(info_size, SEGMENT_ALIGN);
-        */
         todo();
     }
 
@@ -16733,7 +14574,6 @@ fn segment_os_alloc(
     let mut segment = SegmentPtr::null();
 
     if page_alignment == 0 {
-        // TODO get from cache if possible
     }
 
     if segment.is_null() {
@@ -16751,7 +14591,6 @@ fn segment_os_alloc(
         pcommit = commit;
         proof {
             mem = _mem;
-            //assert(segment.wf());
         }
 
         if segment.is_null() {
@@ -16769,7 +14608,6 @@ fn segment_os_alloc(
     let mut commit_needed_mask = CommitMask::empty();
     commit_needed_mask.create(0, commit_needed);
     if !pcommit_mask.all_set(&commit_needed_mask) {
-        //assert(commit_needed as int * COMMIT_SIZE as int <= segment_size);
 
         let (success, is_zero) = crate::os_commit::os_commit(
             segment.segment_ptr as *mut u8,
@@ -16781,21 +14619,10 @@ fn segment_os_alloc(
         pcommit_mask.set(&commit_needed_mask);
     }
 
-    // note: segment metadata is set by the caller
 
-    // TODO what does _mi_segment_map_allocated_at do?
 
     proof {
-        /*assert(segment.wf());
-        assert(mem.wf());
-        assert(mem.os_exact_range(segment.segment_ptr.id(), SEGMENT_SIZE as int));*/
-        //assert(set_int_range(
-        //    segment_start(segment.segment_id@),
-        //    segment_start(segment.segment_id@) + COMMIT_SIZE
-        //  ).subset_of( pcommit_mask.bytes(segment.segment_id@) ))
-        //by {
         crate::commit_mask::set_int_range_commit_size(segment.segment_id@, *pcommit_mask);
-        //}
         assert(pcommit_mask.bytes(segment.segment_id@).subset_of(mem.os_rw_bytes()))
         by {
             reveal(CommitMask::bytes);
@@ -16818,49 +14645,11 @@ fn segment_free(segment: SegmentPtr, force: bool, tld: TldPtr, Tracked(local): T
         common_preserves(*old(local), *final(local)),
 {
     todo();
-    /*
-    proof {
-        let next_state = PageOrg::take_step::segment_freeing_start(local.page_organization, segment.segment_id@);
-        local.page_organization = next_state;
-        preserves_mem_chunk_good(*old(local), *local);
-        assert(local.wf_main());
-    }
 
-    let mut slice = segment.get_page_header_ptr(0);
-    let end = segment.get_page_after_end();
-    let page_count = 0;
-    while slice.page_ptr.to_usize() < end.to_usize()
-        invariant local.wf_main(),
-            segment.wf(),
-            segment.is_in(*local),
-            tld.is_in(*local),
-            tld.wf(),
-            slice.page_ptr.id() < end.id() ==> slice.wf(),
-            slice.page_ptr.id() >= end.id() ==> slice.page_id@.idx == SLICES_PER_SEGMENT,
-            slice.page_id@.segment_id == segment.segment_id@,
-            local.page_organization.popped == Popped::SegmentFreeing(slice.page_id@.segment_id, slice.page_id@.idx as int),
-            end.id() == page_header_start(
-                PageId { segment_id: segment.segment_id@, idx: SLICES_PER_SEGMENT as nat }),
-    {
-        let ghost list_idx = local.page_organization.segment_freeing_is_in();
 
-        if slice.get_inner_ref(Tracked(&*local)).xblock_size == 0 && !segment.is_kind_huge(Tracked(&*local)) {
-            let count = slice.get_count(Tracked(&*local));
-            let sbin_idx = slice_bin(count as usize);
-            span_queue_delete(tld, sbin_idx, slice, Tracked(&mut *local), Ghost(list_idx), Ghost(count as int));
-        } else {
-            todo();
-        }
 
-        let count = slice.get_count(Tracked(&*local));
-        proof { local.page_organization.get_count_bound(slice.page_id@); }
-        slice = slice.add_offset(count as usize);
-    }
 
-    todo();
 
-    // mi_segment_os_free(segment, tld);
-    */
 }
 
 fn segment_os_free(segment: SegmentPtr, tld: TldPtr, Tracked(local): Tracked<&mut Local>)
@@ -16869,30 +14658,14 @@ fn segment_os_free(segment: SegmentPtr, tld: TldPtr, Tracked(local): Tracked<&mu
         segment.wf(), segment.is_in(*old(local)),
         tld.wf(), tld.is_in(*old(local)),
 {
-    // TODO segment_map_freed_at(segment);
 
-    //let size = segment_size(segment, Tracked(&*local)) as isize;
-    //segments_track_size(-size, tld, Tracked(&mut *local));
     todo();
 
-    /*
-    let skip_cache_push = size != SEGMENT_SIZE
-        || segment.get_mem_align_offset(Tracked(&*local)) != 0
-        || segment.is_kind_huge(Tracked(&*local));
 
-    let mut try_arena_free = skip_cache_push;
-    if !skip_cache_push {
-        // TODO implement segment cache
-        // !_mi_segment_cache_push(segment, size, segment->memid, &segment->commit_mask, &segment->decommit_mask, segment->mem_is_large, segment->mem_is_pinned, tld->os))
-    }
-    */
 
 
 }
 
-// segment_slices = # of slices in the segment
-// pre_size = size of the pages that contain the segment metadata
-// info_slices = # of slices needed to contain the pages of the segment metadata
 fn segment_calculate_slices(required: usize)
   -> (res: (usize, usize, usize))
   requires required == 0,
@@ -16996,8 +14769,6 @@ fn segment_page_clear(page: PagePtr, tld: TldPtr, Tracked(local): Tracked<&mut L
     let ghost page_id = page.page_id@;
     let ghost next_state = PageOrg::take_step::set_range_to_not_used(local.page_organization);
     let ghost n_slices = local.page_organization.pages[page_id].count.unwrap();
-    //assert(page.is_used_and_primary(*local));
-    //assert(local.thread_token.value().pages.dom().contains(page_id));
     let ghost page_state = local.thread_token.value().pages[page_id];
 
     let segment = SegmentPtr::ptr_segment(page);
@@ -17076,25 +14847,8 @@ fn segment_page_clear(page: PagePtr, tld: TldPtr, Tracked(local): Tracked<&mut L
 
         proof { delay_token = _delay_token; heap_of_page_token = _heap_of_page_token; }
     });
-    /*
-    used_page_get_mut_prev!(page, local, p => {
-        p = PPtr::from_usize(0);
-    });
-    used_page_get_mut_next!(page, local, n => {
-        n = PPtr::from_usize(0);
-    });
-    */
 
     proof {
-        /*assert forall |pid: PageId|
-            page_id.range_from(0, n_slices as int).contains(pid) &&
-              page_id != pid implies local.thread_token.value().pages[pid].offset != 0
-        by {
-            //assert(local.page_organization.pages.dom().contains(pid));
-            //assert(0 <= pid.idx < SLICES_PER_SEGMENT);
-            //assert(local.page_organization.pages[pid].offset.is_some());
-            //assert(local.page_organization.pages[pid].offset.unwrap() != 0);
-        }*/
 
         local.psa = local.psa.union_prefer_right(local.unused_pages);
 
@@ -17106,73 +14860,21 @@ fn segment_page_clear(page: PagePtr, tld: TldPtr, Tracked(local): Tracked<&mut L
 
 
         let tracked thread_state_tok = local.take_thread_token();
-        //assert(delay_token@.key == page_id);
-        //assert(heap_of_page_token@.key == page_id);
         let tracked thread_tok = local.instance.page_destroy_tokens(local.thread_id, page_id, n_slices, thread_state_tok, delay_token, heap_of_page_token);
         local.thread_token = thread_tok;
 
         preserves_mem_chunk_good_on_transfer_back(*old(local), *local, page_id);
         preserves_mem_chunk_good_except(*old(local), *local, segment_id);
 
-        /*assert forall |pid|
-            #[trigger] local.pages.dom().contains(pid) implies
-              ((local.unused_pages.dom().contains(pid) <==>
-                !local.thread_token.value().pages.dom().contains(pid)))
-        by {
-            let s = page_id.range_from(0, n_slices as int);
-            if local.unused_pages.dom().contains(pid) {
-                if s.contains(pid) {
-                    assert(!local.thread_token.value().pages.dom().contains(pid));
-                } else {
-                    assert(!psa_map.dom().contains(pid));
-                    assert(old(local).unused_pages.dom().contains(pid));
-                    assert(!old(local).thread_token.value().pages.dom().contains(pid));
-                    assert(!local.thread_token.value().pages.dom().contains(pid));
-                }
-            }
-            if !local.unused_pages.dom().contains(pid) {
-                assert(local.thread_token.value().pages.dom().contains(pid));
-            }
-        }*/
-
-        /*let org_pages = local.page_organization.pages;
-        let pages = local.pages;
-        let psa = local.psa;
-
-        let old_psa = old(local).psa;
-        assert forall |pid| #[trigger] org_pages.dom().contains(pid) implies
-            page_organization_pages_match_data(org_pages[pid], pages[pid], psa[pid])
-        by {
-            let s = page_id.range_from(0, n_slices as int);
-            if s.contains(pid) {
-                if pid == page_id {
-                    assert(org_pages[pid].offset.is_some());
-                    let o = org_pages[pid].offset.unwrap();
-
-                    assert(old_psa[pid].points_to@.value.unwrap().offset as int == o * SIZEOF_PAGE_HEADER);
 
 
-                    assert(old(local).thread_token.value().pages[pid].shared_access
-                        .points_to@.value.unwrap().offset as int == o * SIZEOF_PAGE_HEADER);
 
-                    assert(psa_map[pid].points_to@.value.unwrap().offset as int == o * SIZEOF_PAGE_HEADER);
-                    assert(local.unused_pages[pid].points_to@.value.unwrap().offset as int == o * SIZEOF_PAGE_HEADER);
 
-                    assert(psa[pid].points_to@.value.unwrap().offset as int == o * SIZEOF_PAGE_HEADER);
 
-                    assert(page_organization_pages_match_data(org_pages[pid], pages[pid], psa[pid]));
-                } else if pid.idx == page_id.idx + n_slices - 1 {
-                    assert(page_organization_pages_match_data(org_pages[pid], pages[pid], psa[pid]));
-                } else {
-                    assert(page_organization_pages_match_data(org_pages[pid], pages[pid], psa[pid]));
-                }
-            } else {
-                assert(page_organization_pages_match_data(org_pages[pid], pages[pid], psa[pid]));
-            }
-        }
 
-        assert(page_organization_pages_match(local.page_organization.pages, local.pages, local.psa));
-        assert(local.page_organization_valid());*/
+
+
+
 
         assert(local.wf_main());
     }
@@ -17189,12 +14891,10 @@ fn segment_page_clear(page: PagePtr, tld: TldPtr, Tracked(local): Tracked<&mut L
         local.page_organization = next_state;
         local.psa = local.psa.union_prefer_right(local.unused_pages);
         preserves_mem_chunk_good(local_snap, *local);
-        //assert(local.wf_main());
     }
 
     proof {
         preserves_mem_chunk_good(local_snap, *local);
-        //assert(local.wf());
     }
 }
 
@@ -17239,16 +14939,14 @@ fn segment_span_free_coalesce(slice: PagePtr, tld: TldPtr, Tracked(local): Track
 
     proof {
         local.page_organization.get_count_bound_very_unready();
-        //assert(slice_count == local.page_organization.pages[slice.page_id@].count.unwrap());
         const_facts();
     }
 
-    //// Merge with the 'after' page
 
     let (page, less_than_end) = slice.add_offset_and_check(slice_count as usize, segment);
     proof {
         if less_than_end {
-            local.page_organization.valid_page_after(); //slice.page_id@, page.page_id@);
+            local.page_organization.valid_page_after(); 
         }
     }
     if less_than_end && page.get_inner_ref(Tracked(&*local)).xblock_size == 0 {
@@ -17293,37 +14991,17 @@ fn segment_span_free_coalesce(slice: PagePtr, tld: TldPtr, Tracked(local): Track
         slice_count += n_count;
 
         proof {
-            //assert(!local.page_organization.pages[page_id].is_used);
             local.page_organization = next_state;
 
-            /*let local1 = local_snap;
-            let local2 = *local;
-            assert forall |page_id| local1.is_used_primary(page_id) implies
-              local2.is_used_primary(page_id)
-              && local1.page_capacity(page_id) <= local2.page_capacity(page_id)
-              && local1.page_reserved(page_id) <= local2.page_reserved(page_id)
-              && local1.block_size(page_id) == local2.block_size(page_id)
-            by {
-              assert(local2.is_used_primary(page_id));
-              assert(local1.page_capacity(page_id) <= local2.page_capacity(page_id));
-              assert(local1.page_reserved(page_id) <= local2.page_reserved(page_id));
-              assert(local1.block_size(page_id) == local2.block_size(page_id));
-            }*/
 
 
             preserves_mem_chunk_good(local_snap, *local);
-            //assert(page_organization_queues_match(local.page_organization.unused_dlist_headers,
-            //      local.tld@.value.unwrap().segments.span_queue_headers@));
-            //assert(local.page_organization_valid());
-            //assert(local.wf_main());
         }
     }
 
     assert(local.wf_main());
 
-    //// Merge with the 'before' page
 
-    // Had to factor this out for timeout-related reasons :\
     let (slice, slice_count) = segment_span_free_coalesce_before(segment, slice, tld, Tracked(&mut *local), slice_count);
 
     segment_span_free(segment, slice.get_index(), slice_count as usize, true, tld,
@@ -17363,19 +15041,11 @@ fn segment_span_free_coalesce_before(segment: SegmentPtr, slice: PagePtr, tld: T
 
     if slice.is_gt_0th_slice(segment) {
         proof {
-            /*assert(local.page_organization.popped == Popped::VeryUnready(
-                slice.page_id@.segment_id,
-                slice.page_id@.idx as int,
-                slice_count as int,
-                local.page_organization.popped.get_VeryUnready_3()));*/
             local.page_organization.valid_page_before();
         }
         let last = slice.sub_offset(1);
-        //assert(local.page_organization.pages.dom().contains(last.page_id@));
-        let offset = last.get_ref(Tracked(&*local)).offset; // multiplied by SIZEOF_PAGE_HEADER
-        //assert(local.page_organization.pages[last.page_id@].offset.is_some());
+        let offset = last.get_ref(Tracked(&*local)).offset; 
         let ghost o = local.page_organization.pages[last.page_id@].offset.unwrap();
-        //assert(last.page_id@.idx - o >= 0);
         let ghost page_id = PageId { segment_id: last.page_id@.segment_id,
                 idx: (last.page_id@.idx - o) as nat };
         let page_ptr = calculate_page_ptr_subtract_offset(last.page_ptr, offset,
@@ -17384,7 +15054,6 @@ fn segment_span_free_coalesce_before(segment: SegmentPtr, slice: PagePtr, tld: T
         let page = PagePtr { page_ptr, page_id: Ghost(page_id) };
         proof {
             is_page_ptr_nonzero(page_ptr, page_id);
-            //assert(page.wf());
         }
         if page.get_inner_ref(Tracked(&*local)).xblock_size == 0 {
             let ghost local_snap = *local;
@@ -17428,51 +15097,24 @@ fn segment_span_free_coalesce_before(segment: SegmentPtr, slice: PagePtr, tld: T
             slice = page;
 
             proof {
-                //assert(n_count == local.page_organization.pages[page_id].count.unwrap());
-                //assert(!local.page_organization.pages[page_id].is_used);
                 local.page_organization = next_state;
                 preserves_mem_chunk_good(local_snap, *local);
-                //assert(page_organization_queues_match(local.page_organization.unused_dlist_headers,
-                //      local.tld@.value.unwrap().segments.span_queue_headers));
-                //assert(local.page_organization_valid());
-                //let slice_page_id = slice.page_id@;
-                //assert(
-                //  local.pages.index(slice_page_id).wf_unused(slice_page_id, local.unused_pages[slice_page_id], local.page_organization.popped, local.instance)
-                //);
 
-                //assert(
-                //  old(local).pages.index(orig_id).wf_unused(orig_id, old(local).unused_pages[orig_id], old(local).page_organization.popped, local.instance)
-                //);
-                //assert(local.pages.index(orig_id).inner.value().zeroed_except_block_size());
-                //assert(
-                //  local.pages.index(orig_id).wf_unused(orig_id, local.unused_pages[orig_id], local.page_organization.popped, local.instance)
-                //);
-                //assert(local.wf_main());
 
-                /*assert(slice.wf());
-                assert(local.page_organization.popped.is_VeryUnready());
-                assert(local.page_organization.popped.get_VeryUnready_1()
-                    == slice.page_id@.idx as int);
-                assert(local.page_organization.popped.get_VeryUnready_2()
-                    == slice_count as int);
-                assert(local.page_organization.popped == Popped::VeryUnready(slice.page_id@.segment_id, slice.page_id@.idx as int, slice_count as int));*/
             }
         }
     }
 
     proof {
         local.page_organization.get_count_bound_very_unready();
-        //assert(slice.page_id@.idx + slice_count <= SLICES_PER_SEGMENT);
     }
 
     (slice, slice_count)
 }
 
 }
-// ===== END INLINED DEPENDENCY: segment.rs =====
 }
 mod commit_segment {
-// ===== BEGIN INLINED DEPENDENCY: commit_segment.rs =====
 #![allow(unused_imports)]
 
 use vstd::prelude::*;
@@ -17494,14 +15136,13 @@ fn clock_now() -> i64 {
     t.tv_sec.wrapping_mul(1000).wrapping_add( (((t.tv_nsec as u64) / 1000000) as i64) )
 }
 
-// Should not be called for huge segments, I think? TODO can probably optimize out some checks
 fn segment_commit_mask(
     segment_ptr: *mut u8,
     conservative: bool,
     p: usize,
     size: usize,
     cm: &mut CommitMask)
- -> (res: (*mut u8, usize)) // start_p, full_size
+ -> (res: (*mut u8, usize)) 
     requires
         segment_ptr as int % SEGMENT_SIZE as int == 0,
         segment_ptr as int + SEGMENT_SIZE <= usize::MAX,
@@ -17515,10 +15156,6 @@ fn segment_commit_mask(
             && (!conservative ==> start_p as int <= p <= p + size <= start_p as int + full_size)
             && start_p as int >= segment_ptr as int
             && start_p as int + full_size <= segment_ptr as int + SEGMENT_SIZE
-            //&& (!conservative ==> set_int_range((p - segment_ptr) / COMMIT_SIZE as int,
-            //    (((p + size - 1 - segment_ptr as int) / COMMIT_SIZE as int) + 1)).subset_of(cm@))
-            //&& (conservative ==> cm@ <= set_int_range((p - segment_ptr) / COMMIT_SIZE as int,
-            //    (((p + size - 1 - segment_ptr as int) / COMMIT_SIZE as int) + 1)))
             && start_p as int % COMMIT_SIZE as int == 0
             && full_size as int % COMMIT_SIZE as int == 0
             && final(cm)@ =~=
@@ -17530,8 +15167,6 @@ fn segment_commit_mask(
             start_p as int <= segment_ptr as int + i * SLICE_SIZE
             && start_p as int + full_size >= segment_ptr as int + (i + 1) * SLICE_SIZE
         )
-        //&& start_p as int % SLICE_SIZE as int == 0
-        //&& full_size as int % SLICE_SIZE as int == 0
     }})
 {
     proof { const_facts(); }
@@ -17615,10 +15250,6 @@ fn segment_commitx(
         segment.is_in(*old(local)),
         p >= segment.segment_ptr.addr(),
         p + size <= segment.segment_ptr.addr() + SEGMENT_SIZE,
-        // !commit ==> old(local).segments[segment.segment_id@]
-        //    .mem.os_has_range_read_write(p as int, size as int),
-        // !commit ==> old(local).segments[segment.segment_id@]
-        //    .mem.pointsto_has_range(p as int, size as int),
         !commit ==>
             set_int_range(p as int, p + size)
              <= old(local).decommit_mask(segment.segment_id@).bytes(segment.segment_id@),
@@ -17662,12 +15293,8 @@ pub fn segment_ensure_committed(
         && segment.get_decommit_mask(Tracked(&*local)).is_empty()
     {
         proof {
-            //assert forall |j: int| set_int_range(p as int, p + size).contains(j)
-            //  implies local.commit_mask(segment.segment_id@).bytes(segment.segment_id@).contains(j)
-            //by {
                 const_facts();
                 reveal(CommitMask::bytes);
-            //}
         }
 
         return true;
@@ -17729,16 +15356,6 @@ pub fn segment_perhaps_decommit(
             let segment_id = segment.segment_id@;
             segment_start_mult_commit_size(segment_id);
             assert(segment.segment_ptr as int % COMMIT_SIZE as int == 0);
-            /*assert forall |addr| mask.bytes(segment_id).contains(addr)
-                implies set_int_range(p as int, p + size).contains(addr)
-            by {
-                assert(mask@.contains((addr - segment.segment_ptr.addr()) / COMMIT_SIZE as int));
-                assert((addr - segment.segment_ptr.addr()) / COMMIT_SIZE as int
-                    >= (start - segment.segment_ptr.addr()) / COMMIT_SIZE as int);
-                assert(addr >= start);
-                assert(addr >= p);
-                assert(addr < p + size);
-            }*/
             assert(mask.bytes(segment_id)
                 <= set_int_range(p as int, p + size));
             assert(cmask.bytes(segment_id)
@@ -17747,10 +15364,6 @@ pub fn segment_perhaps_decommit(
                 old(local).decommit_mask(segment_id).bytes(segment_id) + cmask.bytes(segment_id));
             assert(old(local).mem_chunk_good(segment_id));
             preserve_totals(*old(local), *local, segment_id);
-            //assert(local.segment_pages_used_total(segment_id)
-            //    =~= old(local).segment_pages_used_total(segment_id));
-            //assert(local.segment_pages_range_total(segment_id)
-            //    =~= old(local).segment_pages_range_total(segment_id));
             preserves_mem_chunk_good_except(*old(local), *local, segment.segment_id@);
             assert(mem_chunk_good1(
                 local.segments[segment_id].mem,
@@ -17851,8 +15464,6 @@ pub fn segment_delayed_decommit(
         idx = next_idx;
 
         proof {
-            // idx + count <= COMMIT_MASK_BITS (512) and COMMIT_SIZE == 65536, so the offsets
-            // stay within SEGMENT_SIZE and don't overflow the segment's address range.
             assert((idx + count) * (COMMIT_SIZE as int) <= SEGMENT_SIZE) by (nonlinear_arith)
                 requires idx + count <= COMMIT_MASK_BITS, COMMIT_MASK_BITS == 512,
                     COMMIT_SIZE == 65536, SEGMENT_SIZE == 33554432;
@@ -17866,10 +15477,8 @@ pub fn segment_delayed_decommit(
 }
 
 }
-// ===== END INLINED DEPENDENCY: commit_segment.rs =====
 }
 mod os_commit {
-// ===== BEGIN INLINED DEPENDENCY: os_commit.rs =====
 use core::intrinsics::{unlikely, likely};
 use vstd::prelude::*;
 use vstd::set_lib::*;
@@ -17892,12 +15501,9 @@ pub fn os_commit(addr: *mut u8, size: usize, Tracked(mem): Tracked<&mut MemChunk
         addr as int != 0,
         addr as int + size <= usize::MAX,
         addr@.provenance == old(mem).points_to.provenance(),
-        //old(mem).has_pointsto_for_all_read_write(),
     ensures ({
         let (success, is_zero) = res;
         final(mem).wf()
-        //&& final(mem).has_pointsto_for_all_read_write()
-        //&& (success ==> final(mem).os_has_range_read_write(addr as int, size as int))
         && final(mem).has_new_pointsto(&*old(mem))
         && final(mem).os.dom() == old(mem).os.dom()
         && final(mem).points_to.provenance() == old(mem).points_to.provenance()
@@ -18054,46 +15660,28 @@ fn os_commitx(
     if commit {
         mprotect_prot_read_write(p, csize, Tracked(&mut exact_mem));
     } else {
-        // TODO madvise?
         mprotect_prot_none(p, csize, Tracked(&mut exact_mem));
     }
 
     proof {
         mem.join(exact_mem);
         mem.give_points_to_range(weird_extra);
-        //assert( mem.os.dom() == old(mem).os.dom(),
         if commit {
         }
         if !commit {
-            /*assert(em.points_to.dom()
-                =~= set_int_range(addr as int, addr + size as int));
-            assert(em.points_to.dom() - exact_mem.points_to.dom()
-                =~= set_int_range(addr as int, addr + size as int));
 
-            assert(exact_mem.range_os_rw().disjoint(exact_mem.range_os_none()));
-            assert(exact_mem.os_rw_bytes() =~= Set::empty());
 
-            assert(em.os_rw_bytes() - exact_mem.os_rw_bytes()
-                =~= set_int_range(addr as int, addr + size as int));
 
-            assert(old(mem).points_to.dom() - mem.points_to.dom()
-                =~= set_int_range(addr as int, addr + size as int));
-            assert(old(mem).os_rw_bytes() - mem.os_rw_bytes()
-                =~= set_int_range(addr as int, addr + size as int));
-            */
         }
         assert(mem.os.dom() =~= old(mem).os.dom());
     }
 
-    // TODO bubble up error instead of panicking
     return (true, is_zero);
 }
 
 }
-// ===== END INLINED DEPENDENCY: os_commit.rs =====
 }
 mod os_alloc {
-// ===== BEGIN INLINED DEPENDENCY: os_alloc.rs =====
 use core::intrinsics::{unlikely, likely};
 use vstd::prelude::*;
 use crate::config::*;
@@ -18136,20 +15724,8 @@ pub fn os_alloc_aligned_offset(
         return os_alloc_aligned(size, alignment, request_commit, allow_large);
     } else {
         todo(); loop{}
-        /*
-        let extra = align_up(offset, alignment) - offset;
-        let oversize = size + extra;
 
-        let (start, commited, is_large) = os_alloc_aligned(oversize, alignment, request_commit, allow_large);
-        if start == 0 {
-            return 0;
-        }
 
-        let p = start + extra;
-        if commited && extra > get_page_size() {
-            todo();
-        }
-        */
     }
 }
 
@@ -18184,7 +15760,7 @@ pub fn os_good_alloc_size(size: usize) -> (res: usize)
             if size <= SEGMENT_SIZE {
                 assert((size + page_size() - 1) / page_size() <= 8192);
                 assert((size + page_size() - 1) / page_size() * page_size() <= SEGMENT_SIZE);
-                assert((SEGMENT_SIZE + 0x400000 - 1) / 0x400000 as int == 8) by(compute); // needed on x64-docker
+                assert((SEGMENT_SIZE + 0x400000 - 1) / 0x400000 as int == 8) by(compute); 
             }
         }
         return x;
@@ -18391,8 +15967,6 @@ fn os_get_aligned_hint(try_alignment: usize, size: usize) -> (hint: usize)
     if hint == 0 || hint > HINT_MAX {
         let iinit = HINT_BASE;
 
-        //let r = heap_random_next();
-        //let iinit = iinit + ((MI_SEGMENT_SIZE * ((r>>17) & 0xFFFFF)) % MI_HINT_AREA);
 
         let expected = hint.wrapping_add(size);
         aligned_base_cas(expected, iinit);
@@ -18461,10 +16035,8 @@ fn unix_mmapx(
 }
 
 }
-// ===== END INLINED DEPENDENCY: os_alloc.rs =====
 }
 mod page {
-// ===== BEGIN INLINED DEPENDENCY: page.rs =====
 #![allow(unused_imports)]
 
 use core::intrinsics::{unlikely, likely};
@@ -18594,13 +16166,6 @@ fn page_queue_find_free_ex(heap_ptr: HeapPtr, pq: usize, first_try: bool, Tracke
         let ghost page_id = page.page_id@;
         let ghost next_id = local.page_organization.pages[page_id].dlist_entry.unwrap().next.unwrap();
         proof {
-            /*assert(local.page_organization.pages.dom().contains(page_id));
-            assert(page_organization_pages_match_data(local.page_organization.pages[page_id], local.pages[page_id], local.psa[page_id]));
-            assert(is_page_ptr_opt(next_ptr, local.page_organization.pages[page_id].dlist_entry.unwrap().next));
-            if next_ptr.id() != 0 {
-                assert(local.page_organization.pages[page_id].dlist_entry.unwrap().next.is_some());
-                assert(is_page_ptr(next_ptr.id(), next_id));
-            }*/
             local.page_organization.used_next_is_in(page.page_id@, pq as int, list_idx);
             size_of_bin_mult_word_size(pq as int);
         }
@@ -18612,8 +16177,6 @@ fn page_queue_find_free_ex(heap_ptr: HeapPtr, pq: usize, first_try: bool, Tracke
         }
 
         if page.get_inner_ref(Tracked(&*local)).capacity < page.get_inner_ref(Tracked(&*local)).reserved {
-            //let tld_ptr = heap_ptr.get_ref(Tracked(&*local)).tld_ptr;
-            //assert(local.is_used_primary(page.page_id@));
             crate::alloc_generic::page_extend_free(page, Tracked(&mut *local));
             break;
         }
@@ -18623,11 +16186,6 @@ fn page_queue_find_free_ex(heap_ptr: HeapPtr, pq: usize, first_try: bool, Tracke
         page = PagePtr { page_ptr: next_ptr, page_id: Ghost(next_id) };
 
         proof {
-            //list_idx = list_idx + 1;
-            /*if next_ptr.id() != 0 {
-                assert(page.wf());
-                assert(local.page_organization.valid_used_page(page.page_id@, pq as int, list_idx));
-            }*/
         }
     }
 
@@ -18692,7 +16250,7 @@ fn page_fresh_alloc(heap_ptr: HeapPtr, pq: usize, block_size: usize, page_alignm
         return page_ptr;
     }
 
-    let full_block_size: usize = block_size; // TODO handle pq == NULL or huge pages
+    let full_block_size: usize = block_size; 
     let tld_ptr = heap_ptr.get_ref(Tracked(&*local)).tld_ptr;
 
     proof {
@@ -18710,7 +16268,6 @@ fn page_fresh_alloc(heap_ptr: HeapPtr, pq: usize, block_size: usize, page_alignm
     return page_ptr;
 }
 
-// READY --> USED
 fn page_init(heap_ptr: HeapPtr, page_ptr: PagePtr, block_size: usize, tld_ptr: TldPtr, Tracked(local): Tracked<&mut Local>, Ghost(pq): Ghost<int>)
     requires
         old(local).wf_main(),
@@ -18724,12 +16281,6 @@ fn page_init(heap_ptr: HeapPtr, page_ptr: PagePtr, block_size: usize, tld_ptr: T
         block_size <= u32::MAX,
         valid_bin_idx(pq),
         size_of_bin(pq) == block_size,
-        //old(local).page_organization[page_ptr.page_id@].block_size == Some(block_
-        //old(local).page_inner(page_ptr.page_id@).xblock_size == block_size
-        //old(local).segments[page_ptr.page_id@.segment_id]
-        //  .mem.committed_pointsto_has_range(
-        //    segment_start(page_ptr.page_id@.segment_id) + page_ptr.page_id@.idx * SLICE_SIZE,
-        //    local.page_organization.pages[page_ptr.page_id@].count.unwrap() * SLIZE_SIZE),
         page_init_is_committed(page_ptr.page_id@, *old(local)),
         good_count_for_block_size(block_size as int,
               old(local).page_organization.pages[page_ptr.page_id@].count.unwrap() as int),
@@ -18773,13 +16324,11 @@ fn page_init(heap_ptr: HeapPtr, page_ptr: PagePtr, block_size: usize, tld_ptr: T
         Tracked(delay_token),
         Tracked(heap_of_page_token),
     ) = local.instance.create_page_mk_tokens(
-            // params
             local.thread_id,
             page_id,
             n_slices as nat,
             block_size as nat,
             new_page_state_map,
-            // input ghost state
             thread_token,
         );
 
@@ -18791,23 +16340,14 @@ fn page_init(heap_ptr: HeapPtr, page_ptr: PagePtr, block_size: usize, tld_ptr: T
             instance: Ghost(local.instance), page_id: Ghost(page_ptr.page_id@), emp: Tracked(emp_x), emp_inst: Tracked(emp_inst), };
         page.xthread_free.enable(Ghost(block_size as nat), Ghost(page_ptr.page_id@),
             Tracked(local.instance.clone()), Tracked(delay_token));
-        //assert(page.xheap.wf(local.instance, page_ptr.page_id@));
     });
 
     unused_page_get_mut_inner!(page_ptr, local, inner => {
         proof {
             const_facts();
-            //assert(block_size as u32 == block_size);
 
             local.page_organization.get_count_bound(page_ptr.page_id@);
-            //assert(count <= SLICES_PER_SEGMENT);
-            //assert(count * SLICE_SIZE <= SLICES_PER_SEGMENT * SLICE_SIZE);
-            //assert(0 <= count * SLICE_SIZE < u32::MAX);
-            //assert(block_size as u32 != 0);
 
-            // prove that reserved will fit in u16
-            // should follow from good_count_for_block_size
-            //assert(count == old(local).page_organization.pages[page_ptr.page_id@].count.unwrap());
             let start_offs = start_offset(block_size as int);
             start_offset_le_slice_size(block_size as int);
             assert((count * SLICE_SIZE - start_offs) / block_size as int <= u16::MAX) by(nonlinear_arith)
@@ -18817,9 +16357,6 @@ fn page_init(heap_ptr: HeapPtr, page_ptr: PagePtr, block_size: usize, tld_ptr: T
 
         inner.xblock_size = block_size as u32;
         let start_offs = calculate_start_offset(block_size);
-        //proof {
-        //    assert(count * SLICE_SIZE as u32 >= start_offs);
-        //}
         let page_size = count * SLICE_SIZE as u32 - start_offs;
         inner.reserved = (page_size / block_size as u32) as u16;
 
@@ -18828,22 +16365,7 @@ fn page_init(heap_ptr: HeapPtr, page_ptr: PagePtr, block_size: usize, tld_ptr: T
         inner.local_free.set_ghost_data(
             Ghost(page_id), Ghost(true), Ghost(local.instance), Ghost(block_size as nat), Ghost(None));
 
-        /*assert(inner.capacity == 0);
-        assert(inner.free.wf());
-        assert(inner.local_free.wf());
-        assert(inner.free.block_size() == block_size);
-        assert(inner.local_free.block_size() == block_size);
-        assert(inner.free.len() == 0);
-        assert(inner.local_free.len() == 0);
-        assert(inner.free.fixed_page());
-        assert(inner.local_free.fixed_page());
-        assert(inner.free.page_id() == page_id);
-        assert(inner.local_free.page_id() == page_id);
-        assert(inner.free.instance() == local.instance);
-        assert(inner.local_free.instance() == local.instance);
-        assert(inner.used == 0);
 
-        assert(inner.reserved == page_size as int / block_size as int);*/
         assert(page_size as int / block_size as int * block_size as int <= page_size) by(nonlinear_arith)
             requires page_size >= 0, block_size > 0;
     });
@@ -18853,49 +16375,17 @@ fn page_init(heap_ptr: HeapPtr, page_ptr: PagePtr, block_size: usize, tld_ptr: T
         let ghost new_page_state_map2 = Map::new(
             range,
             |pid: PageId| PageState {
-                //offset: pid.idx - page_id.idx,
-                //block_size: block_size as nat,
-                //num_blocks: 0,
                 is_enabled: true,
                 shared_access: new_psa_map[pid],
                 .. thread_token.value().pages[pid]
             });
-        /*assert forall |pid: PageId| #[trigger] new_page_state_map2.dom().contains(pid) implies
-                new_page_state_map2[pid] == PageState {
-                    is_enabled: true,
-                    shared_access: new_psa_map[pid],
-                    .. thread_token.value().pages[pid]
-                }
-        by {
-            let a = new_page_state_map2[pid];
-            let llama = PageState {
-                    is_enabled: true,
-                    shared_access: new_psa_map[pid],
-                    .. thread_token.value().pages[pid]
-                };
-            assert(llama.offset == thread_token.value().pages[pid].offset);
-            assert(new_page_state_map2[pid].is_enabled == true);
-            assert(new_page_state_map2[pid].shared_access == new_psa_map[pid]);
-            assert(new_page_state_map2[pid].num_blocks == thread_token.value().pages[pid].num_blocks);
-            assert(new_page_state_map2[pid].offset == thread_token.value().pages[pid].offset);
-            assert(new_page_state_map2[pid].block_size == thread_token.value().pages[pid].block_size);
-            assert(a == llama);
-            assert(a.offset == llama.offset);
-            assert(a.block_size == llama.block_size);
-            assert(a.num_blocks == llama.num_blocks);
-            assert(a.shared_access == llama.shared_access);
-            assert(a.is_enabled == llama.is_enabled);
-            assert(a == llama);
-        }*/
 
         let tracked thread_token = local.instance.page_enable(
-                // params
                 local.thread_id,
                 page_id,
                 n_slices as nat,
                 new_page_state_map2,
                 new_psa_map,
-                // input ghost state
                 thread_token,
                 new_psa_map,
             );
@@ -18904,76 +16394,14 @@ fn page_init(heap_ptr: HeapPtr, page_ptr: PagePtr, block_size: usize, tld_ptr: T
         local.page_organization = next_state;
         local.psa = local.psa.insert(page_id, new_psa_map[page_id]);
 
-        /*assert forall |pid|
-            #[trigger] local.pages.dom().contains(pid) &&
-              local.thread_token.value().pages.dom().contains(pid) implies
-                local.pages.index(pid).wf(
-                  pid,
-                  local.thread_token.value().pages.index(pid),
-                  local.instance,
-                )
-        by {
-            if range.contains(pid) {
-                if pid.idx == page_id.idx {
-                    assert(local.pages.index(pid).wf(pid, local.thread_token.value().pages.index(pid), local.instance));
-                } else {
-                    assert(old(local).pages.index(pid).wf_unused(pid,
-                        old(local).unused_pages[pid], old(local).page_organization.popped, old(local).instance));
-                    assert(old(local).unused_pages[pid] ==
-                        local.thread_token.value().pages.index(pid).shared_access);
-                    assert(old(local).pages.index(pid).wf_unused(pid,
-                        local.thread_token.value().pages.index(pid).shared_access, local.page_organization.popped, local.instance));
-                    assert(local.pages.index(pid).wf(pid, local.thread_token.value().pages.index(pid), local.instance));
-                }
-            } else {
-                assert(local.pages.index(pid).wf(pid, local.thread_token.value().pages.index(pid), local.instance));
-            }
-        }*/
 
-        /*assert forall |segment_id|
-            #[trigger] local.segments.dom().contains(segment_id) ==>
-              local.segments[segment_id].wf(
-                segment_id,
-                local.thread_token.value().segments.index(segment_id),
-                local.instance,
-              )
-        by {
-            let seg = local.segments[segment_id];
-            let old_seg = old(local).segments[segment_id];
-            if segment_id == page_ptr.page_id@.segment_id {
-                assert(local.mem_chunk_good(segment_id));
-            } else {
-                //mem_chunk_good_preserved_one(old(local).page_organization,
-                //    local.page_organization, segment_id);
-                //assert(mem_chunk_good(old_seg.mem, segment_id,
-                //    old_seg.main@.value.unwrap().commit_mask@, old(local).page_organization));
-                assert(local.mem_chunk_good(segment_id));
-            }
-        }*/
 
-        //let org_pages = local.page_organization.pages;
-        //let pages = local.pages;
-        //let psa = local.psa;
-        /*assert forall |pid| #[trigger] org_pages.dom().contains(pid) implies
-            page_organization_pages_match_data(org_pages[pid], pages[pid], psa[pid], pid, local.page_organization.popped)
-        by {
-            if pid == page_id {
-                assert(page_organization_pages_match_data(org_pages[pid], pages[pid], psa[pid], pid, local.page_organization.popped));
-            } else {
-                assert(page_organization_pages_match_data(org_pages[pid], pages[pid], psa[pid], pid, local.page_organization.popped));
-            }
-        }*/
 
         preserves_mem_chunk_good_except(*old(local), *local, page_id.segment_id);
         preserves_mem_chunk_on_set_used(*old(local), *local, page_id);
 
-        /*assert(page_organization_pages_match(local.page_organization.pages,
-              local.pages, local.psa, local.page_organization.popped));
-        assert(local.page_organization_valid());
-        assert(local.wf_main());*/
     }
 
-    //assert(local.is_used_primary(page_ptr.page_id@));
     crate::alloc_generic::page_extend_free(page_ptr, Tracked(&mut *local))
 }
 
@@ -18995,18 +16423,8 @@ fn page_queue_of(page: PagePtr, Tracked(local): Tracked<&Local>) -> (res: (HeapP
     proof {
         if is_in_full {
             list_idx = local.page_organization.marked_full_is_in(page.page_id@);
-            //assert(local.page_organization.valid_used_page(page.page_id@, bin as int, list_idx));
         } else {
             list_idx = local.page_organization.marked_unfull_is_in(page.page_id@);
-            /*smallest_bin_fitting_size_size_of_bin(bin as int);
-            assert(local.block_size(page.page_id@) ==
-                local.page_organization.pages[page.page_id@].page_header_kind.unwrap().get_Normal_1());
-            assert(bin == smallest_bin_fitting_size(
-                local.block_size(page.page_id@)));
-            assert(bin == smallest_bin_fitting_size(
-                size_of_bin());
-            assert(bin == local.page_organization.pages[page.page_id@].page_header_kind.unwrap().get_Normal_0());
-            assert(local.page_organization.valid_used_page(page.page_id@, bin as int, list_idx));*/
         }
         const_facts();
     }
@@ -19128,8 +16546,6 @@ fn page_queue_enqueue_from(heap: HeapPtr, to: usize, from: usize, page: PagePtr,
             Some(PageHeaderKind::Normal(b, bsize)) =>
               from == BIN_FULL
                 && to == b,
-                //&& valid_bin_idx(to as int)
-                //&& bsize == size_of_bin(to as int),
             None => false,
           })
     ensures
@@ -19152,10 +16568,8 @@ pub fn page_try_use_delayed_free(page: PagePtr, delay: usize, override_never: bo
 }
 
 }
-// ===== END INLINED DEPENDENCY: page.rs =====
 }
 mod queues {
-// ===== BEGIN INLINED DEPENDENCY: queues.rs =====
 #![allow(unused_imports)]
 
 use core::intrinsics::{unlikely, likely};
@@ -19186,9 +16600,6 @@ pub fn page_queue_remove(heap: HeapPtr, pq: usize, page: PagePtr, Tracked(local)
     requires old(local).wf(), page.wf(), page.is_in(*old(local)),
         heap.wf(), heap.is_in(*old(local)),
         page.is_used_and_primary(*old(local)),
-        //valid_bin_idx(pq as int) || pq == BIN_FULL,
-        //old(local).page_organization.pages[page.page_id@].page_header_kind ==
-        //    Some(PageHeaderKind::Normal(crate::bin_sizes::size_of_bin(pq as int) as int)),
         old(local).page_organization.valid_used_page(page.page_id@, pq as int, list_idx),
     ensures
         final(local).wf_main(),
@@ -19270,8 +16681,6 @@ pub fn page_queue_push_back(heap: HeapPtr, pq: usize, page: PagePtr, Tracked(loc
 }
 
 
-//spec fn local_direct_no_change_needed(loc1: Local, loc2: Local, pq: int) -> bool {
-//}
 
 spec fn local_direct_update(loc1: Local, loc2: Local, i: int, j: int, pq: int) -> bool {
     &&& loc2 == Local { heap: loc2.heap, .. loc1 }
@@ -19323,15 +16732,6 @@ fn heap_queue_first_update(heap: HeapPtr, pq: usize, Tracked(local): Tracked<&mu
                     #[trigger] old(local).heap.pages_free_direct.value()@[k],
                     old_p, old(local).page_empty_global@.s.points_to.ptr())
         ),
-        //old_p.addr() != 0 &&
-        //  old_p.addr() == old(local).heap.pages.value()@[pq as int].first.addr()
-        //  ==> old_p == old(local).heap.pages.value()@[pq as int].first,
-        //old_p.addr() == old(local).page_empty_global@.s.points_to.ptr().addr()
-        //  ==> old_p == old(local).page_empty_global@.s.points_to.ptr(),
-        //old(local).heap.pages.value()@[pq as int].first.addr()
-        //      == old(local).page_empty_global@.s.points_to.ptr().addr()
-        //  ==> old(local).heap.pages.value()@[pq as int].first
-        //      == old(local).page_empty_global@.s.points_to.ptr()
     ensures
         pq == BIN_FULL ==> *final(local) == *old(local),
         pq != BIN_FULL ==> local_direct_update(*old(local), *final(local),
@@ -19346,15 +16746,12 @@ fn heap_queue_first_update(heap: HeapPtr, pq: usize, Tracked(local): Tracked<&mu
         proof {
             if pq != BIN_FULL {
                 out_of_small_range(pq as int);
-                //assert(pfd_lower(pq as int) >= PAGES_DIRECT);
             }
         }
         return;
     }
-    //assert(pq != BIN_FULL);
 
     let mut page_ptr = heap.get_pages(Tracked(&*local))[pq].first;
-    //assert(page_ptr == old(local).heap.pages.value()@[pq as int].first);
     if page_ptr.addr() == 0 {
         let (_page, Tracked(emp)) = heap.get_page_empty(Tracked(&*local));
         page_ptr = _page;
@@ -19363,37 +16760,7 @@ fn heap_queue_first_update(heap: HeapPtr, pq: usize, Tracked(local): Tracked<&mu
     let idx = size / 8;
 
     if heap.get_pages_free_direct(Tracked(&*local))[idx].addr() == page_ptr.addr() {
-        /*proof {
-            let i = pfd_lower(pq as int) as int;
-            let j = pfd_upper(pq as int) as int + 1;
-            assert(idx == j - 1);
 
-            let loc1 = *old(local);
-            let loc2 = *local;
-            let pq = pq as int;
-            let pfd1 = loc1.heap.pages_free_direct.value()@;
-            let pfd2 = loc2.heap.pages_free_direct.value()@;
-            let emp = loc1.page_empty_global@.s.points_to@.pptr;
-            let p = loc1.heap.pages.value()@[pq].first.id();
-            assert forall |k| #![trigger pfd2.index(k)]
-                0 <= k < pfd2.len() && i <= k < j implies
-                    pages_free_direct_match(pfd2[k].id(), p, emp)
-            by {
-                let z = idx as int;
-                assert(pages_free_direct_match(pfd2[z].id(), p, emp));
-                if p == 0 {
-                    assert(pfd2[k].id() == emp);
-                } else {
-                    assert(pfd2[k].id() == p);
-                }
-            }
-            assert(local_direct_update(loc1, loc2, i, j, pq));
-        }*/
-        //assert(page_ptr == old(local).heap.pages.value()@[pq as int].first);
-        //assert(old_p.addr() == page_ptr.addr());
-        //assert(old_p.addr() != 0);
-        //assert(old_p == page_ptr);
-        //assert(local.heap.pages_free_direct.value()@[idx as int] == page_ptr);
         return;
     }
 
@@ -19403,21 +16770,6 @@ fn heap_queue_first_update(heap: HeapPtr, pq: usize, Tracked(local): Tracked<&mu
         let b = bin(size);
         let prev = pq - 1;
 
-        /*
-        // for large minimal alignment, need to do something here
-        loop
-            invariant
-                old(local).wf_basic(),
-                heap.wf(),
-                heap.is_in(*old(local)),
-                0 <= prev <=
-        {
-            let prev_block_size = heap.get_pages(Tracked(&*local))[prev].block_size;
-            if !(b == bin(prev_block_size) && prev > 0) {
-                break;
-            }
-            prev = prev - 1;
-        }*/
 
         let prev_block_size = heap.get_pages(Tracked(&*local))[prev].block_size;
         proof {
@@ -19430,8 +16782,6 @@ fn heap_queue_first_update(heap: HeapPtr, pq: usize, Tracked(local): Tracked<&mu
         }
         let s = 1 + prev_block_size / 8;
         s
-        //let t = if s > idx { idx } else { s };
-        //t
     };
 
     proof {
@@ -19472,33 +16822,10 @@ fn heap_queue_first_update(heap: HeapPtr, pq: usize, Tracked(local): Tracked<&mu
     }
 }
 
-/*
-#[verifier::external_body]
-proof fn ptr_ineqs(old_p: *mut Page, pq: usize, Tracked(local): Tracked<&mut Local>)
-    requires
-        old(local).wf_main(),
-        pq == BIN_FULL || valid_bin_idx(pq as int),
-    ensures
-        *local == *old(local),
-        old_p.addr() != 0 &&
-          old_p.addr() == local.heap.pages.value()@[pq as int].first.addr()
-          ==> old_p == local.heap.pages.value()@[pq as int].first,
-        old_p.addr() == local.page_empty_global@.s.points_to.ptr().addr()
-          ==> old_p == local.page_empty_global@.s.points_to.ptr(),
-        local.heap.pages.value()@[pq as int].first.addr()
-              == local.page_empty_global@.s.points_to.ptr().addr()
-          ==> local.heap.pages.value()@[pq as int].first
-              == local.page_empty_global@.s.points_to.ptr()
-{
-    unimplemented!()
-}
-*/
 
 }
-// ===== END INLINED DEPENDENCY: queues.rs =====
 }
 mod init {
-// ===== BEGIN INLINED DEPENDENCY: init.rs =====
 #![allow(unused_imports)]
 
 use core::intrinsics::{unlikely, likely};
@@ -19551,41 +16878,34 @@ type RightToUseThread = Mim::right_to_use_thread;
 type MimInst = Mim::Instance;
 
 
-/*
-impl RightToUseThread {
-    pub open spec fn wf(tid: ThreadId) { true } // TODO
-}
-*/
 
-//impl Copy for Global { }
 
 #[verifier::external_body]
-pub proof fn global_init() -> (tracked res: (Global, Map<ThreadId, Mim::right_to_use_thread>))    // $line_count$Trusted$
-    ensures // $line_count$Trusted$
-        forall |tid: ThreadId| #[trigger] res.1.dom().contains(tid) // $line_count$Trusted$
-          && res.0.wf_right_to_use_thread(res.1[tid], tid) // $line_count$Trusted$
+pub proof fn global_init() -> (tracked res: (Global, Map<ThreadId, Mim::right_to_use_thread>))    
+    ensures 
+        forall |tid: ThreadId| #[trigger] res.1.dom().contains(tid) 
+          && res.0.wf_right_to_use_thread(res.1[tid], tid) 
 {
     unimplemented!()
 }
 
-pub fn heap_init(Tracked(global): Tracked<Global>, // $line_count$Trusted$
-      Tracked(right): Tracked<Mim::right_to_use_thread>, // $line_count$Trusted$
-      Tracked(cur_thread): Tracked<IsThread> // $line_count$Trusted$
-) -> (res: (HeapPtr, Tracked<Option<Local>>)) // $line_count$Trusted$
-    requires global.wf_right_to_use_thread(right, cur_thread@), // $line_count$Trusted$
-    ensures ({ let (heap, local_opt) = res; { // $line_count$Trusted$
-        heap.heap_ptr.addr() != 0 ==> // $line_count$Trusted$
-            local_opt@.is_some() // $line_count$Trusted$
-            && local_opt@.unwrap().wf() // $line_count$Trusted$
-            && local_opt@.unwrap().inst() == global.inst() // $line_count$Trusted$
-            && heap.wf() // $line_count$Trusted$
-            && heap.is_in(local_opt@.unwrap()) // $line_count$Trusted$
-    }}) // $line_count$Trusted$
+pub fn heap_init(Tracked(global): Tracked<Global>, 
+      Tracked(right): Tracked<Mim::right_to_use_thread>, 
+      Tracked(cur_thread): Tracked<IsThread> 
+) -> (res: (HeapPtr, Tracked<Option<Local>>)) 
+    requires global.wf_right_to_use_thread(right, cur_thread@), 
+    ensures ({ let (heap, local_opt) = res; { 
+        heap.heap_ptr.addr() != 0 ==> 
+            local_opt@.is_some() 
+            && local_opt@.unwrap().wf() 
+            && local_opt@.unwrap().inst() == global.inst() 
+            && heap.wf() 
+            && heap.is_in(local_opt@.unwrap()) 
+    }}) 
 {
     proof { use_type_invariant(&global); }
     increment_thread_count();
 
-    // TODO use a cache for thread data
     let (addr, Tracked(mem)) = thread_data_alloc();
     if addr.addr() == 0 {
         return (HeapPtr { heap_ptr: core::ptr::null_mut(), heap_id: Ghost(arbitrary()) }, Tracked(None));
@@ -19598,8 +16918,8 @@ pub fn heap_init(Tracked(global): Tracked<Global>, // $line_count$Trusted$
         assert(addr as int % vstd::layout::align_of::<Heap>() as int == 0);
         assert((addr as usize + SIZEOF_HEAP) as int % vstd::layout::align_of::<Tld>() as int == 0);
     }
-    vstd::layout::layout_for_type_is_valid::<Heap>(); // $line_count$Proof$
-    vstd::layout::layout_for_type_is_valid::<Tld>(); // $line_count$Proof$
+    vstd::layout::layout_for_type_is_valid::<Heap>(); 
+    vstd::layout::layout_for_type_is_valid::<Tld>(); 
 
     let tracked points_to_heap_raw = mem.take_points_to_range(addr as int, SIZEOF_HEAP as int);
     let tracked points_to_tld_raw = mem.take_points_to_range(addr as usize + SIZEOF_HEAP, SIZEOF_TLD as int);
@@ -19641,20 +16961,7 @@ pub fn heap_init(Tracked(global): Tracked<Global>, // $line_count$Trusted$
         i = i + 1;
     }
 
-    /*let mut i = 0;
-    while i < BIN_FULL + 1
-        invariant 0 <= i <= BIN_FULL + 1
-          pages.len() == i,
-          forall |j: int| 0 <= j < i ==> pages[j] == PageQueue {
 
-          };
-    {
-        pages.push(PageQueue {
-            first: core::ptr::null_mut(),
-            last: core::ptr::null_mut(),
-            block_size:
-        });
-    }*/
 
     let (pages_free_direct_pcell, Tracked(pages_free_direct_pointsto)) = PCell::new(pages_free_direct);
     let (pages_pcell, Tracked(pages_pointsto)) = PCell::new(pages);
@@ -19750,8 +17057,6 @@ pub fn heap_init(Tracked(global): Tracked<Global>, // $line_count$Trusted$
                 emp)
         by {
             bounds_for_smallest_bin_fitting_size(wsize * INTPTR_SIZE);
-            //assert(0 <= smallest_bin_fitting_size(wsize * INTPTR_SIZE));
-            //assert(smallest_bin_fitting_size(wsize * INTPTR_SIZE) < pages.len());
         }
 
         assert(pages_free_direct_is_correct(
@@ -19793,7 +17098,7 @@ fn pages_tmp() -> (pages: [PageQueue; 75])
           && pages[p].last.addr() == 0
           && (valid_bin_idx(p) ==> pages[p].block_size == size_of_bin(p)),
       pages[0].block_size == 8,
-      pages[BIN_FULL as int].block_size == 8 * (524288 + 2), //8 * (MEDIUM_OBJ_WSIZE_MAX + 2),
+      pages[BIN_FULL as int].block_size == 8 * (524288 + 2), 
 {
     proof { const_facts(); }
     let pages = [
@@ -19880,8 +17185,6 @@ fn pages_tmp() -> (pages: [PageQueue; 75])
         PageQueue::empty(458752),
         PageQueue::empty(524288),
 
-        //PageQueue::empty(MEDIUM_OBJ_WSIZE_MAX as usize + 1),
-        //PageQueue::empty(MEDIUM_OBJ_WSIZE_MAX as usize + 2),
         PageQueue::empty(524288 + 1),
         PageQueue::empty(524288 + 2),
     ];
@@ -20163,29 +17466,11 @@ fn thread_data_alloc()
     }
 
     proof {
-        //assert(set_int_range(addr as int, addr as int + 4096) <= mc.range_os_rw());
-        //assert(set_int_range(addr as int, addr as int + 4096) <= mc.range_points_to());
-        //assert(SIZEOF_HEAP + SIZEOF_TLD < page_size());
-        //assert(mc.pointsto_has_range(addr as int, SIZEOF_HEAP + SIZEOF_TLD));
     }
     (addr, Tracked(mc))
 }
 
-///// The global 'empty page'
 
-/*
-pub fn get_page_empty()
-    -> (res: (PPtr<Page>, Tracked<Shared<PageFullAccess>>))
-    ensures ({ let (page_ptr, pfa) = res; {
-        pfa@@.wf_empty_page_global()
-        && pfa@@.s.points_to@.pptr == page_ptr.id()
-        && page_ptr.id() != 0
-    }})
-{
-    let e = get_empty_page_stuff();
-    (e.ptr, Tracked(e.pfa.borrow().clone()))
-}
-*/
 
 struct EmptyPageStuff {
     ptr: *mut Page,
@@ -20200,11 +17485,6 @@ impl EmptyPageStuff {
     }
 }
 
-/*
-#[verifier::external]
-static EMPTY_PAGE_PTR: std::sync::LazyLock<EmptyPageStuff> =
-    std::sync::LazyLock::new(init_empty_page_ptr);
-*/
 
 fn init_empty_page_ptr() -> (e: EmptyPageStuff)
     ensures e.wf(),
@@ -20228,7 +17508,7 @@ fn init_empty_page_ptr() -> (e: EmptyPageStuff)
             vstd::layout::align_of::<Page>() as int);
         assert(pt as int % vstd::layout::align_of::<Page>() as int == 0);
     }
-    vstd::layout::layout_for_type_is_valid::<Page>(); // $line_count$Proof$
+    vstd::layout::layout_for_type_is_valid::<Page>(); 
     let tracked mut points_to = points_to_raw.into_typed::<Page>(pt as usize);
     proof { points_to.is_nonnull(); }
 
@@ -20274,51 +17554,14 @@ fn init_empty_page_ptr() -> (e: EmptyPageStuff)
     EmptyPageStuff { ptr: page_ptr, pfa: Tracked(pfa) }
 }
 
-/*
-#[verifier::external_body]
-fn get_empty_page_stuff() -> (e: &'static EmptyPageStuff)
-    ensures e.wf()
-{
-    &*EMPTY_PAGE_PTR
-}
-*/
 
-//// Current thread count
 
-/*
-struct_with_invariants!{
-    pub struct ThreadCountAtomic {
-        pub atomic: AtomicUsize<_, (), _>,
-    }
 
-    pub open spec fn wf(&self) -> bool {
-        invariant
-            on atomic
-            is (v: usize, g: ())
-        {
-            true
-        }
-    }
-}
 
-impl ThreadCountAtomic {
-    #[inline]
-    pub get(&self) -> usize {
-        self.atomic.load()
-    }
 
-    #[inline]
-    pub new(&self) -> usize {
-        self.atomic.load()
-    }
-}
-*/
 
 exec static THREAD_COUNT: core::sync::atomic::AtomicUsize = core::sync::atomic::AtomicUsize::new(0);
 
-//exec static THREAD_COUNT: core::sync::atomic::AtomicUsize
-//  ensures true
-//  { core::sync::atomic::AtomicUsize::new(0) }
 
 #[inline]
 fn increment_thread_count() {
@@ -20332,7 +17575,6 @@ pub fn current_thread_count() -> usize {
 
 
 }
-// ===== END INLINED DEPENDENCY: init.rs =====
 }
 
 use vstd::prelude::*;
@@ -20355,10 +17597,7 @@ fn big_test(heap: crate::types::HeapPtr) {
     }
 }
 
-// Called from C overrides
 
-// verus_mi_thread_init_default_heap should be called once-per-thread,
-// and must be called before verus_mi_heap_malloc
 
 use core::ffi::c_void;
 use crate::types::todo;
@@ -20366,17 +17605,7 @@ use crate::types::todo;
 #[verifier::external]
 #[no_mangle]
 pub unsafe extern "C" fn verus_mi_thread_init_default_heap() -> *mut c_void {
-    // heap_init takes a `right_to_use_thread` token. That's why we can only call
-    // verus_mi_thread_init_default_heap once per thread.
 
-    // TODO note that the thread id u64s MAY be re-used.
-    // However, we only get one `right_to_use_thread` token per available ID.
-    // So we either need to:
-    //  - destroy the thread local state at the end of a thread's lifetime
-    //      (reclaiming the right_to_use_thread token)
-    //    This requires implementing abandoned segments
-    // OR
-    //  - check that the thread ID is unused
 
     let (heap, _) = crate::init::heap_init(Tracked::assume_new(), Tracked::assume_new(), Tracked::assume_new());
     heap.heap_ptr as *mut c_void
@@ -20411,9 +17640,6 @@ pub unsafe extern "C" fn malloc(size: usize) -> *mut c_void {
 #[verifier::external]
 #[no_mangle]
 pub unsafe extern "C" fn calloc(number: usize, size: usize) -> *mut c_void {
-    // calloc is required to zero its memory.
-    // TODO we should implement calloc in the verified code with a specification that
-    // the memory is zeroed.
     unsafe {
         let (sz, ov) = count_size_overflow(number, size);
         let p = malloc(sz);
@@ -20628,7 +17854,6 @@ pub unsafe extern "C" fn __posix_memalign(p: *mut *mut c_void, alignment: usize,
 
 
 
-// TODO need to figure out how to override the C++ new / delete operators
 
 #[cfg(feature = "override_system_allocator")]
 extern "C" {
@@ -20640,22 +17865,9 @@ extern "C" {
     #[no_mangle]
     pub fn thread_id_helper() -> u64;
 
-/*
-    #[verifier::external]
-    #[no_mangle]
-    pub fn malloc(size: usize) -> *mut c_void;
 
-    #[no_mangle]
-    fn calloc(number: usize, size: usize) -> *mut c_void;
 
-    #[no_mangle]
-    fn realloc(ptr: *mut c_void, size: usize) -> *mut c_void;
 
-    #[verifier::external]
-    #[no_mangle]
-    pub fn free(ptr: *mut c_void);
-    */
 }
-// ===== END INLINED DEPENDENCY: lib.rs =====
 
 fn main() {}

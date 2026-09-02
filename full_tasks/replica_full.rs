@@ -1,83 +1,41 @@
-// ===== BEGIN INLINED DEPENDENCY: src/lib.rs =====
-// Verified Node Replication Library
-// SPDX-License-Identifier: Apache-2.0 OR MIT
-//
-//! # Verified Node Replication Library
-//!
-//! This library is a verified version of the [node-replicatin library](https://github.com/vmware/node-replication/)
-//! that allows for the construction of replicated, concurrent data structures.
-//!
-//! This top-level module contains the trusted traits and the top-level lemmas.
 #[allow(unused_imports)]
 use verus_builtin::*;
 use verus_state_machines_macros::state_machine;
 use vstd::prelude::*;
 
 pub mod constants {
-// ===== BEGIN INLINED DEPENDENCY: src/constants.rs =====
-// Verified Node Replication Library
-// SPDX-License-Identifier: Apache-2.0 OR MIT
-//
-//! Defines constants that are being used by the library, both in the execution and the
-//! verification. The constants mostly define the size of the log, and certain thresholds
-//! when warnings are being printed etc.
 #[allow(unused_imports)]
 use verus_builtin::*;
 use verus_builtin_macros::*;
 
 verus! {
 
-/// the maximum number of replicas
 pub open const MAX_REPLICAS_PER_LOG: usize = 16;
 
 #[verus::trusted]
 pub open const MAX_REPLICAS: usize = 16;
 
-/// the size of the log in bytes
 pub open const DEFAULT_LOG_BYTES: usize = 2 * 1024 * 1024;
 
-// making the assumption here that the write operation is about 12-16 bytes..
 pub open const LOG_SIZE: usize = 512 * 1024;
 
-// 4 * 1024 * 1024;
-/// maximum number of threads per replica
 pub open const MAX_THREADS_PER_REPLICA: usize = 128;
 
 pub open const MAX_PENDING_OPS: usize = 1;
 
-/// the maximum number of requests
 pub open const MAX_REQUESTS: usize = MAX_THREADS_PER_REPLICA * MAX_PENDING_OPS;
 
-/// interval when we do a try_combine when checking for responses
 pub open const RESPONSE_CHECK_INTERVAL: usize = 0x2000_0000;
 
-/// Constant required for garbage collection. When the tail and the head are these many
-/// entries apart on the circular buffer, garbage collection will be performed by one of
-/// the replicas registered with the log.
-///
-/// For the GC algorithm to work, we need to ensure that we can support the largest
-/// possible append after deciding to perform GC. This largest possible append is when
-/// every thread within a replica has a full batch of writes to be appended to the shared
-/// log.
 pub open const GC_FROM_HEAD: usize = MAX_PENDING_OPS * MAX_THREADS_PER_REPLICA;
 
-/// Threshold after how many iterations we abort and report the replica we're waiting for
-/// as stuck for busy spinning loops.
-///
-/// Should be a power of two to avoid divisions.
 pub open const WARN_THRESHOLD: usize = 0x10000000;
 
-/// the maximum number of identifiers that can be used
 pub open const MAX_IDX: u64 = 0xffff_ffff_f000_0000;
 
-} // verus!
-// ===== END INLINED DEPENDENCY: src/constants.rs =====
+} 
 }
 mod exec {
-// ===== BEGIN INLINED DEPENDENCY: src/exec/mod.rs =====
-// Verified Node Replication Library
-// SPDX-License-Identifier: Apache-2.0 OR MIT
-//
 #[allow(unused_imports)]
 use verus_builtin::*;
 use verus_builtin_macros::*;
@@ -86,10 +44,8 @@ use vstd::prelude::*;
 
 use crate::Dispatch;
 
-// spec imports
 use crate::spec::{cyclicbuffer::CyclicBuffer, unbounded_log::UnboundedLog};
 
-// exec imports
 use crate::exec::context::ThreadToken;
 use crate::exec::log::{NrLog, NrLogTokens};
 use crate::exec::replica::{Replica, ReplicaConfig, ReplicaId};
@@ -98,10 +54,6 @@ use crate::constants::{LOG_SIZE, MAX_REPLICAS, MAX_THREADS_PER_REPLICA};
 use crate::AffinityFn;
 
 pub mod context {
-// ===== BEGIN INLINED DEPENDENCY: src/exec/context.rs =====
-// Verified Node Replication Library
-// SPDX-License-Identifier: Apache-2.0 OR MIT
-//
 #[allow(unused_imports)]
 use verus_builtin::*;
 use verus_builtin_macros::*;
@@ -115,40 +67,25 @@ use vstd::{
 
 use crate::Dispatch;
 
-// constants
 use crate::constants::MAX_THREADS_PER_REPLICA;
 
-// spec import
 use crate::spec::flat_combiner::FlatCombiner;
 use crate::spec::unbounded_log::UnboundedLog;
 
-// exec imports
 use crate::exec::replica::{ReplicaId, ReplicaToken};
 use crate::exec::CachePadded;
 use crate::exec::Replica;
 
 verus! {
 
-////////////////////////////////////////////////////////////////////////////////////////////////////
-// Thread Token
-////////////////////////////////////////////////////////////////////////////////////////////////////
-/// A (monotoically increasing) number that uniquely identifies a thread that's
-/// registered with the replica.
 pub type ThreadId = u32;
 
-/// the thread token identifies a thread of a given replica
-///
-///  - Dafny: linear datatype ThreadOwnedContext
 pub struct ThreadToken<DT: Dispatch> {
-    /// the replica id this thread uses
-    pub  /* REVIEW: (crate) */
+    pub                       
      rid: ReplicaToken,
-    /// identifies the thread within the replica
-    pub  /* REVIEW: (crate) */
+    pub                       
      tid: ThreadId,
-    /// the flat combiner client of the thread
     pub fc_client: Tracked<FlatCombiner::clients>,
-    /// the permission to access the thread's operation batch
     pub batch_perm: Tracked<PointsTo<PendingOperation<DT>>>,
 }
 
@@ -158,14 +95,13 @@ impl<DT: Dispatch> ThreadToken<DT> {
         &&& self.fc_client@.value().is_Idle()
         &&& (self.tid as nat)
             < MAX_THREADS_PER_REPLICA
-        // &&& self.fc_client@@.instance == fc_inst
 
         &&& self.batch_perm@.mem_contents().is_uninit()
         &&& self.fc_client@.key() == self.tid as nat
     }
 
     pub open spec fn wf(&self, replica: &Replica<DT>) -> bool {
-        &&& self.wf2(replica.spec_id() + 1)  // +1 here because ids got < replicas
+        &&& self.wf2(replica.spec_id() + 1)  
 
         &&& self.rid@ == replica.spec_id()
         &&& self.fc_client@.instance_id() == replica.flat_combiner_instance@.id()
@@ -199,21 +135,10 @@ impl<DT: Dispatch> ThreadToken<DT> {
     }
 }
 
-////////////////////////////////////////////////////////////////////////////////////////////////////
-// Pending Operation
-////////////////////////////////////////////////////////////////////////////////////////////////////
-/// Data for a pending operation.
-///
-///  - Dafny: datatype OpResponse
-///  - Rust:  pub struct PendingOperation<T, R, M> {
-///
-/// In Dafny those data types are not options, but in Rust they are
 pub struct PendingOperation<DT: Dispatch> {
-    /// the operation that is being executed
-    pub  /*REVIEW: (crate)*/
+    pub                     
      op: DT::WriteOperation,
-    /// the response of the operation
-    pub  /*REVIEW: (crate)*/
+    pub                     
      resp: Option<DT::Response>,
 }
 
@@ -228,40 +153,16 @@ impl<DT: Dispatch> PendingOperation<DT> {
     pub fn set_result(&mut self, resp: DT::Response) {
         self.resp = Some(resp);
     }
-    // pub fn to_result(self) -> DT::Response {
-    //     self.resp.get_Some_0()
-    // }
 
 }
 
-////////////////////////////////////////////////////////////////////////////////////////////////////
-// Thread Context
-////////////////////////////////////////////////////////////////////////////////////////////////////
 struct_with_invariants!{
-/// Contains state of a particular thread context within NR w.r.g. to outstanding operations.
-///
-///  - Dafny: linear datatype Context = Context(
-///  - Rust:  pub(crate) struct Context<T, R, M>
-///
-/// Note, in contrast to the Rust version, we just have a single outstanding operation
 #[repr(align(128))]
 pub struct Context<DT: Dispatch> {
-    /// Array that will hold all pending operations to be appended to the shared
-    /// log as well as the results obtained on executing them against a replica.
-    ///
-    /// This is protected by the `atomic` field.
-    ///
-    ///  - Dafny: linear cell: CachePadded<Cell<OpResponse>>
-    ///  - Rust:  pub(crate) batch: [CachePadded<PendingOperation<T, R, M>>; MAX_PENDING_OPS],
-    pub/*REVIEW: (crate)*/ batch: CachePadded<PCell<PendingOperation<DT>>>,
+    pub                    batch: CachePadded<PCell<PendingOperation<DT>>>,
 
-    /// The number of operations in this context, (just 0 or 1)
-    ///
-    ///  - Dafny: linear atomic: CachePadded<Atomic<uint64, ContextGhost>>,
-    ///  - Rust:  N/A
-    pub/*REVIEW: (crate)*/ atomic: CachePadded<AtomicU64<_, ContextGhost<DT>, _>>,
+    pub                    atomic: CachePadded<AtomicU64<_, ContextGhost<DT>, _>>,
 
-    /// ghost: identifier of the thread
     pub thread_id_g: Ghost<nat>,
 
     pub flat_combiner_instance: Tracked<FlatCombiner::Instance>,
@@ -275,7 +176,7 @@ pub open spec fn wf(&self, thread_idx: nat) -> bool {
     invariant on atomic with (flat_combiner_instance, unbounded_log_instance, batch, thread_id_g) specifically (self.atomic.0) is (v: u64, g: ContextGhost<DT>) {
         &&& g.inv(v, thread_id_g@, batch.0, flat_combiner_instance@, unbounded_log_instance@)
     }
-}}  // struct_with_invariants!
+}}  
 
 
 impl<DT: Dispatch> Context<DT> {
@@ -300,10 +201,8 @@ impl<DT: Dispatch> Context<DT> {
         proof {
             thread_id_g = thread_id as nat;
         }
-        // create the storage for storing the update operation
         let (batch, batch_perms) = PCell::empty();
         let batch = CachePadded(batch);
-        // create the atomic with the ghost context
         let tracked context_ghost = ContextGhost {
             batch_perms: None,
             slots: slot.get(),
@@ -316,7 +215,6 @@ impl<DT: Dispatch> Context<DT> {
                 Tracked(context_ghost),
             ),
         );
-        // Assemble the context, return with the permissions
         (
             Context {
                 batch,
@@ -329,11 +227,6 @@ impl<DT: Dispatch> Context<DT> {
         )
     }
 
-    /// Enqueues an operation onto this context's batch of pending operations.
-    ///
-    /// This is invoked by the thread that want's to execute an operation
-    ///
-    /// Note, enqueue is a bit a misnomer. We just have one operation per thread
     pub fn enqueue_op(
         &self,
         op: DT::WriteOperation,
@@ -361,7 +254,6 @@ impl<DT: Dispatch> Context<DT> {
         } = context_ghost.get();
         let tracked mut batch_perms = batch_perms.tracked_unwrap();
         let tracked local_updates = local_updates.tracked_unwrap();
-        // put the operation there, updates the permissions so we can store them in the GhostContext
         self.batch.0.put(Tracked(&mut batch_perms), PendingOperation::new(op));
         let tracked send_request_result;
         let res =
@@ -392,9 +284,6 @@ impl<DT: Dispatch> Context<DT> {
         (true, Tracked(new_context_ghost))
     }
 
-    /// Returns a single response if available. Otherwise, returns None.
-    ///
-    /// this is invoked by the thread that has enqueued the operation before
     pub fn dequeue_response(
         &self,
         context_ghost: Tracked<FCClientRequestResponseGhost<DT>>,
@@ -460,81 +349,22 @@ impl<DT: Dispatch> Context<DT> {
         }
     }
 
-    // /// Enqueues a response onto this context. This is invoked by the combiner
-    // /// after it has executed operations (obtained through a call to ops()) against the
-    // /// replica this thread is registered against.
-    // pub fn enqueue_response(&self, resp: DT::Response) -> bool
-    //     requires
-    //         self.wf(self.thread_id_g@)
-    //         // self.atomic != 0
-    // {
-    //     // let tracked token : Option<Tracked<PointsTo<PendingOperation>>>;
-    //     // let res = atomic_with_ghost!(
-    //     //     &self.atomic.0 => load();
-    //     //     returning res;
-    //     //     ghost g => {
-    //     //         if res == 1 {
-    //     //             // store the operatin in the cell
-    //     //             token =  Some(g.batch_perms);
-    //     //         } else {
-    //     //             token = None;
-    //     //         }
-    //     //     }
-    //     // );
-    //     // if res != 0 {
-    //     //     let tracked token = token.get_Some_0();
-    //     //     // take the operation from the cell
-    //     //     // HERE
-    //     //     // let mut prev = self.batch.0.take(&mut token);
-    //     //     // prev.set_result(resp);
-    //     //     // store the operation in the cell again
-    //     //     // self.batch.0.put(&mut token, prev);
-    //     //     true
-    //     // } else {
-    //     //     false
-    //     // }
-    //     false
-    // }
-    /// Returns the maximum number of operations that will go pending on this context.
     #[inline(always)]
     pub(crate) fn batch_size() -> usize {
-        // MAX_PENDING_OPS
         1
-    }  // /
-    // Given a logical address, returns an index into the batch at which it falls.
-    // #[inline(always)]
-    // pub(crate) fn index(&self, logical: usize) -> usize {
-    //     // logical & (MAX_PENDING_OPS - 1)
-    //     0
-    // }
+    }  
 
 }
 
-////////////////////////////////////////////////////////////////////////////////////////////////////
-// Ghost Context
-////////////////////////////////////////////////////////////////////////////////////////////////////
 struct_with_invariants!{
-/// The ghost context for a thread carying permissions and tracking the state of the update operation
-///
-///  - Dafny:   glinear datatype ContextGhost = ContextGhost(
 pub tracked struct ContextGhost<DT: Dispatch> {
-    /// Token to access the batch cell in Context
-    ///
-    ///  - Dafny: glinear contents: glOption<CellContents<OpResponse>>,
     pub batch_perms: Option<PointsTo<PendingOperation<DT>>>,
 
-    /// The flat combiner slot.
-    ///
-    ///  - Dafny: glinear fc: FCSlot,
     pub slots: FlatCombiner::slots,
 
-    /// tracks the update operation
-    ///
-    ///  - Dafny: glinear update: glOption<Update>
     pub update: Option<UnboundedLog::local_updates<DT>>
 }
 
-//  - Dafny: predicate inv(v: uint64, i: nat, cell: Cell<OpResponse>, fc_loc_s: nat)
 pub open spec fn inv(&self, v: u64, tid: nat, cell: PCell<PendingOperation<DT>>, fc: FlatCombiner::Instance, inst: UnboundedLog::Instance<DT>) -> bool {
     predicate {
         &&& self.slots.key() == tid
@@ -580,8 +410,7 @@ pub open spec fn inv(&self, v: u64, tid: nat, cell: PCell<PendingOperation<DT>>,
         })
     }
 }
-}  // struct_with_invariants! ContextGhost
-/// Request Enqueue/Dequeue ghost state
+}  
 
 
 pub tracked struct FCClientRequestResponseGhost<DT: Dispatch> {
@@ -666,11 +495,9 @@ impl<DT: Dispatch> FCClientRequestResponseGhost<DT> {
     }
 }
 
-} // verus!
-// ===== END INLINED DEPENDENCY: src/exec/context.rs =====
+} 
 }
 pub mod log {
-// ===== BEGIN INLINED DEPENDENCY: src/exec/log.rs =====
 #[allow(unused_imports)]
 use verus_builtin::*;
 use verus_builtin_macros::*;
@@ -698,55 +525,27 @@ use crate::exec::CachePadded;
 
 verus! {
 
-////////////////////////////////////////////////////////////////////////////////////////////////////
-// Utils
-////////////////////////////////////////////////////////////////////////////////////////////////////
 #[verus::line_count::ignore]
 #[verus::trusted]
-#[verifier(external_body)]  /* vattr */
+#[verifier(external_body)]             
 pub fn print_starvation_warning(line: u32) {
     eprintln!("WARNING({line}): has been looping for `WARN_THRESHOLD` iterations. Are we starving?");
 }
 
 #[verus::trusted]
-#[verifier(external_body)]  /* vattr */
+#[verifier(external_body)]             
 pub fn warn_with_tail_too_big() {
     eprintln!("WARNING: Tail value exceeds the maximum value of u64.");
 }
 
-////////////////////////////////////////////////////////////////////////////////////////////////////
-// Log Entries
-////////////////////////////////////////////////////////////////////////////////////////////////////
 struct_with_invariants!{
-/// An entry that sits on the log. Each entry consists of three fields: The operation to
-/// be performed when a thread reaches this entry on the log, the replica that appended
-/// this operation, and a flag indicating whether this entry is valid.
-///
-/// `T` is the type on the operation - typically an enum class containing opcodes as well
-/// as arguments. It is required that this type be sized and cloneable.
 #[repr(align(128))]
 pub struct BufferEntry<DT: Dispatch> {
-    /// The operation that this entry represents.
-    ///
-    ///  - Dafny: linear cell: Cell<CB.ConcreteLogEntry>, where
-    ///            datatype ConcreteLogEntry = ConcreteLogEntry(op: nrifc.UpdateOp, node_id: uint64)
-    ///  - Rust:  pub(crate) operation: Option<T>,
-    // pub(crate) operation: Option<UOp>,
 
-    /// Identifies the replica that issued the above operation.
-    ///
-    ///  - Dafny: as part of ConcreteLogEntry(op: nrifc.UpdateOp, node_id: uint64)
-    ///  - Rust:  pub(crate) replica: usize,
-    // pub(crate) replica: usize,
     pub log_entry: PCell<Option<ConcreteLogEntry<DT>>>,
 
-    /// Indicates whether this entry represents a valid operation when on the log.
-    ///
-    ///  - Dafny: linear alive: Atomic<bool, CBAliveBit>)
-    ///  - Rust:  pub(crate) alivef: AtomicBool,
     pub alive: AtomicBool<_, CyclicBuffer::alive_bits<DT>, _>,
 
-    /// the index into the cyclic buffer of this entry into the cyclig buffer.
     pub cyclic_buffer_idx: Ghost<nat>,
     pub cyclic_buffer_instance: Tracked<CyclicBuffer::Instance<DT>>
 }
@@ -762,59 +561,23 @@ pub open spec fn wf(&self, idx: nat, cb_inst: CyclicBuffer::Instance<DT>) -> boo
         &&& g.value() === v
     }
 }
-}  // struct_with_invariants
-////////////////////////////////////////////////////////////////////////////////////////////////////
-// NR Log
-////////////////////////////////////////////////////////////////////////////////////////////////////
+}  
 
 
 struct_with_invariants!{
-/// A log of operations that is typically accessed by multiple Replicas/Nodes
-///
-/// Corresponds to
-///  - `pub struct Log<T, LM, M>` in the upstream code
-///  - `linear datatype NR` in the dafny code
 #[repr(align(128))]
 pub struct NrLog<DT: Dispatch>
 {
-    /// The actual log, a slice of entries.
-    ///  - Dafny: linear buffer: lseq<BufferEntry>,
-    ///           glinear bufferContents: GhostAtomic<CBContents>,
-    ///  - Rust:  pub(crate) slog: Box<[Cell<Entry<T, M>>]>,
     pub slog: Vec<BufferEntry<DT>>,
 
-    /// Completed tail maintains an index <= tail that points to a log entry after which there
-    /// are no completed operations across all replicas registered against this log.
-    ///
-    ///  - Dafny: linear ctail: CachePadded<Atomic<uint64, Ctail>>,
-    ///  - Rust:  pub(crate) ctail: CachePadded<AtomicUsize>,
     pub version_upper_bound: CachePadded<AtomicU64<_, UnboundedLog::version_upper_bound<DT>, _>>,
 
-    /// Logical index into the above slice at which the log starts.
-    ///
-    ///  - Dafny: linear head: CachePadded<Atomic<uint64, CBHead>>,
-    ///  - Rust:  pub(crate) head: CachePadded<AtomicUsize>,
     pub head: CachePadded<AtomicU64<_, CyclicBuffer::head<DT>, _>>,
 
-    /// Logical index into the above slice at which the log ends. New appends go here.
-    ///
-    ///  - Dafny: linear globalTail: CachePadded<Atomic<uint64, GlobalTailTokens>>,
-    ///  - Rust:  pub(crate) tail: CachePadded<AtomicUsize>,
     pub tail: CachePadded<AtomicU64<_, (UnboundedLog::tail<DT>, CyclicBuffer::tail<DT>), _>>,
 
-    /// Array consisting of the local tail of each replica registered with the log.
-    /// Required for garbage collection; since replicas make progress over the log
-    /// independently, we want to make sure that we don't garbage collect operations
-    /// that haven't been executed by all replicas.
-    ///
-    ///  - Dafny: linear node_info: lseq<NodeInfo>, // NodeInfo is padded
-    ///  - Rust:  pub(crate) ltails: [CachePadded<AtomicUsize>; MAX_REPLICAS_PER_LOG],
-    ///
-    pub/*REVIEW: (crate)*/ local_versions: Vec<CachePadded<AtomicU64<_, (UnboundedLog::local_versions<DT>, CyclicBuffer::local_versions<DT>), _>>>,  // NodeInfo is padded
+    pub                    local_versions: Vec<CachePadded<AtomicU64<_, (UnboundedLog::local_versions<DT>, CyclicBuffer::local_versions<DT>), _>>>,  
 
-    // The upstream Rust version also contains:
-    //  - pub(crate) next: CachePadded<AtomicUsize>, the identifier for the next replica
-    //  - pub(crate) lmasks: [CachePadded<Cell<bool>>; MAX_REPLICAS_PER_LOG], tracking of alivebits
 
     pub num_replicas: Ghost<nat>,
     pub unbounded_log_instance: Tracked<UnboundedLog::Instance<DT>>,
@@ -876,11 +639,10 @@ pub open spec fn wf(&self) -> bool {
         &&& 0 <= v <= MAX_IDX
     }
 }
-}  // struct_with_invariants!{
+}  
 
 
 impl<DT: Dispatch> NrLog<DT> {
-    /// initializes the NrLOg
     pub fn new(num_replicas: usize, log_size: usize) -> (res: (
         Self,
         Vec<ReplicaToken>,
@@ -897,9 +659,6 @@ impl<DT: Dispatch> NrLog<DT> {
             forall|i| #![trigger res.1[i]] 0 <= i < num_replicas ==> res.1[i].id_spec() == i,
             res.2@.wf(num_replicas as nat),
     {
-        //
-        // initialize the unbounded log state machine to obtain the tokens
-        //
         let tracked unbounded_log_instance: UnboundedLog::Instance<DT>;
         let tracked ul_tail: UnboundedLog::tail<DT>;
         let tracked ul_replicas: Map<NodeId, UnboundedLog::replicas<DT>>;
@@ -908,15 +667,15 @@ impl<DT: Dispatch> NrLog<DT> {
         let tracked ul_combiner: Map<NodeId, UnboundedLog::combiner<DT>>;
         proof {
             let tracked (
-                Tracked(unbounded_log_instance0),  // Tracked<Instance>,
-                Tracked(ul_log0),  //Tracked<Map<LogIdx,log>>,
-                Tracked(ul_tail0),  //Tracked<tail>,
-                Tracked(ul_replicas0),  //Tracked<Map<NodeId,replicas>>,
-                Tracked(ul_local_versions0),  //Tracked<Map<NodeId,local_versions>>,
-                Tracked(ul_version_upper_bound0),  //Tracked<version_upper_bound>,
-                _,  //Tracked(ul_local_reads0), //Tracked<Map<ReqId,local_reads>>,
-                _,  //Tracked(ul_local_updates0), //Tracked<Map<ReqId,local_updates>>,
-                Tracked(ul_combiner0),  //Tracked<Map<NodeId,combiner>>
+                Tracked(unbounded_log_instance0),  
+                Tracked(ul_log0),  
+                Tracked(ul_tail0),  
+                Tracked(ul_replicas0),  
+                Tracked(ul_local_versions0),  
+                Tracked(ul_version_upper_bound0),  
+                _,  
+                _,  
+                Tracked(ul_combiner0),  
             ) = UnboundedLog::Instance::initialize(num_replicas as nat);
             unbounded_log_instance = unbounded_log_instance0;
             ul_tail = ul_tail0;
@@ -925,9 +684,6 @@ impl<DT: Dispatch> NrLog<DT> {
             ul_version_upper_bound = ul_version_upper_bound0;
             ul_combiner = ul_combiner0.into_map();
         }
-        //
-        // initialize the log cells
-        //
         let ghost mut logical_log_idx;
         proof {
             logical_log_idx = -log_size as int;
@@ -960,20 +716,15 @@ impl<DT: Dispatch> NrLog<DT> {
                     ),
             decreases log_size - log_idx
         {
-            // pub log_entry: PCell<ConcreteLogEntry>,
-            // create the log entry cell, TODO: create the concrete log entry here?
             let (pcell, token) = PCell::new(Option::None);
-            // add the cell to the log entries for later, store the id
             proof {
                 cell_ids = cell_ids.push(pcell.id());
             }
             slog_entries.push(Option::Some(pcell));
-            // create the stored type
             let tracked stored_type = StoredType {
                 cell_perms: token.get(),
                 log_entry: Option::None,
             };
-            // add the stored type to the contents map
             proof {
                 contents.tracked_insert(logical_log_idx, stored_type);
             }
@@ -982,9 +733,6 @@ impl<DT: Dispatch> NrLog<DT> {
                 logical_log_idx = logical_log_idx + 1;
             }
         }
-        //
-        // Create the cyclic buffer state machine
-        //
 
         let tracked cyclic_buffer_instance: CyclicBuffer::Instance<DT>;
         let tracked cb_head: CyclicBuffer::head<DT>;
@@ -994,12 +742,12 @@ impl<DT: Dispatch> NrLog<DT> {
         let tracked cb_combiners: Map<NodeId, CyclicBuffer::combiner<DT>>;
         proof {
             let tracked (
-                Tracked(cyclic_buffer_instance0),  // CyclicBuffer::Instance>;
-                Tracked(cb_head0),  // CyclicBuffer::head>;
-                Tracked(cb_tail0),  // CyclicBuffer::tail>;
-                Tracked(cb_local_versions0),  // Map<NodeId, CyclicBuffer::local_versions>;
-                Tracked(cb_alive_bits0),  // Map<LogIdx, CyclicBuffer::alive_bits>;
-                Tracked(cb_combiner0),  // Map<NodeId, CyclicBuffer::combiner>;
+                Tracked(cyclic_buffer_instance0),  
+                Tracked(cb_head0),  
+                Tracked(cb_tail0),  
+                Tracked(cb_local_versions0),  
+                Tracked(cb_alive_bits0),  
+                Tracked(cb_combiner0),  
             ) = CyclicBuffer::Instance::initialize(
                 log_size as nat,
                 num_replicas as nat,
@@ -1015,9 +763,6 @@ impl<DT: Dispatch> NrLog<DT> {
             cb_alive_bits = cb_alive_bits0.into_map();
             cb_combiners = cb_combiner0.into_map();
         }
-        //
-        // build up the actual log
-        //
         let mut slog: Vec<BufferEntry<DT>> = Vec::with_capacity(log_size);
         let mut log_idx = 0;
         while log_idx < log_size
@@ -1143,9 +888,6 @@ impl<DT: Dispatch> NrLog<DT> {
             );
             nid = nid + 1;
         }
-        //
-        // Create the replica tokens
-        //
 
         let mut replica_tokens: Vec<ReplicaToken> = Vec::with_capacity(num_replicas);
         let mut idx = 0;
@@ -1186,7 +928,6 @@ impl<DT: Dispatch> NrLog<DT> {
         (log, replica_tokens, Tracked(config))
     }
 
-    /// Returns a physical index given a logical index into the shared log.
     #[inline(always)]
     pub(crate) fn index(&self, logical: u64) -> (result: usize)
         requires
@@ -1199,7 +940,7 @@ impl<DT: Dispatch> NrLog<DT> {
         (logical as usize) % self.slog.len()
     }
 
-    pub  /*REVIEW: (crate)*/
+    pub                     
      open spec fn index_spec(&self, logical: nat) -> nat
         recommends
             self.slog.len() == LOG_SIZE,
@@ -1218,7 +959,7 @@ impl<DT: Dispatch> NrLog<DT> {
         ((logical as usize) / LOG_SIZE % 2) == 0
     }
 
-    pub  /*REVIEW: (crate)*/
+    pub                     
      open spec fn is_alive_value_spec(&self, logical: int) -> bool
         recommends
             self.slog.len() == LOG_SIZE,
@@ -1226,10 +967,6 @@ impl<DT: Dispatch> NrLog<DT> {
         ((logical / (LOG_SIZE as int)) % 2) == 0
     }
 
-    /// This method returns the current version upper bound value for the log.
-    ///
-    ///  - Rust: get_ctail()
-    ///  - Dafny: n/a part of do-read
     pub(crate) fn get_version_upper_bound(
         &self,
         local_reads: Tracked<UnboundedLog::local_reads<DT>>,
@@ -1260,11 +997,6 @@ impl<DT: Dispatch> NrLog<DT> {
         (res, Tracked(new_local_reads_g))
     }
 
-    /// checks whether the version of the local replica has advanced enough to perform read operations
-    ///
-    /// This basically corresponds to the transition `readonly_read_to_read` in the unbounded log.
-    ///
-    // https://github.com/vmware/node-replication/blob/57075c3ddaaab1098d3ec0c2b7d01cb3b57e1ac7/node-replication/src/log.rs#L525
     pub fn is_replica_synced_for_reads(
         &self,
         node_id: ReplicaId,
@@ -1286,10 +1018,8 @@ impl<DT: Dispatch> NrLog<DT> {
             result.1@.instance_id() == self.unbounded_log_instance@.id(),
             result.1@.key() == local_reads@.key(),
     {
-        // obtain the request id from the local_reads token
         let rid_g: Ghost<ReqId> = Ghost(local_reads@.key());
         let tracked new_local_reads_g: UnboundedLog::local_reads<DT>;
-        // obtain the local version
         let local_version = &self.local_versions[node_id as usize].0;
         let res =
             atomic_with_ghost!(
@@ -1330,17 +1060,14 @@ impl<DT: Dispatch> NrLog<DT> {
         unimplemented!()
     }
 
-    /// Inserts a slice of operations into the log.
     #[inline(always)]
     #[verifier::exec_allows_no_decreases_clause]
     pub fn append(
         &self,
         replica_token: &ReplicaToken,
         operations: &Vec<DT::WriteOperation>,
-        // responses and actual replica are part of the closure
         responses: &mut Vec<DT::Response>,
         actual_replica: &mut DT,
-        // here we also need to pass the mut replica
         ghost_data: Tracked<NrLogAppendExecDataGhost<DT>>,
     ) -> (result: Tracked<NrLogAppendExecDataGhost<DT>>)
         requires
@@ -1391,7 +1118,6 @@ impl<DT: Dispatch> NrLog<DT> {
                     self.cyclic_buffer_instance@,
                 ),
         {
-            // unpack stuff
             let tracked NrLogAppendExecDataGhost {
                 local_updates,
                 ghost_replica,
@@ -1407,14 +1133,12 @@ impl<DT: Dispatch> NrLog<DT> {
                 iteration = 0;
             }
             iteration = iteration + 1;
-            // let tail = self.tail.load(Ordering::Relaxed);
             let tail =
                 atomic_with_ghost!(
                 &self.tail.0 => load();
                 returning tail;
                 ghost g => { }
             );
-            // let head = self.head.load(Ordering::Relaxed);
             let head =
                 atomic_with_ghost!(
                 &self.head.0 => load();
@@ -1424,11 +1148,6 @@ impl<DT: Dispatch> NrLog<DT> {
                         .advance_tail_start(nid as nat, &g, cb_combiner);
                 }
             );
-            // If there are fewer than `GC_FROM_HEAD` entries on the log, then just
-            // try again. The replica that reserved entry (h + self.slog.len() - GC_FROM_HEAD)
-            // is currently trying to advance the head of the log. Keep refreshing the
-            // replica against the log to make sure that it isn't deadlocking GC.
-            // if tail > head + self.slog.len() - GC_FROM_HEAD  {  }
             if tail > head + (self.slog.len() as u64 - GC_FROM_HEAD as u64) {
                 if waitgc == WARN_THRESHOLD {
                     print_starvation_warning(line!());
@@ -1442,7 +1161,6 @@ impl<DT: Dispatch> NrLog<DT> {
                         cb_combiner,
                     );
                 }
-                // overwrite the request_ids here, as we're not executing any local updates
                 let tracked ghost_data0 = NrLogAppendExecDataGhost {
                     local_updates: Tracked(local_updates),
                     ghost_replica,
@@ -1467,36 +1185,22 @@ impl<DT: Dispatch> NrLog<DT> {
                         request_ids,
                     };
                 }
-                // upstream has an advance_head here, but dafny doesn't
-                // let ghost_data0 = self.advance_head(replica_token, responses, actual_replica, ghost_data0);
                 continue ;
             }
             let new_tail = tail + (nops as u64);
-            // capture the warning here
             if new_tail >= MAX_IDX {
                 warn_with_tail_too_big();
-                ////////////////////////////////////////////////////////////////////////////////////
-                // !!! THIS IS A PANIC CASE! WE DO NOT RETURN FROM HERE !!!
-                ////////////////////////////////////////////////////////////////////////////////////
                 #[allow(while_true)]
                 while true {
-                }  // TODO: is that fine?
+                }  
 
             }
-            // If on adding in the above entries there would be fewer than `GC_FROM_HEAD`
-            // entries left on the log, then we need to advance the head of the log.
 
             let advance = new_tail > head + (self.slog.len() - GC_FROM_HEAD) as u64;
-            // Try reserving slots for the operations. If that fails, then restart
-            // from the beginning of this loop.
-            // if self.tail.compare_exchange_weak(tail, tail + nops, Ordering::Acquire, Ordering::Acquire) !+ Ok(tail) {
-            //     continue;
-            // }
             let tracked mut cb_log_entries: Map<int, StoredType<DT>> = Map::tracked_empty();
             let tracked mut log_entries: Map<nat, UnboundedLog::log<DT>> = Map::tracked_empty();
             let result =
                 atomic_with_ghost!(
-                //&self.tail.0 => compare_exchange(tail, new_tail);
                 &self.tail.0 => compare_exchange_weak(tail, new_tail);
                 update prev -> next;
                 returning result;
@@ -1511,7 +1215,6 @@ impl<DT: Dispatch> NrLog<DT> {
                         cb_combiner = cb_combiner0;
                         cb_log_entries = cb_log_entries0;
 
-                        // transition to the placed phase
                         combiner = self.unbounded_log_instance.borrow().exec_trivial_start(nid as nat, combiner);
 
                         if request_ids.view().len() > 0 {
@@ -1545,22 +1248,20 @@ impl<DT: Dispatch> NrLog<DT> {
                 }
             );
             if !matches!(result, Result::Ok(tail)) {
-                // assemble the struct again
                 proof {
                     ghost_data_new =
                     NrLogAppendExecDataGhost {
-                        local_updates: Tracked(local_updates),  // Tracked::<Map<ReqId, UnboundedLog::local_updates>>,
-                        ghost_replica,  // Tracked<UnboundedLog::replicas>,
-                        combiner: Tracked(combiner),  // Tracked<UnboundedLog::combiner>,
-                        cb_combiner: Tracked(cb_combiner),  // Tracked<CyclicBuffer::combiner>,
-                        request_ids,  // Ghost<Seq<ReqId>>,
+                        local_updates: Tracked(local_updates),  
+                        ghost_replica,  
+                        combiner: Tracked(combiner),  
+                        cb_combiner: Tracked(cb_combiner),  
+                        request_ids,  
                     };
                 }
                 continue ;
             }
             let ghost cell_ids = self.cyclic_buffer_instance@.cell_ids();
             let ghost buffer_size = self.cyclic_buffer_instance@.buffer_size();
-            // Successfully reserved entries on the shared log. Add the operations in.
             let mut idx = 0;
             while idx < nops
                 invariant
@@ -1588,16 +1289,9 @@ impl<DT: Dispatch> NrLog<DT> {
                             &&& log_entries[i].instance_id() == self.unbounded_log_instance@.id()
                             &&& log_entries[i].value().node_id
                                 == nid as nat
-                            //
-                            // The following will result in a resource limit exceeded
-                            //
 
                             &&& log_entries[i].value().op
                                 == operations[i as int]
-                            //
-                            // Adding the `&` below will fix this.
-                            //
-                            // &&& log_entries[i]@.value.op == &operations[i as int]
 
                         },
                     forall|i|
@@ -1617,21 +1311,16 @@ impl<DT: Dispatch> NrLog<DT> {
                     cb_log_entry = cb_log_entries.tracked_remove((tail + idx) - LOG_SIZE);
                 }
                 let tracked mut cb_log_entry_perms = cb_log_entry.cell_perms;
-                // the logical index into the log
                 let logical_log_idx = tail + idx as u64;
                 let log_idx = self.index(logical_log_idx);
-                // unsafe { (*e).operation = Some(op.clone()) };
-                // unsafe { (*e).replica = idx.0 };
                 let new_log_entry = ConcreteLogEntry {
                     op: DT::clone_write_op(&operations[idx as usize]),
                     node_id: nid as u64,
                 };
-                // update the log entry in the buffer
                 self.slog[log_idx].log_entry.replace(
                     Tracked(&mut cb_log_entry_perms),
                     Option::Some(new_log_entry),
                 );
-                // unsafe { (*e).alivef.store(m, Ordering::Release) };
                 let m = self.is_alive_value(logical_log_idx as u64);
                 atomic_with_ghost!(
                     &self.slog[log_idx].alive => store(m);
@@ -1676,11 +1365,11 @@ impl<DT: Dispatch> NrLog<DT> {
                 self.cyclic_buffer_instance.borrow().append_finish(nid as nat, cb_combiner);
                 ghost_data_new =
                 NrLogAppendExecDataGhost {
-                    local_updates: Tracked(local_updates),  // Tracked::<Map<ReqId, UnboundedLog::local_updates>>,
-                    ghost_replica,  // Tracked<UnboundedLog::replicas>,
-                    combiner: Tracked(combiner),  // Tracked<UnboundedLog::combiner>,
-                    cb_combiner: Tracked(cb_combiner),  // Tracked<CyclicBuffer::combiner>,
-                    request_ids,  // Ghost<Seq<ReqId>>,
+                    local_updates: Tracked(local_updates),  
+                    ghost_replica,  
+                    combiner: Tracked(combiner),  
+                    cb_combiner: Tracked(cb_combiner),  
+                    request_ids,  
                 };
             }
             if advance {
@@ -1697,18 +1386,13 @@ impl<DT: Dispatch> NrLog<DT> {
         }
     }
 
-    /// Advances the head of the log forward. If a replica has stopped making
-    /// progress, then this method will never return. Accepts a closure that is
-    /// passed into execute() to ensure that this replica does not deadlock GC.
     #[inline(always)]
     #[verifier::exec_allows_no_decreases_clause]
     fn advance_head(
         &self,
         replica_token: &ReplicaToken,
-        // the following were part of the closure
         responses: &mut Vec<DT::Response>,
         actual_replica: &mut DT,
-        // ghost state for execute etc.
         ghost_data: Tracked<NrLogAppendExecDataGhost<DT>>,
     ) -> (res: Tracked<NrLogAppendExecDataGhost<DT>>)
         requires
@@ -1760,27 +1444,22 @@ impl<DT: Dispatch> NrLog<DT> {
                 request_ids,
             } = ghost_data0;
             let tracked mut cb_combiner = cb_combiner.get();
-            // let global_head = self.head.load(Ordering::Relaxed);
             let global_head =
                 atomic_with_ghost!(
                 &self.head.0 => load();
                 returning ret;
-                ghost g => { /* no-op */ }
+                ghost g => {             }
             );
-            // let f = self.tail.load(Ordering::Relaxed);
             let global_tail =
                 atomic_with_ghost!(
                 &self.tail.0 => load();
                 returning ret;
-                ghost g => { /* no-op */ }
+                ghost g => {             }
             );
             let (min_local_version, cb_combiner0) = self.find_min_local_version(
                 Tracked(cb_combiner),
             );
             let tracked mut cb_combiner = cb_combiner0.get();
-            // If we cannot advance the head further, then start
-            // from the beginning of this loop again. Before doing so, try consuming
-            // any new entries on the log to prevent deadlock.
             if min_local_version == global_head {
                 proof {
                     cb_combiner =
@@ -1791,9 +1470,6 @@ impl<DT: Dispatch> NrLog<DT> {
                 }
                 if iteration == WARN_THRESHOLD {
                     print_starvation_warning(line!());
-                    // let tracked cb_combiner = Tracked(cb_combiner);
-                    // let tracked ghost_data = NrLogAppendExecDataGhost { local_updates, ghost_replica, combiner, cb_combiner, request_ids };
-                    // return Tracked(ghost_data);
                     iteration = 0;
                 }
                 let cb_combiner = Tracked(cb_combiner);
@@ -1808,8 +1484,6 @@ impl<DT: Dispatch> NrLog<DT> {
                 self.execute(replica_token, responses, actual_replica, Tracked(ghost_data0));
                 continue ;
             }
-            // There are entries that can be freed up; update the head offset.
-            // self.head.store(min_local_tail, Ordering::Relaxed);
 
             atomic_with_ghost!(
                 &self.head.0 => store(min_local_version);
@@ -1836,13 +1510,11 @@ impl<DT: Dispatch> NrLog<DT> {
                 cb_combiner,
                 request_ids,
             };
-            // replica_token@ < self.local_versions.len(),
             ghost_data_new =
             self.execute(replica_token, responses, actual_replica, Tracked(ghost_data0));
         }
     }
 
-    /// proof function that transitions local updates into the done state.
     #[verifier::external_body]
     proof fn execute_update_done_multiple(
         tracked &self,
@@ -1877,9 +1549,6 @@ impl<DT: Dispatch> NrLog<DT> {
         unimplemented!()
     }
 
-    /// Executes a passed in closure (`d`) on all operations starting from a
-    /// replica's local tail on the shared log. The replica is identified
-    /// through an `idx` passed in as an argument.
     #[verifier::exec_allows_no_decreases_clause]
     pub(crate) fn execute(
         &self,
@@ -1910,44 +1579,35 @@ impl<DT: Dispatch> NrLog<DT> {
             ),
     {
         let nid = replica_token.id() as usize;
-        // somehow can't really do this as a destructor
         let tracked ghost_data = ghost_data.get();
-        // let tracked Tracked(ghost_data) = ghost_data;  // XXX: that one here doesn't work?
-        let tracked mut local_updates = ghost_data.local_updates.get();  // Tracked::<Map<ReqId, UnboundedLog::local_updates>>,
-        let tracked mut ghost_replica = ghost_data.ghost_replica.get();  // Tracked<UnboundedLog::replicas>,
-        let tracked mut combiner = ghost_data.combiner.get();  // Tracked<UnboundedLog::combiner>,
-        let tracked mut cb_combiner = ghost_data.cb_combiner.get();  // Tracked<CyclicBuffer::combiner>,
-        let ghost request_ids = ghost_data.request_ids@;  // Ghost<Seq<ReqId>>,
+        let tracked mut local_updates = ghost_data.local_updates.get();  
+        let tracked mut ghost_replica = ghost_data.ghost_replica.get();  
+        let tracked mut combiner = ghost_data.combiner.get();  
+        let tracked mut cb_combiner = ghost_data.cb_combiner.get();  
+        let ghost request_ids = ghost_data.request_ids@;  
         let ghost mut request_ids_new = request_ids;
         proof {
-            // if the combiner in idle, we start it with the trival start transition
             if combiner.value().is_Ready() {
                 combiner =
                 self.unbounded_log_instance.borrow().exec_trivial_start(nid as nat, combiner);
                 request_ids_new = Seq::empty();
             }
         }
-        // let ltail = self.ltails[idx.0 - 1].load(Ordering::Relaxed);
         let mut local_version =
             atomic_with_ghost!(
             &self.local_versions[nid].0 => load();
             returning ret;
             ghost g => {
-                // this kicks of the state transition in both the cyclic buffer and the unbounded log
                 combiner = self.unbounded_log_instance.borrow().exec_load_local_version(nid as nat, &g.0, combiner);
                 cb_combiner = self.cyclic_buffer_instance.borrow().reader_start(nid as nat, &g.1, cb_combiner);
             }
         );
-        // Check if we have any work to do by comparing our local tail with the log's
-        // global tail. If they're equal, then we're done here and can simply return.
-        // let gtail = self.tail.load(Ordering::Relaxed);
         let global_tail =
             atomic_with_ghost!(
             &self.tail.0 => load();
             returning global_tail;
             ghost g => {
                 if (local_version == global_tail) {
-                    // there has ben no additional updates to be applied, combiner back to idle
                     combiner = self.unbounded_log_instance.borrow().exec_finish_no_change(nid as nat, &g.0, combiner);
                     cb_combiner = self.cyclic_buffer_instance.borrow().reader_abort(nid as nat, cb_combiner);
                 } else {
@@ -1958,36 +1618,20 @@ impl<DT: Dispatch> NrLog<DT> {
         );
         if local_version == global_tail {
             let tracked ghost_data_ret = NrLogAppendExecDataGhost {
-                local_updates: Tracked(local_updates),  // Tracked::<Map<ReqId, UnboundedLog::local_updates>>,
-                ghost_replica: Tracked(ghost_replica),  // Tracked<UnboundedLog::replicas>,
-                combiner: Tracked(combiner),  // Tracked<UnboundedLog::combiner>,
-                cb_combiner: Tracked(cb_combiner),  // Tracked<CyclicBuffer::combiner>,
-                request_ids: Ghost(request_ids),  // Ghost<Seq<ReqId>>,
+                local_updates: Tracked(local_updates),  
+                ghost_replica: Tracked(ghost_replica),  
+                combiner: Tracked(combiner),  
+                cb_combiner: Tracked(cb_combiner),  
+                request_ids: Ghost(request_ids),  
             };
-            // not sure why this one needs to be here?
             assert(ghost_data_ret.common_pred(
                 replica_token@,
                 actual_replica.view(),
                 self.unbounded_log_instance@,
                 self.cyclic_buffer_instance@,
             ));
-            // assert(ghost_data_ret.cb_combiner@.value()  == ghost_data.cb_combiner@.value());
-            // assert(ghost_data_ret.request_ids == ghost_data.request_ids);
-            // assert(ghost_data.combiner@@.value.is_Placed() ==> {
-            //     &&& ghost_data_ret.post_exec(ghost_data.request_ids@, responses@)
-            // });
-            // assert(ghost_data.combiner@@.value.is_Ready() ==> {
-            //     &&& ghost_data_ret.combiner@@.value  == ghost_data.combiner@@.value
-            //     &&& ghost_data_ret.local_updates == ghost_data.local_updates
-            //     &&& responses@ == old(responses)@
-            // });
-            // assert(ghost_data_ret.execute_post(ghost_data, replica_token@, actual_replica.view(), old(responses)@, responses@, self.unbounded_log_instance@, self.cyclic_buffer_instance@));
             return Tracked(ghost_data_ret);
         }
-        // Execute all operations from the passed in offset to the shared log's tail.
-        // Check if the entry is live first; we could have a replica that has reserved
-        // entries, but not filled them into the log yet.
-        // for i in ltail..gtail {
 
         let ghost local_updates_old = local_updates;
         let ghost responses_old = responses@;
@@ -2045,12 +1689,10 @@ impl<DT: Dispatch> NrLog<DT> {
                     },
             decreases global_tail - local_version
         {
-            // calculating the actual index and the
             let phys_log_idx = self.index(local_version);
             let is_alive_value = self.is_alive_value(local_version);
             let mut iteration = 1;
             let mut is_alive = false;
-            // while unsafe { (*e).alivef.load(Ordering::Acquire) != self.lmasks[idx.0 - 1].get() } {
             while !is_alive
                 invariant
                     self.wf(),
@@ -2093,28 +1735,21 @@ impl<DT: Dispatch> NrLog<DT> {
                 is_alive = alive_bit == is_alive_value;
                 iteration = iteration + 1;
             }
-            // dispatch the operation to apply the update to the replica
-            // unsafe { d((*e).operation.as_ref().unwrap().clone(),(*e).replica == idx.0,) };
 
             let tracked stored_entry: &StoredType<DT>;
             proof {
                 stored_entry =
                 self.cyclic_buffer_instance.borrow().guard_guards(nid as nat, &cb_combiner);
             }
-            // read the entry
             let log_entry = self.slog[phys_log_idx].log_entry.borrow(
                 Tracked(&stored_entry.cell_perms),
             );
-            // perform the update
             let res = actual_replica.dispatch_mut(
                 DT::clone_write_op(&log_entry.as_ref().unwrap().op),
             );
             if log_entry.as_ref().unwrap().node_id == nid as u64 {
-                // case: local dispatch, store the result in the response vector
                 proof {
-                    // unwrap the entry
                     if let Option::Some(e) = &stored_entry.log_entry {
-                        // appeal to the state machien to get that response_idx < request_ids_new.len()
                         self.unbounded_log_instance.borrow().pre_exec_dispatch_local(
                             nid as nat,
                             e,
@@ -2144,13 +1779,10 @@ impl<DT: Dispatch> NrLog<DT> {
                 responses.push(res);
                 responses_idx = responses_idx + 1;
             } else {
-                // case: remote dispatch
                 proof {
                     assert(stored_entry.log_entry.unwrap().value().node_id != nid);
                     if let Option::Some(e) = &stored_entry.log_entry {
                         assert(e.value().node_id != nid);
-                        // assert(ghost_replica@.key == nid as nat);
-                        // assert(combiner@.value.get_Loop_lversion() < combiner@.value.get_Loop_tail());
                         let tracked exec_dispatch_remote_result =
                             self.unbounded_log_instance.borrow().exec_dispatch_remote(
                             nid as nat,
@@ -2161,7 +1793,7 @@ impl<DT: Dispatch> NrLog<DT> {
                         ghost_replica = exec_dispatch_remote_result.0.get();
                         combiner = exec_dispatch_remote_result.1.get();
                     } else {
-                        assert(false)  // should not happen
+                        assert(false)  
 
                     }
                 }
@@ -2178,7 +1810,6 @@ impl<DT: Dispatch> NrLog<DT> {
                 &combiner,
             );
         }
-        // self.ctail.fetch_max(gtail, Ordering::Relaxed);
         atomic_with_ghost!(
             &self.version_upper_bound.0 => fetch_max(global_tail);
             ghost g => {
@@ -2188,7 +1819,6 @@ impl<DT: Dispatch> NrLog<DT> {
                     local_updates = self.execute_update_done_multiple(request_ids_new,  local_updates, &g);
                 }
             });
-        // self.ltails[idx.0 - 1].store(gtail, Ordering::Relaxed);
         atomic_with_ghost!(
             &self.local_versions[nid].0 => store(global_tail);
             ghost g => {
@@ -2203,13 +1833,12 @@ impl<DT: Dispatch> NrLog<DT> {
                 g = (ul_local_versions, cb_local_versions);
         });
         let tracked ghost_data_ret = NrLogAppendExecDataGhost {
-            local_updates: Tracked(local_updates),  // Tracked::<Map<ReqId, UnboundedLog::local_updates>>,
-            ghost_replica: Tracked(ghost_replica),  // Tracked<UnboundedLog::replicas>,
-            combiner: Tracked(combiner),  // Tracked<UnboundedLog::combiner>,
-            cb_combiner: Tracked(cb_combiner),  // Tracked<CyclicBuffer::combiner>,
-            request_ids: Ghost(request_ids),  // Ghost<Seq<ReqId>>,
+            local_updates: Tracked(local_updates),  
+            ghost_replica: Tracked(ghost_replica),  
+            combiner: Tracked(combiner),  
+            cb_combiner: Tracked(cb_combiner),  
+            request_ids: Ghost(request_ids),  
         };
-        // not sure why this one needs to be here?
         assert(ghost_data_ret.execute_post(
             ghost_data,
             replica_token@,
@@ -2222,13 +1851,6 @@ impl<DT: Dispatch> NrLog<DT> {
         Tracked(ghost_data_ret)
     }
 
-    /// Loops over all `local_versions` and finds the replica with the lowest version.
-    ///
-    /// # Returns
-    /// The ID (in `LogToken`) of the replica with the lowest tail and the
-    /// corresponding/lowest tail `idx` in the `Log`.
-    ///
-    ///  - Dafny: part of advance_head
     pub(crate) fn find_min_local_version(
         &self,
         cb_combiner: Tracked<CyclicBuffer::combiner<DT>>,
@@ -2245,11 +1867,9 @@ impl<DT: Dispatch> NrLog<DT> {
             result.1@.value().get_AdvancingHead_idx() == self.num_replicas,
             result.1@.value().get_AdvancingHead_min_local_version() == result.0,
     {
-        // let r = self.next.load(Ordering::Relaxed);
         let num_replicas = self.local_versions.len();
         let tracked mut g_cb_comb_new: CyclicBuffer::combiner<DT> = cb_combiner.get();
         let ghost g_node_id = cb_combiner@.key();
-        // let (mut min_replica_idx, mut min_local_tail) = (0, self.ltails[0].load(Ordering::Relaxed));
         let mut min_local_version =
             atomic_with_ghost!(
             &self.local_versions[0].0 => load();
@@ -2258,11 +1878,6 @@ impl<DT: Dispatch> NrLog<DT> {
                 g_cb_comb_new = self.cyclic_buffer_instance.borrow()
                                         .advance_head_start(g_node_id, &g.1, g_cb_comb_new);
             });
-        // Find the smallest local tail across all replicas.
-        // for idx in 1..r {
-        //    let cur_local_tail = self.ltails[idx - 1].load(Ordering::Relaxed);
-        //    min_local_tail = min(min_local_tail, cur_local_tail)
-        //}
         let mut idx: usize = 1;
         while idx < num_replicas
             invariant
@@ -2277,7 +1892,6 @@ impl<DT: Dispatch> NrLog<DT> {
                 num_replicas == self.local_versions.len(),
             decreases num_replicas - idx
         {
-            // let cur_local_tail = self.ltails[idx - 1].load(Ordering::Relaxed);
             let cur_local_tail =
                 atomic_with_ghost!(
                 &self.local_versions[idx].0 => load();
@@ -2295,25 +1909,20 @@ impl<DT: Dispatch> NrLog<DT> {
     }
 }
 
-////////////////////////////////////////////////////////////////////////////////////////////////////
-// Ghost State
-////////////////////////////////////////////////////////////////////////////////////////////////////
-/// Data structure that is passed between the append and exec functins of the log.
 pub tracked struct NrLogAppendExecDataGhost<DT: Dispatch> {
-    pub  /* REVIEW (crate) */
+    pub                      
      local_updates: Tracked::<Map<ReqId, UnboundedLog::local_updates<DT>>>,
-    pub  /* REVIEW (crate) */
+    pub                      
      ghost_replica: Tracked<UnboundedLog::replicas<DT>>,
-    pub  /* REVIEW (crate) */
+    pub                      
      combiner: Tracked<UnboundedLog::combiner<DT>>,
-    pub  /* REVIEW (crate) */
+    pub                      
      cb_combiner: Tracked<CyclicBuffer::combiner<DT>>,
-    pub  /* REVIEW (crate) */
+    pub                      
      request_ids: Ghost<Seq<ReqId>>,
 }
 
 impl<DT: Dispatch> NrLogAppendExecDataGhost<DT> {
-    /// some common predicate that ties the state to the node and instances
     pub open spec fn common_pred(
         &self,
         nid: NodeId,
@@ -2373,7 +1982,7 @@ impl<DT: Dispatch> NrLogAppendExecDataGhost<DT> {
         &&& self.combiner@.value().is_Ready() ==> self.post_exec(pre.request_ids@, responses)
         &&& self.combiner@.value().is_Placed() ==> self.pre_exec(responses)
         &&& self.cb_combiner@.value()
-            == pre.cb_combiner@.value()  // other fields in common_pred
+            == pre.cb_combiner@.value()  
 
         &&& self.request_ids == pre.request_ids
     }
@@ -2456,7 +2065,6 @@ impl<DT: Dispatch> NrLogAppendExecDataGhost<DT> {
         }
     }
 
-    // corresponds to Dafny's pre_exec() function
     pub open spec fn pre_exec(&self, responses: Seq<DT::Response>) -> bool {
         &&& responses.len() == 0
         &&& self.combiner@.value().is_Placed()
@@ -2470,7 +2078,6 @@ impl<DT: Dispatch> NrLogAppendExecDataGhost<DT> {
             })
     }
 
-    // corresponds to Dafny's post_exec() function
     pub open spec fn post_exec(
         &self,
         request_ids: Seq<ReqId>,
@@ -2490,7 +2097,6 @@ impl<DT: Dispatch> NrLogAppendExecDataGhost<DT> {
 }
 
 struct_with_invariants!{
-/// keeps track of the recursive state when applying updates to the unbounded log
 pub tracked struct AppendEntriesGhostState<DT: Dispatch> {
     pub ghost idx               : nat,
     pub ghost old_tail          : nat,
@@ -2517,11 +2123,9 @@ pub open spec fn wf(&self, nid: nat, ridx: nat, inst: UnboundedLog::Instance<DT>
 
         &&& (forall |i| 0 <= i < self.idx ==> #[trigger]self.request_ids[i] == self.combiner.value().get_Placed_queued_ops()[i])
 
-        // we added all the new entries
         &&& (forall |i| 0 <= i < self.idx <==> self.log_entries.contains_key(i))
         &&& (forall |i| 0 <= i < self.request_ids.len() ==> self.local_updates.contains_key(i))
 
-        // processed entries
         &&& (forall |i| #![trigger self.local_updates[i]] 0 <= i < self.idx ==> {
             &&& self.local_updates[i].instance_id() == inst.id()
             &&& self.local_updates[i].key() == self.request_ids[i as int]
@@ -2529,7 +2133,6 @@ pub open spec fn wf(&self, nid: nat, ridx: nat, inst: UnboundedLog::Instance<DT>
             &&& self.local_updates[i].value().get_Placed_op() == self.operations[i as int]
         })
 
-        // unprocessed entries
         &&& (forall |i| #![trigger self.local_updates[i]] self.idx <= i < self.request_ids.len() ==> {
             &&& self.local_updates[i].instance_id() == inst.id()
             &&& self.local_updates[i].key() == self.request_ids[i as int]
@@ -2537,7 +2140,6 @@ pub open spec fn wf(&self, nid: nat, ridx: nat, inst: UnboundedLog::Instance<DT>
             &&& self.local_updates[i].value().get_Init_op() == self.operations[i as int]
         })
 
-        // the log entries
         &&& (forall |i| #![trigger self.log_entries[i]] 0 <= i < self.idx ==> {
             &&& self.log_entries[i].instance_id() == inst.id()
             &&& self.log_entries[i].key() == self.old_tail + i
@@ -2546,11 +2148,10 @@ pub open spec fn wf(&self, nid: nat, ridx: nat, inst: UnboundedLog::Instance<DT>
         })
     }
 }
-}  // struct_with_invariants!
+}  
 
 
 struct_with_invariants!{
-/// represents the tokens that are created when a new log is being initialized
 pub tracked struct NrLogTokens<DT: Dispatch> {
     pub ghost num_replicas: nat,
     pub tracked replicas                : Map<NodeId,UnboundedLog::replicas<DT>>,
@@ -2588,17 +2189,12 @@ pub open spec fn wf(&self, num_replicas: nat) -> bool {
     }
 }
 
-}  // struct_with_invariants!{
+}  
 
 
-} // verus!
-// ===== END INLINED DEPENDENCY: src/exec/log.rs =====
+} 
 }
 pub mod replica {
-// ===== BEGIN TARGET SOURCE: src/exec/replica.rs =====
-// Verified Node Replication Library
-// SPDX-License-Identifier: Apache-2.0 OR MIT
-//
 #[allow(unused_imports)]
 use verus_builtin::*;
 use verus_builtin_macros::*;
@@ -2617,7 +2213,6 @@ use crate::constants::{
 
 use crate::Dispatch;
 
-// spec import
 use crate::spec::cyclicbuffer::CyclicBuffer;
 use crate::spec::flat_combiner::FlatCombiner;
 use crate::spec::types::{NodeId, ReqId};
@@ -2625,7 +2220,6 @@ use crate::spec::unbounded_log::UnboundedLog;
 #[cfg(verus_keep_ghost)]
 use crate::{is_readonly_stub, is_readonly_ticket, is_update_stub, is_update_ticket};
 
-// exec imports
 use crate::exec::context::{
     Context, FCClientRequestResponseGhost, PendingOperation, ThreadId, ThreadToken,
 };
@@ -2635,27 +2229,19 @@ use crate::exec::rwlock::RwLock;
 use crate::exec::utils::{rids_match, rids_match_add_none, rids_match_add_rid, rids_match_pop};
 use crate::exec::CachePadded;
 
-// use crate::exec::rwlock_unverified::RwLock as RwLockUnverified;
 
 verus! {
 
 #[verus::trusted]
-#[verifier(external_body)]  /* vattr */
+#[verifier(external_body)]             
 fn spin_loop_hint() {
     core::hint::spin_loop();
 }
 
-////////////////////////////////////////////////////////////////////////////////////////////////////
-// Replica Types
-////////////////////////////////////////////////////////////////////////////////////////////////////
-/// Unique identifier for the given replica (relative to the log)
 pub type ReplicaId = usize;
 
-/// a token that identifies the replica
-///
-// #[derive(Copy, Clone, Eq, PartialEq)]
 pub struct ReplicaToken {
-    pub  /* REVIEW: (crate) */
+    pub                       
      rid: ReplicaId,
 }
 
@@ -2694,26 +2280,14 @@ impl ReplicaToken {
     }
 }
 
-////////////////////////////////////////////////////////////////////////////////////////////////////
-// Replicated Data Structure
-////////////////////////////////////////////////////////////////////////////////////////////////////
 struct_with_invariants!{
-/// Represents the data structure that is being replicated, protected by a RWLock
-///
-///  - Dafny: linear datatype NodeReplica = NodeReplica(
 pub struct ReplicatedDataStructure<DT: Dispatch> {
-    /// the actual data structure
-    ///  - Dafny: linear actual_replica: nrifc.DataStructureType,
     pub data: DT,
-    ///  - Dafny: glinear ghost_replica: Replica,
     pub replica: Tracked<UnboundedLog::replicas<DT>>,
-    ///  - Dafny: glinear combiner: CombinerToken,
     pub combiner: Tracked<UnboundedLog::combiner<DT>>,
-    ///  - Dafny: glinear cb: CBCombinerToken
     pub cb_combiner: Tracked<CyclicBuffer::combiner<DT>>
 }
 
-//  - Dafny: predicate WF(nodeId: nat, cb_loc_s: nat) {
 pub open spec fn wf(&self, nid: NodeId, inst: UnboundedLog::Instance<DT>, cb: CyclicBuffer::Instance<DT>) -> bool {
     predicate {
         &&& self.combiner@.instance_id() == inst.id()
@@ -2727,83 +2301,30 @@ pub open spec fn wf(&self, nid: NodeId, inst: UnboundedLog::Instance<DT>, cb: Cy
         &&& self.cb_combiner@.value().is_Idle()
         &&& self.cb_combiner@.instance_id() == cb.id()
     }
-}}  // struct_with_invariants
-////////////////////////////////////////////////////////////////////////////////////////////////////
-// Replica
-////////////////////////////////////////////////////////////////////////////////////////////////////
+}}  
 
 
 struct_with_invariants!{
-/// An instance of a replicated data structure which uses a shared [`Log`] to
-/// scale operations on the data structure across cores and processors.
-///
-///  - Dafny:   linear datatype Node
-///  - Rust:    pub struct Replica<D>
 #[repr(align(128))]
 #[cfg_attr(verus_keep_ghost, verifier::reject_recursive_types(DT))]
 pub struct Replica<DT: Dispatch> {
-    /// An identifier that we got from the Log when the replica was registered
-    /// against the shared-log ([`Log::register()`]). Required to pass to the
-    /// log when consuming operations from the log.
-    ///
-    ///  - Dafny: nodeId: uint64,
-    ///  - Rust:  log_tkn: LogToken,
     pub replica_token: ReplicaToken,
 
-    /// Stores the index of the thread currently doing flat combining. Field is
-    /// zero if there isn't any thread actively performing flat-combining.
-    /// Atomic since this acts as the combiner lock.
-    ///
-    ///  - Dafny: linear combiner_lock: CachePadded<Atomic<uint64, glOption<CombinerLockState>>>,
-    ///  - Rust:  combiner: CachePadded<AtomicUsize>,
     pub combiner: CachePadded<AtomicU64<_, Option<CombinerLockStateGhost<DT>>, _>>,
 
-    /// List of per-thread contexts. Threads buffer write operations here when
-    /// they cannot perform flat combining (because another thread might already
-    /// be doing so).
-    ///
-    ///  - Dafny: linear contexts: lseq<Context>,
-    ///  - Rust:  contexts: Vec<Context<<D as Dispatch>::WriteOperation, <D as Dispatch>::Response>>,
     pub contexts: Vec<Context<DT>>,
 
-    /// A buffer of operations for flat combining.
-    ///
-    /// Safety: Protected by the cominer lock.
-    ///
-    ///  - Dafny: linear ops: LC.LinearCell<seq<nrifc.UpdateOp>>,
-    ///  - Rust:  buffer: RefCell<Vec<<D as Dispatch>::WriteOperation>>,
     pub collected_operations: PCell<Vec<<DT as Dispatch>::WriteOperation>>,
 
-    /// Number of operations collected by the combiner from each thread at any
-    /// we just have one inflight operation per thread
-    /// inflight: RefCell<[usize; MAX_THREADS_PER_REPLICA]>,
     pub collected_operations_per_thread: PCell<Vec<usize>>,
 
-    /// A buffer of results collected after flat combining. With the help of
-    /// `inflight`, the combiner enqueues these results into the appropriate
-    /// thread context.
-    ///
-    /// Safety: Protected by the cominer lock.
-    ///
-    ///  - Dafny: linear responses: LC.LinearCell<seq<nrifc.ReturnType>>,
-    ///  - Rust:  result: RefCell<Vec<<D as Dispatch>::Response>>,
     pub responses: PCell<Vec<<DT as Dispatch>::Response>>,
 
-    /// The underlying data structure. This is shared among all threads that are
-    /// registered with this replica. Each replica maintains its own copy of
-    /// `data`.
-    ///
-    ///   - Dafny: linear replica: RwLock,
-    ///   - Rust:  data: CachePadded<RwLock<D>>,
     pub data: CachePadded<RwLock<ReplicatedDataStructure<DT>>>,
-    // pub _data: CachePadded<RwLockUnverified<ReplicatedDataStructure<DT>>>,
 
-    // Thread index that will be handed out to the next thread that registers
-    // with the replica when calling [`Replica::register()`].
-    pub num_threads: u64, //CachePadded<AtomicU64<_, Tracked<u64>, _>>,
+    pub num_threads: u64, 
 
-    /// thread token that is handed out to the threads that register
-    pub /* REVIEW: (crate) */ thread_tokens: Vec<ThreadToken<DT>>,
+    pub                       thread_tokens: Vec<ThreadToken<DT>>,
 
     pub unbounded_log_instance: Tracked<UnboundedLog::Instance<DT>>,
     pub cyclic_buffer_instance: Tracked<CyclicBuffer::Instance<DT>>,
@@ -2832,18 +2353,13 @@ pub open spec fn wf(&self) -> bool {
     }
 
     invariant on combiner with (flat_combiner_instance, responses, collected_operations, collected_operations_per_thread) specifically (self.combiner.0) is (v: u64, g: Option<CombinerLockStateGhost<DT>>) {
-        // v != 0 means lock is not taken, if it's not taken, the ghost state is Some
         &&& (v == 0) <==> g.is_some()
-        //
         &&& (g matches Some(g) ==> g.inv(flat_combiner_instance@, responses.id(), collected_operations.id(), collected_operations_per_thread.id()))
     }
 
-    // invariant on num_threads with (flat_combiner_instance) specifically (self.num_threads.0)  is (v: u64, g: Tracked<u64>) {
-    //     v == g@
-    // }
 }
 
-}  // struct_with_invariants!
+}  
 
 
 impl<DT: Dispatch> Replica<DT> {
@@ -2869,28 +2385,22 @@ impl<DT: Dispatch> Replica<DT> {
             unbounded_log_instance: unbounded_log_instance,
             cyclic_buffer_instance: cyclic_buffer_instance,
         } = config.get();
-        //
-        // initialize the flat combiner
-        //
         let tracked fc_instance: FlatCombiner::Instance;
         let tracked mut fc_clients: Map<nat, FlatCombiner::clients>;
         let tracked mut fc_slots: Map<nat, FlatCombiner::slots>;
         let tracked fc_combiner: FlatCombiner::combiner;
         proof {
             let tracked (
-                Tracked(fc_instance0),  // FlatCombiner::Instance,
-                Tracked(fc_clients0),  // Map<ThreadId, FlatCombiner::clients>,
-                Tracked(fc_slots0),  // Map<ThreadId, FlatCombiner::slots>,
-                Tracked(fc_combiner0),  // FlatCombiner::combiner
+                Tracked(fc_instance0),  
+                Tracked(fc_clients0),  
+                Tracked(fc_slots0),  
+                Tracked(fc_combiner0),  
             ) = FlatCombiner::Instance::initialize(num_threads as nat);
             fc_instance = fc_instance0;
             fc_clients = fc_clients0.into_map();
             fc_slots = fc_slots0.into_map();
             fc_combiner = fc_combiner0;
         }
-        //
-        // create the memory cells for the buffers
-        //
         let (responses, responses_token) = PCell::new(Vec::with_capacity(num_threads));
         let (collected_operations, collected_operations_perm) = PCell::new(
             Vec::with_capacity(num_threads),
@@ -2898,9 +2408,6 @@ impl<DT: Dispatch> Replica<DT> {
         let (collected_operations_per_thread, collected_operations_per_thread_perm) = PCell::new(
             Vec::with_capacity(num_threads),
         );
-        //
-        // create the data structure protected by the RW lock
-        //
         let replicated_data_structure = ReplicatedDataStructure {
             data: DT::init(),
             replica: Tracked(replica),
@@ -2912,7 +2419,6 @@ impl<DT: Dispatch> Replica<DT> {
             unbounded_log_instance,
             cyclic_buffer_instance,
         ));
-        // TODO: get the right spec function in there!
         let ghost data_structure_inv = |s: ReplicatedDataStructure<DT>|
             { s.wf(replica_token.id_spec(), unbounded_log_instance, cyclic_buffer_instance) };
         let data = CachePadded(
@@ -2922,16 +2428,6 @@ impl<DT: Dispatch> Replica<DT> {
                 Ghost(data_structure_inv),
             ),
         );
-        // let _replicated_data_structure = ReplicatedDataStructure {
-        // data: DT::init(),
-        // replica: Tracked(replica),
-        // combiner: Tracked(combiner),
-        // cb_combiner: Tracked(cb_combiner),
-        // };
-        // let _data = CachePadded(RwLockUnverified::new(_replicated_data_structure));
-        //
-        // Create the thread contexts
-        //
         let mut contexts: Vec<Context<DT>> = Vec::with_capacity(num_threads);
         let mut thread_tokens: Vec<ThreadToken<DT>> = Vec::with_capacity(num_threads);
         let mut idx = 0;
@@ -2992,7 +2488,6 @@ impl<DT: Dispatch> Replica<DT> {
                 fc_client: Tracked(client),
                 batch_perm,
             };
-            // assert(token.wf2(unbounded_log_instance.num_replicas()));
             contexts.push(context);
             thread_tokens.push(token);
             idx = idx + 1;
@@ -3018,10 +2513,7 @@ impl<DT: Dispatch> Replica<DT> {
                 Tracked(Option::Some(context_ghost)),
             ),
         );
-        let num_threads = 0;  //AtomicU64::new(Ghost(()), 0, Tracked(0));
-        //
-        // Assemble the data struture
-        //
+        let num_threads = 0;  
         Replica {
             replica_token,
             combiner,
@@ -3030,7 +2522,6 @@ impl<DT: Dispatch> Replica<DT> {
             collected_operations_per_thread,
             responses,
             data,
-            // _data,
             thread_tokens,
             num_threads,
             unbounded_log_instance: Tracked(unbounded_log_instance),
@@ -3046,14 +2537,10 @@ impl<DT: Dispatch> Replica<DT> {
         self.replica_token.id()
     }
 
-    /// returns the replica id for this replica
     pub open spec fn spec_id(&self) -> NodeId {
         self.replica_token.id_spec()
     }
 
-    /// Try to become acquire the combiner lock here. If this fails, then return None.
-    ///
-    ///  - Dafny: part of method try_combine
     #[inline(always)]
     fn acquire_combiner_lock(&self) -> (result: (bool, Tracked<Option<CombinerLockStateGhost<DT>>>))
         requires
@@ -3067,33 +2554,19 @@ impl<DT: Dispatch> Replica<DT> {
                 self.collected_operations_per_thread.id(),
             ),
     {
-        // OPT: try to check whether the lock is already present
-        // for _ in 0..4 {
-        //     if self.combiner.load(Ordering::Relaxed) != 0 { return None; }
-        // }
         let res =
             atomic_with_ghost!(
-                // upstream is compare_exchange_weak
                 &self.combiner.0 => load();
                 ghost g => { }
             );
         if res != 0 {
             return (false, Tracked(Option::None));
         }
-        // XXX: we should pass in the replica token here, just setting the tid to 1 should work
-        //      as the lock is basically a spinlock anyway
 
         let tid = 1u64;
-        // Step 1: perform cmpxchg to acquire the combiner lock
-        // if self.combiner.compare_exchange_weak(0, 1, Ordering::Acquire, Ordering::Acquire) != Ok(0) {
-        //     None
-        // } else {
-        //     Some(CombinerLock { replica: self })
-        // }
         let tracked lock_g: Option<CombinerLockStateGhost<DT>>;
         let res =
             atomic_with_ghost!(
-            // upstream is compare_exchange_weak
             &self.combiner.0 => compare_exchange(0, tid + 1);
             update prev->next;
             ghost g => {
@@ -3125,8 +2598,6 @@ impl<DT: Dispatch> Replica<DT> {
             });
     }
 
-    /// Appends an operation to the log and attempts to perform flat combining.
-    /// Accepts a thread `tid` as an argument. Required to acquire the combiner lock.
     fn try_combine(&self, slog: &NrLog<DT>)
         requires
             self.wf(),
@@ -3134,20 +2605,16 @@ impl<DT: Dispatch> Replica<DT> {
             self.unbounded_log_instance@ == slog.unbounded_log_instance@,
             slog.cyclic_buffer_instance@ == self.cyclic_buffer_instance@,
     {
-        // Step 1: try to take the combiner lock to become combiner
         let (acquired, combiner_lock) = self.acquire_combiner_lock();
-        // Step 2: if we are the combiner then perform flat combining, else return
         if acquired {
             assert(combiner_lock@.is_some());
             let combiner_lock = Tracked(combiner_lock.get().tracked_unwrap());
             let combiner_lock = self.combine(slog, combiner_lock);
             self.release_combiner_lock(combiner_lock);
         } else {
-            // nothing to be done here.
         }
     }
 
-    /// Performs one round of flat combining. Collects, appends and executes operations.
     fn combine(
         &self,
         slog: &NrLog<DT>,
@@ -3172,24 +2639,19 @@ impl<DT: Dispatch> Replica<DT> {
                 self.collected_operations_per_thread.id(),
             ),
     {
-        // disassemble the combiner lock
         let tracked combiner_lock = combiner_lock.get();
         let flat_combiner = Tracked(combiner_lock.flat_combiner.get());
         let tracked mut collected_operations_perm = combiner_lock.collected_operations_perm.get();
         let tracked mut collected_operations_per_thread_perm =
             combiner_lock.collected_operations_per_thread_perm.get();
         let tracked mut responses_token = combiner_lock.responses_token.get();
-        // obtain access to the responses, operations and num_ops_per_thread buffers
         let mut responses = self.responses.take(Tracked(&mut responses_token));
         let mut operations = self.collected_operations.take(
             Tracked(&mut collected_operations_perm),
         );
-        // assert(self.collected_operations_per_thread.id() == collected_operations_per_thread_perm@.pcell);
         let mut num_ops_per_thread = self.collected_operations_per_thread.take(
             Tracked(&mut collected_operations_per_thread_perm),
         );
-        // Step 1: collect the operations from the threads
-        // self.collect_thread_ops(&mut buffer, operations.as_mut_slice());
         let Tracked(collect_res) = self.collect_thread_ops(
             &mut operations,
             &mut num_ops_per_thread,
@@ -3197,15 +2659,11 @@ impl<DT: Dispatch> Replica<DT> {
         );
         let tracked ThreadOpsData { flat_combiner, local_updates, request_ids, cell_permissions } =
             collect_res;
-        // Step 2: Take the R/W lock on the data structure
         let (replicated_data_structure, write_handle) = self.data.0.acquire_write();
         let mut data = replicated_data_structure.data;
         let ghost_replica = replicated_data_structure.replica;
         let combiner = replicated_data_structure.combiner;
         let cb_combiner = replicated_data_structure.cb_combiner;
-        // let mut replicated_data_structure = self._data.0.write(MAX_THREADS_PER_REPLICA);
-        // let data = &mut replicated_data_structure.data;
-        // Step 3: Append all operations to the log
         let tracked append_exec_ghost_data = NrLogAppendExecDataGhost {
             local_updates,
             ghost_replica,
@@ -3220,9 +2678,6 @@ impl<DT: Dispatch> Replica<DT> {
             &mut data,
             Tracked(append_exec_ghost_data),
         );
-        // TODO: release lock here! upstream does release the lock here and the reacquire it!
-        // drop(replicated_data_structure);
-        // Step 3: Execute all operations
         let append_exec_ghost_data = slog.execute(
             &self.replica_token,
             &mut responses,
@@ -3240,7 +2695,6 @@ impl<DT: Dispatch> Replica<DT> {
         let tracked ghost_replica = ghost_replica.get();
         let tracked combiner = combiner.get();
         let tracked cb_combiner = cb_combiner.get();
-        // Step 4: release the R/W lock on the data structure
         let replicated_data_structure = ReplicatedDataStructure {
             data,
             replica: Tracked(ghost_replica),
@@ -3248,7 +2702,6 @@ impl<DT: Dispatch> Replica<DT> {
             cb_combiner: Tracked(cb_combiner),
         };
         self.data.0.release_write(replicated_data_structure, write_handle);
-        // Step 5: collect the results
         let tracked thread_ops_data = ThreadOpsData {
             flat_combiner,
             request_ids,
@@ -3262,18 +2715,15 @@ impl<DT: Dispatch> Replica<DT> {
         );
         let tracked ThreadOpsData { flat_combiner, request_ids, local_updates, cell_permissions } =
             distribute_thread_resps_result.get();
-        // clear the buffers again
         responses.clear();
         operations.clear();
         num_ops_per_thread.clear();
-        // // place the responses back into the state
         self.responses.put(Tracked(&mut responses_token), responses);
         self.collected_operations.put(Tracked(&mut collected_operations_perm), operations);
         self.collected_operations_per_thread.put(
             Tracked(&mut collected_operations_per_thread_perm),
             num_ops_per_thread,
         );
-        // re-assemble the combiner lock
         let tracked combiner_lock = CombinerLockStateGhost {
             flat_combiner,
             collected_operations_perm: Tracked(collected_operations_perm),
@@ -3283,8 +2733,6 @@ impl<DT: Dispatch> Replica<DT> {
         Tracked(combiner_lock)
     }
 
-    ///
-    /// - Dafny: combine_collect()
     #[inline(always)]
     fn collect_thread_ops(
         &self,
@@ -3314,10 +2762,7 @@ impl<DT: Dispatch> Replica<DT> {
         let tracked mut cell_permissions: Map<nat, PointsTo<PendingOperation<DT>>> =
             Map::tracked_empty();
         let ghost mut request_ids = Seq::empty();
-        // let num_registered_threads = self.next.load(Ordering::Relaxed);
         let num_registered_threads = MAX_THREADS_PER_REPLICA;
-        // Collect operations from each thread registered with this replica.
-        // for i in 1..num_registered_threads {
         let mut thread_idx = 0;
         while thread_idx < num_registered_threads
             invariant
@@ -3368,7 +2813,7 @@ impl<DT: Dispatch> Replica<DT> {
                 atomic_with_ghost!(
                 &self.contexts[thread_idx].atomic.0 => load();
                 returning num_ops;
-                ghost g // g : ContextGhost
+                ghost g 
             => {
             });
             if num_ops == 1 {
@@ -3386,7 +2831,6 @@ impl<DT: Dispatch> Replica<DT> {
                 }
                 operations.push(op);
             }
-            // set the number of active operations per thread
 
             num_ops_per_thread.push(num_ops as usize);
             thread_idx = thread_idx + 1;
@@ -3405,7 +2849,6 @@ impl<DT: Dispatch> Replica<DT> {
         Tracked(thread_ops_data)
     }
 
-    /// - Dafny: combine_respond
     fn distribute_thread_resps(
         &self,
         responses: &mut Vec<DT::Response>,
@@ -3441,10 +2884,7 @@ impl<DT: Dispatch> Replica<DT> {
         let tracked mut flat_combiner = flat_combiner.get();
         let tracked mut cell_permissions = cell_permissions.get();
         let tracked mut updates = local_updates.get();
-        // let num_registered_threads = self.next.load(Ordering::Relaxed);
         let num_registered_threads = MAX_THREADS_PER_REPLICA;
-        // let (mut s, mut f) = (0, 0);
-        // for i in 1..num_registered_threads {
         let mut thread_idx = 0;
         let mut resp_idx: usize = 0;
         while thread_idx < num_registered_threads
@@ -3506,36 +2946,22 @@ impl<DT: Dispatch> Replica<DT> {
                 );
             }
             let num_ops = num_ops_per_thread[thread_idx];
-            // assert(flat_combiner@.value.get_Responding_1() < num_registered_threads);
             if num_ops == 0 {
-                // if operations[i - 1] == 0 {
-                //     continue;
-                // };
                 proof {
                     self.flat_combiner_instance.borrow().combiner_responding_empty(
                         &mut flat_combiner,
                     );
                 }
-                // assert(forall|i: nat| #![trigger updates[i]] resp_idx <= i < request_ids@.len() ==> {
-                //     &&& updates.contains_key(i)
-                // });
             } else {
-                //     f += operations[i - 1];
-                //     self.contexts[i - 1].enqueue_resps(&results[s..f]);
-                //     s += operations[i - 1];
-                // obtain the element from the operation batch
                 let tracked mut permission = cell_permissions.tracked_remove(thread_idx as nat);
                 let mut op_resp = self.contexts[thread_idx].batch.0.take(Tracked(&mut permission));
-                // update with the response
                 let resp: DT::Response = DT::clone_response(&responses[resp_idx]);
                 op_resp.resp = Some(resp);
-                // place the element back into the batch
                 self.contexts[thread_idx].batch.0.put(Tracked(&mut permission), op_resp);
-                //     operations[i - 1] = 0;
                 atomic_with_ghost!(
                     &self.contexts[thread_idx].atomic.0 => store(0);
                     update prev -> next;
-                    ghost g // g : ContextGhost
+                    ghost g 
                     => {
                     }
                 );
@@ -3555,8 +2981,6 @@ impl<DT: Dispatch> Replica<DT> {
         Tracked(thread_ops_data)
     }
 
-    /// Registers a thread with this replica. Returns a [`ReplicaToken`] if the
-    /// registration was successfull. None if the registration failed.
     pub fn register(&mut self) -> (res: Option<ThreadToken<DT>>)
         requires
             old(self).wf(),
@@ -3570,15 +2994,11 @@ impl<DT: Dispatch> Replica<DT> {
         self.thread_tokens.pop()
     }
 
-    #[verifier(external_body)]  /* vattr */
+    #[verifier(external_body)]             
     pub fn progress(line: u32) {
         println!("Replica:: progress {line}");
     }
 
-    /// Executes an immutable operation against this replica and returns a
-    /// response.
-    ///
-    /// In Dafny this refers to do_operation
     #[verifier::exec_allows_no_decreases_clause]
     pub fn execute(
         &self,
@@ -3602,23 +3022,9 @@ impl<DT: Dispatch> Replica<DT> {
                 == self.contexts[result.1.thread_id_spec() as int].batch.0.id(),
             is_readonly_stub(result.2@, ticket@.key(), result.0, slog.unbounded_log_instance@),
     {
-        // let tracked local_reads : UnboundedLog::local_reads<DT>;
-        // proof {
-        //     let tracked ticket = self.unbounded_log_instance.borrow().readonly_start(op);
-        //     local_reads = ticket.1.get();
-        // }
         let ghost rid: nat = ticket@.key();
         let ghost nid = tkn.replica_id_spec();
-        // Step 1: Read the local tail value
-        // let ctail = slog.get_ctail();
         let (version_upper_bound, ticket) = slog.get_version_upper_bound(ticket);
-        // Step 2: wait until the replica is synced for reads, try to combine in mean time
-        // while !slog.is_replica_synced_for_reads(&self.log_tkn, ctail) {
-        //     if let Err(e) = self.try_combine(slog) {
-        //         return Err((e, op));
-        //     }
-        //     spin_loop();
-        // }
         let (mut is_synced, mut ticket) = slog.is_replica_synced_for_reads(
             self.id(),
             version_upper_bound,
@@ -3647,16 +3053,10 @@ impl<DT: Dispatch> Replica<DT> {
             ticket = res.1;
         }
         let tracked ticket = ticket.get();
-        // Step 3: Take the read-only lock, and read the value
-        // let res = self.data.read(idx.tid() - 1).dispatch(op)
         assert(tkn.thread_id_spec() < self.data.0.max_threads());
-        // let result = self._data.0.read(tkn.thread_id() as usize).data.dispatch(op);
         let read_handle = self.data.0.acquire_read(tkn.thread_id() as usize);
         let replica = self.data.0.borrow(Tracked(&read_handle));
         let result = replica.data.dispatch(op);
-        // assert(replica.wf(self.spec_id(), self.unbounded_log_instance@, self.cyclic_buffer_instance@));
-        // assert(replica.replica@.view().instance == self.unbounded_log_instance);
-        // assert(replica.replica@.view().key == rid);
         let tracked ticket = self.unbounded_log_instance.borrow().readonly_apply(
             rid,
             replica.replica.borrow(),
@@ -3664,19 +3064,9 @@ impl<DT: Dispatch> Replica<DT> {
             replica.combiner.borrow(),
         );
         self.data.0.release_read(read_handle);
-        // // Step 4: Finish the read-only transaction, return result
-        // let tracked local_reads = local_reads;
-        // proof {
-        //     self.unbounded_log_instance.borrow().readonly_finish(rid, op, result, local_reads);
-        // }
-        // assert(false);
         (result, tkn, Tracked(ticket))
     }
 
-    /// Executes a mutable operation against this replica and returns a
-    /// response.
-    ///
-    /// In Dafny this refers to do_operation
     pub fn execute_mut(
         &self,
         slog: &NrLog<DT>,
@@ -3702,9 +3092,6 @@ impl<DT: Dispatch> Replica<DT> {
         let tracked ticket = ticket.get();
         let ghost req_id: nat = ticket.key();
         let ThreadToken { rid, tid, fc_client, batch_perm } = tkn;
-        // Step 1: Enqueue the operation onto the thread local batch
-        // while !self.make_pending(op.clone(), idx.tid()) {}
-        // Note: if we have the thread token, this will always succeed.
         let tracked context_ghost = FCClientRequestResponseGhost {
             batch_perms: Some(batch_perm.get()),
             cell_id: Ghost(self.contexts[tkn.thread_id_spec() as int].batch.0.id()),
@@ -3713,9 +3100,7 @@ impl<DT: Dispatch> Replica<DT> {
         };
         let mk_pending_res = self.make_pending(op, tid, Tracked(context_ghost));
         let context_ghost = mk_pending_res.1;
-        // Step 2: Try to do flat combining to appy the update to the data structure
         self.try_combine(slog);
-        // Step 3: Obtain the result form the responses
         let response = self.get_response(slog, tid, Ghost(req_id), context_ghost);
         let context_ghost = response.1;
         let tracked FCClientRequestResponseGhost {
@@ -3738,8 +3123,6 @@ impl<DT: Dispatch> Replica<DT> {
         )
     }
 
-    /// Enqueues an operation inside a thread local context. Returns a boolean
-    /// indicating whether the operation was enqueued (true) or not (false).
     #[inline(always)]
     fn make_pending(
         &self,
@@ -3764,7 +3147,6 @@ impl<DT: Dispatch> Replica<DT> {
         context.enqueue_op(op, context_ghost)
     }
 
-    /// Busy waits until a response is available within the thread's context.
     #[verifier::exec_allows_no_decreases_clause]
     fn get_response(
         &self,
@@ -3826,10 +3208,6 @@ impl<DT: Dispatch> Replica<DT> {
     }
 }
 
-////////////////////////////////////////////////////////////////////////////////////////////////////
-// Ghost Structures
-////////////////////////////////////////////////////////////////////////////////////////////////////
-/// struct containing arguments for creating a new replica
 pub tracked struct ReplicaConfig<DT: Dispatch> {
     pub tracked replica: UnboundedLog::replicas<DT>,
     pub tracked combiner: UnboundedLog::combiner<DT>,
@@ -3857,31 +3235,16 @@ impl<DT: Dispatch> ReplicaConfig<DT> {
 }
 
 struct_with_invariants!{
-/// Ghost state that is protected by the combiner lock
-///
-///  - Dafny: glinear datatype CombinerLockState
-///  - Rust:  N/A
 pub tracked struct CombinerLockStateGhost<DT: Dispatch> {
-    // glinear flatCombiner: FCCombiner,
     pub flat_combiner: Tracked<FlatCombiner::combiner>,
 
-    /// Stores the token to access the collected_operations in the replica
-    ///  - Dafny: glinear gops: LC.LCellContents<seq<nrifc.UpdateOp>>,
     pub collected_operations_perm: Tracked<PointsTo<Vec<<DT as Dispatch>::WriteOperation>>>,
 
-    /// Stores the token to access the number of collected operations in the replica
     pub collected_operations_per_thread_perm: Tracked<PointsTo<Vec<usize>>>,
 
-    /// Stores the token to access the responses in teh Replica
-    ///  - Dafny: glinear gresponses: LC.LCellContents<seq<nrifc.ReturnType>>,
     pub responses_token: Tracked<PointsTo<Vec<<DT as Dispatch>::Response>>>,
 }
 
-//  - Dafny: predicate CombinerLockInv(v: uint64, g: glOption<CombinerLockState>, fc_loc: nat,
-//                                     ops: LC.LinearCell<seq<nrifc.UpdateOp>>,
-//                                     responses: LC.LinearCell<seq<nrifc.ReturnType>>)
-//
-// Note: this predicate only holds when the lock is not taken.
 pub open spec fn inv(&self, combiner_instance: FlatCombiner::Instance, responses_id: CellId, op_buffer_id: CellId, thread_ops: CellId) -> bool {
     predicate {
         &&& self.flat_combiner@.value().is_Collecting()
@@ -3890,17 +3253,17 @@ pub open spec fn inv(&self, combiner_instance: FlatCombiner::Instance, responses
 
         &&& self.collected_operations_perm@.mem_contents().is_init()
         &&& self.collected_operations_perm@@.pcell == op_buffer_id
-        &&& self.collected_operations_perm@.mem_contents().value().len() == 0 // we use vector push MAX_THREADS_PER_REPLICA
+        &&& self.collected_operations_perm@.mem_contents().value().len() == 0 
 
         &&& self.responses_token@.mem_contents().is_init()
         &&& self.responses_token@@.pcell == responses_id
-        &&& self.responses_token@.mem_contents().value().len() == 0 // we use vector push MAX_THREADS_PER_REPLICA
+        &&& self.responses_token@.mem_contents().value().len() == 0 
 
         &&& self.collected_operations_per_thread_perm@.mem_contents().is_init()
         &&& self.collected_operations_per_thread_perm@@.pcell == thread_ops
         &&& self.collected_operations_per_thread_perm@.mem_contents().value().len() == 0
     }
-}}  // struct_with_invariants!
+}}  
 
 
 tracked struct ThreadOpsData<DT: Dispatch> {
@@ -4007,14 +3370,9 @@ impl<DT: Dispatch> ThreadOpsData<DT> {
     }
 }
 
-} // verus!
-// ===== END TARGET SOURCE: src/exec/replica.rs =====
+} 
 }
 pub mod rwlock {
-// ===== BEGIN INLINED DEPENDENCY: src/exec/rwlock.rs =====
-// Verified Node Replication Library
-// SPDX-License-Identifier: Apache-2.0 OR MIT
-//
 #[allow(unused_imports)]
 use verus_builtin::*;
 use verus_builtin_macros::*;
@@ -4030,24 +3388,12 @@ use crate::spec::rwlock::RwLockSpec;
 
 verus! {
 
-////////////////////////////////////////////////////////////////////////////////////////////////////
-// RwLockWriteGuard
-////////////////////////////////////////////////////////////////////////////////////////////////////
-/// structure used to release the exclusive write access of a lock when dropped.
-//
-/// This structure is created by the write and try_write methods on RwLockSpec.
 #[verifier::reject_recursive_types(T)]
 pub tracked struct RwLockWriteGuard<T> {
     handle: Tracked<RwLockSpec::exc_guard<PointsTo<T>>>,
     cell_perms: Tracked<PointsTo<T>>,
 }
 
-////////////////////////////////////////////////////////////////////////////////////////////////////
-//  RwLockReadGuard
-////////////////////////////////////////////////////////////////////////////////////////////////////
-/// RAII structure used to release the shared read access of a lock when dropped.
-///
-/// This structure is created by the read and try_read methods on RwLockSpec.
 #[verifier::reject_recursive_types(T)]
 pub struct RwLockReadGuard<T> {
     tid: usize,
@@ -4061,13 +3407,10 @@ impl<T> RwLockReadGuard<T> {
     }
 }
 
-////////////////////////////////////////////////////////////////////////////////////////////////////
-// RwLockDist Impl
-////////////////////////////////////////////////////////////////////////////////////////////////////
 pub const MAX_RC: u64 = 0xffff_ffff_ffff_fff0;
 
 #[verus::trusted]
-#[verifier(external_body)]  /* vattr */
+#[verifier(external_body)]             
 pub fn warn_with_ref_count_too_big() {
     panic!("WARNING: Refcount value exceeds the maximum value of u64.");
 }
@@ -4075,13 +3418,9 @@ pub fn warn_with_ref_count_too_big() {
 struct_with_invariants!{
     #[verifier::reject_recursive_types(T)]
     pub struct RwLock<T> {
-        /// cell containing the data
         data: PCell<T>,
-        /// flag indicating whether the writer lock is held or being acquired
         exc_locked: CachePadded<AtomicBool<_, RwLockSpec::exc_locked<PointsTo<T>>, _>>,
-        /// map of readers that want to acquire the reader lock
         ref_counts: Vec<CachePadded<AtomicU64<_, RwLockSpec::ref_counts<PointsTo<T>>, _>>>,
-        /// the spec instance
         inst: Tracked<RwLockSpec::Instance<PointsTo<T>>>,
         user_inv: Ghost<ISet<T>>,
     }
@@ -4090,7 +3429,6 @@ struct_with_invariants!{
 
         predicate {
             &&& self.inst@.rc_width() == self.ref_counts@.len()
-            // &&& self.ref_counts@.len() > 0
 
             &&& forall |i: int| #![trigger self.ref_counts@.index(i)] (0 <= i && i < self.ref_counts@.len()) ==>
                 self.ref_counts@.index(i).0.well_formed()
@@ -4120,7 +3458,6 @@ struct_with_invariants!{
 }
 
 impl<T> RwLock<T> {
-    /// Invariant on the data
     pub closed spec fn inv(&self, t: T) -> bool {
         self.user_inv@.contains(t)
     }
@@ -4158,9 +3495,7 @@ impl<T> RwLock<T> {
         let tracked inst;
         let tracked exc_locked_token;
         let tracked mut ref_counts_tokens;
-        // create the pcell object
         let (pcell_data, Tracked(mut pcell_token)) = PCell::new(t);
-        // create the set of allowed data structures
         let ghost set_inv = ISet::new(inv@);
         let ghost user_inv = ISet::new(
             |s: PointsTo<T>|
@@ -4171,10 +3506,6 @@ impl<T> RwLock<T> {
                 },
         );
         proof {
-            // user_inv: ISet<T>, t: T
-            // initialize_full(user_inv, perm@, Option::Some(perm.get()));
-            //
-            // initialize(rc_width: int, init_t: T, user_inv: ISet<T>,) {
             let tracked (
                 Tracked(inst0),
                 Tracked(exc_locked_token0),
@@ -4294,9 +3625,6 @@ impl<T> RwLock<T> {
         ensures
             self.wf() && self.wf_write_handle(&res.1@) && self.inv(res.0),
     {
-        // -----------------------------------------------------------------------------------------
-        // First: acquire the write lock
-        // -----------------------------------------------------------------------------------------
         let tracked mut token: Option<RwLockSpec::exc_pending<PointsTo<T>>> = None;
         let mut acquired = false;
         while !acquired
@@ -4318,9 +3646,6 @@ impl<T> RwLock<T> {
             acquired = result.is_ok();
         }
         let tracked mut token = token.tracked_unwrap();
-        // -----------------------------------------------------------------------------------------
-        // Next: wait until all readers have released their lock
-        // -----------------------------------------------------------------------------------------
         let mut idx = 0;
         while idx < self.ref_counts.len()
             invariant
@@ -4329,7 +3654,6 @@ impl<T> RwLock<T> {
                 token.instance_id() == self.inst@.id(),
                 token.value() == idx,
         {
-            // wait until the reader hasn't taken the reader lock yet
             let mut taken = true;
             while taken
                 invariant
@@ -4352,12 +3676,9 @@ impl<T> RwLock<T> {
             }
             idx = idx + 1;
         }
-        // (Ghost<Option<PointsTo<T>>>, Tracked<T>, Tracked<exc_guard<T>>>)
 
         let tracked (_, Tracked(cell_perms), handle) = self.inst.borrow().exc_finish(token);
-        // obtain the data
         let t = self.data.take(Tracked(&mut cell_perms));
-        // return the Writer Guard
         (t, Tracked(RwLockWriteGuard { handle, cell_perms: Tracked(cell_perms) }))
     }
 
@@ -4372,7 +3693,6 @@ impl<T> RwLock<T> {
             invariant
                 self.wf() && tid < self.ref_counts.len(),
         {
-            // TODO: figure out how to do the optimized read here!
             let rc =
                 atomic_with_ghost!(
                 &self.ref_counts[tid].0 => load();
@@ -4381,16 +3701,11 @@ impl<T> RwLock<T> {
             );
             if rc == MAX_RC {
                 warn_with_ref_count_too_big();
-                ////////////////////////////////////////////////////////////////////////////////////
-                // !!! THIS IS A PANIC CASE! WE DO NOT RETURN FROM HERE !!!
-                ////////////////////////////////////////////////////////////////////////////////////
                 #[allow(while_true)]
                 while true {
-                }  // TODO: is that fine?
+                }  
 
             }
-            // fetch add on the reader lock
-            // let tracked mut ref_counts : Tracked<RwLockSpec::ref_counts<PointsTo<T>>>;
 
             let tracked mut shared_pending: Option<RwLockSpec::shared_pending<PointsTo<T>>>;
             let res =
@@ -4401,31 +3716,19 @@ impl<T> RwLock<T> {
             {
                 if prev == rc {
                     assert(rc < MAX_RC);
-                    // Tracked<ref_counts<T>>,Tracked<shared_pending<T>>
                     let tracked (_ref_counts, _shared_pending) = self.inst.borrow().shared_start(tid as int, g);
-                    // ref_counts = _ref_counts;
                     shared_pending = Some(_shared_pending.get());
                     g = _ref_counts.get();
 
-                    // assert(g@.value <= MAX_RC);
                 } else {
                     shared_pending = None;
                 }
 
-                // assume(g@.value < MAX_RC);
-                // // Tracked<ref_counts<T>>,Tracked<shared_pending<T>>
-                // let tracked (_ref_counts, _shared_pending) = self.inst.borrow().shared_start(tid as int, g);
-                // // ref_counts = _ref_counts;
-                // shared_pending = Some(_shared_pending.get());
-                // g = _ref_counts.get();
 
-                // assert(g@.instance == self.inst@);
-                // assert(g@.key == tid as nat);
             });
             if res.is_err() {
                 continue ;
             }
-            // exc_locked: CachePadded<AtomicBool<_, RwLockSpec::exc_locked<PointsTo<T>>, _>>,
 
             let ghost mut perms: PointsTo<T>;
             let tracked shared_guard: Option<RwLockSpec::shared_guard<PointsTo<T>>>;
@@ -4445,7 +3748,6 @@ impl<T> RwLock<T> {
             });
             let perms = Ghost(perms);
             if is_exc_locked {
-                // writer lock still held, try again
                 let res =
                     atomic_with_ghost!(
                     &self.ref_counts[tid].0 => fetch_sub(1);
@@ -4455,7 +3757,6 @@ impl<T> RwLock<T> {
                     g = self.inst.borrow().shared_abandon(tid as int, g, shared_pending);
                 });
             } else {
-                // create the read guard lock
                 return RwLockReadGuard {
                     tid,
                     perms,
@@ -4512,14 +3813,9 @@ impl<T> RwLock<T> {
     }
 }
 
-} // verus!
-// ===== END INLINED DEPENDENCY: src/exec/rwlock.rs =====
+} 
 }
 pub mod utils {
-// ===== BEGIN INLINED DEPENDENCY: src/exec/utils.rs =====
-// Verified Node Replication Library
-// SPDX-License-Identifier: Apache-2.0 OR MIT
-//
 #[allow(unused_imports)]
 use verus_builtin::*;
 use verus_builtin_macros::*;
@@ -4655,40 +3951,21 @@ pub proof fn rids_match_pop(
     unimplemented!()
 }
 
-} // verus!
-// ===== END INLINED DEPENDENCY: src/exec/utils.rs =====
+} 
 }
 
 verus! {
 
-/// a simpe cache padding for the struct fields
 #[verus::trusted]
 #[repr(align(128))]
 pub struct CachePadded<T>(pub T);
 
-////////////////////////////////////////////////////////////////////////////////////////////////////
-// The Public Interface
-////////////////////////////////////////////////////////////////////////////////////////////////////
-/// The "main" type of NR which users interact with.
-///
-///  - Dafny: N/A
-///  - Rust:  pub struct NodeReplicated<D: Dispatch + Sync>
 #[verifier::reject_recursive_types(DT)]
 pub struct NodeReplicated<DT: Dispatch> {
-    /// the log of operations
-    ///
-    ///  - Rust: log: Log<D::WriteOperation>,
-    pub  /* REVIEW: (crate) */
+    pub                       
      log: NrLog<DT>,
-    // log: NrLog,
-    /// the nodes or replicas in the system
-    ///
-    ///  - Rust: replicas: Vec<Box<Replica<D>>>,
-    // replicas: Vec<Box<Replica<DataStructureType, UpdateOp, ReturnType>>>,
-    pub  /* REVIEW (crate) */
+    pub                      
      replicas: Vec<Box<Replica<DT>>>,
-    // pub /* REVIEW: (crate) */ thread_tokens: Vec<Vec<ThreadToken<DT>>>,
-    /// XXX: should that be here, or go into the NrLog / replicas?
     pub unbounded_log_instance: Tracked<UnboundedLog::Instance<DT>>,
     pub cyclic_buffer_instance: Tracked<CyclicBuffer::Instance<DT>>,
 }
@@ -4710,18 +3987,14 @@ impl<DT: Dispatch + Sync> crate::NodeReplicatedT<DT> for NodeReplicated<DT> {
 
     type TT = ThreadToken<DT>;
 
-    /// Wellformedness of the NodeReplicated data structure
     open spec fn wf(&self) -> bool {
-        // the log shall be well-formed and the instances match
         &&& self.log.wf()
         &&& self.unbounded_log_instance@ == self.log.unbounded_log_instance@
         &&& self.cyclic_buffer_instance@
             == self.log.cyclic_buffer_instance@
-        // the number of replicas should be the as configured
 
         &&& self.replicas.len()
             <= MAX_REPLICAS
-        // the replicas should be well-formed and the instances match
 
         &&& (forall|i|
             0 <= i < self.replicas.len() ==> {
@@ -4741,19 +4014,9 @@ impl<DT: Dispatch + Sync> crate::NodeReplicatedT<DT> for NodeReplicated<DT> {
         self.log.unbounded_log_instance@
     }
 
-    /// Creates a new, replicated data-structure from a single-threaded
-    /// data-structure that implements [`Dispatch`]. It uses the [`Default`]
-    /// constructor to create a initial data-structure for `D` on all replicas.
-    ///
-    ///  - Dafny: n/a ?
-    ///  - Rust:  pub fn new(num_replicas: NonZeroUsize) -> Result<Self, NodeReplicatedError>
     fn new(num_replicas: usize, chg_mem_affinity: AffinityFn) -> (res:
         Self)
-    // requires
-    //     num_replicas <= MAX_REPLICAS
-    // ensures res.wf()
     {
-        // switch affinity to the first replica
         chg_mem_affinity.call(0);
         let (log, replica_tokens, nr_log_tokens) = NrLog::new(num_replicas, LOG_SIZE);
         let tracked NrLogTokens {
@@ -4824,13 +4087,11 @@ impl<DT: Dispatch + Sync> crate::NodeReplicatedT<DT> for NodeReplicated<DT> {
                 unbounded_log_instance: unbounded_log_instance.clone(),
                 cyclic_buffer_instance: cyclic_buffer_instance.clone(),
             };
-            // switch the affinity of the replica before we do the allocation
             chg_mem_affinity.call(replica_token.id());
             let replica = Replica::new(replica_token, MAX_THREADS_PER_REPLICA, Tracked(config));
             actual_replicas.push(Box::new(replica));
             idx = idx + 1;
         }
-        // change the affinity back
 
         chg_mem_affinity.call(0);
         let unbounded_log_instance = Tracked(unbounded_log_instance);
@@ -4843,22 +4104,9 @@ impl<DT: Dispatch + Sync> crate::NodeReplicatedT<DT> for NodeReplicated<DT> {
         }
     }
 
-    /// Registers a thread with a given replica in the [`NodeReplicated`]
-    /// data-structure. Returns an Option containing a [`ThreadToken`] if the
-    /// registration was successful. None if the registration failed.
-    ///
-    /// XXX: in the dafny version, we don't have this. Instead, we pre-allocate all
-    ///      threads for the replicas etc.
-    ///
-    ///  - Dafny: N/A (in c++ code?)
-    ///  - Rust:  pub fn register(&self, replica_id: ReplicaId) -> Option<ThreadToken>
     fn register(&mut self, replica_id: ReplicaId) -> (result: Option<
         ThreadToken<DT>,
     >)
-    // requires old(self).wf()
-    // ensures
-    //     self.wf(),
-    //     result.is_Some() ==> result.get_Some_0().WF(&self.replicas[replica_id as int])
     {
         if (replica_id as usize) < self.replicas.len() {
             let mut replica: Box<Replica<DT>> = self.replicas.remove(replica_id);
@@ -4870,13 +4118,6 @@ impl<DT: Dispatch + Sync> crate::NodeReplicatedT<DT> for NodeReplicated<DT> {
         }
     }
 
-    /// Executes a mutable operation against the data-structure.
-    ///
-    ///  - Dafny:
-    ///  - Rust:  pub fn execute_mut(&self, op: <D as Dispatch>::WriteOperation, tkn: ThreadToken)
-    ///             -> <D as Dispatch>::Response
-    ///
-    /// This is basically a wrapper around the `do_operation` of the interface defined in Dafny
     fn execute_mut(
         &self,
         op: DT::WriteOperation,
@@ -4886,30 +4127,15 @@ impl<DT: Dispatch + Sync> crate::NodeReplicatedT<DT> for NodeReplicated<DT> {
         (DT::Response, ThreadToken<DT>, Tracked<UnboundedLog::local_updates<DT>>),
         (ThreadToken<DT>, Tracked<UnboundedLog::local_updates<DT>>),
     >)
-    // requires
-    //     self.wf(), // wf global node
-    //     tkn.WF(&self.replicas.spec_index(tkn.replica_id_spec() as int)),
-    //     is_update_ticket(ticket@, op, self.log.unbounded_log_instance@)
-    // ensures
-    //     result.is_Ok() ==> is_update_stub(result.get_Ok_0().2@, ticket@@.key, result.get_Ok_0().0, self.log.unbounded_log_instance@) && result.get_Ok_0().1.WF(&self.replicas.spec_index(tkn.replica_id_spec() as int)),
-    //     result.is_Err() ==> result.get_Err_0().1 == ticket && result.get_Err_0().0 == tkn
     {
         let replica_id = tkn.replica_id() as usize;
         if replica_id < self.replicas.len() {
-            // get the replica/node, execute it with the log and provide the thread id.
             Ok((&self.replicas[replica_id]).execute_mut(&self.log, op, tkn, ticket))
         } else {
             Err((tkn, ticket))
         }
     }
 
-    /// Executes a immutable operation against the data-structure.
-    ///
-    ///  - Dafny: N/A (in c++ code?)
-    ///  - Rust:  pub fn execute(&self, op: <D as Dispatch>::ReadOperation<'_>, tkn: ThreadToken,)
-    ///             -> <D as Dispatch>::Response
-    ///
-    /// This is basically a wrapper around the `do_operation` of the interface defined in Dafny
     fn execute(
         &self,
         op: DT::ReadOperation,
@@ -4919,17 +4145,9 @@ impl<DT: Dispatch + Sync> crate::NodeReplicatedT<DT> for NodeReplicated<DT> {
         (DT::Response, ThreadToken<DT>, Tracked<UnboundedLog::local_reads<DT>>),
         (ThreadToken<DT>, Tracked<UnboundedLog::local_reads<DT>>),
     >)
-    // requires
-    //     self.wf(), // wf global node
-    //     tkn.WF(&self.replicas.spec_index(tkn.replica_id_spec() as int)),
-    //     is_readonly_ticket(ticket@, op, self.log.unbounded_log_instance@)
-    // ensures
-    //     result.is_Ok() ==> is_readonly_stub(result.get_Ok_0().2@, ticket@@.key, result.get_Ok_0().0, self.log.unbounded_log_instance@) && result.get_Ok_0().1.WF(&self.replicas.spec_index(tkn.replica_id_spec() as int)),
-    //     result.is_Err() ==> result.get_Err_0().1 == ticket && result.get_Err_0().0 == tkn
     {
         let replica_id = tkn.replica_id() as usize;
         if replica_id < self.replicas.len() {
-            // get the replica/node, execute it with the log and provide the thread id.
             Ok((&self.replicas[replica_id]).execute(&self.log, op, tkn, ticket))
         } else {
             Err((tkn, ticket))
@@ -4937,20 +4155,10 @@ impl<DT: Dispatch + Sync> crate::NodeReplicatedT<DT> for NodeReplicated<DT> {
     }
 }
 
-} // verus!
-// ===== END INLINED DEPENDENCY: src/exec/mod.rs =====
+} 
 }
 mod spec {
-// ===== BEGIN INLINED DEPENDENCY: src/spec/mod.rs =====
-// Verified Node Replication Library
-// SPDX-License-Identifier: Apache-2.0 OR MIT
-//
-// some types and utilities
 pub mod types {
-// ===== BEGIN INLINED DEPENDENCY: src/spec/types.rs =====
-// Verified Node Replication Library
-// SPDX-License-Identifier: Apache-2.0 OR MIT
-//
 #[allow(unused_imports)]
 use verus_builtin::*;
 use verus_builtin_macros::*;
@@ -4959,33 +4167,21 @@ use crate::Dispatch;
 
 verus! {
 
-////////////////////////////////////////////////////////////////////////////////////////////////////
-// Some Types
-////////////////////////////////////////////////////////////////////////////////////////////////////
 pub use crate::{NodeId, LogIdx, ReqId, ThreadId};
 
-/// This represents an entry in the abstract log
 pub tracked struct LogEntry<DT: Dispatch> {
     pub op: DT::WriteOperation,
     pub node_id: NodeId,
 }
 
-/// Represents an entry in the log
-///
-/// datatype ConcreteLogEntry = ConcreteLogEntry(op: nrifc.UpdateOp, node_id: uint64)
 pub struct ConcreteLogEntry<DT: Dispatch> {
     pub op: DT::WriteOperation,
     pub node_id: u64,
 }
 
-} // verus!
-// ===== END INLINED DEPENDENCY: src/spec/types.rs =====
+} 
 }
 pub mod utils {
-// ===== BEGIN INLINED DEPENDENCY: src/spec/utils.rs =====
-// Verified Node Replication Library
-// SPDX-License-Identifier: Apache-2.0 OR MIT
-//
 #[allow(unused_imports)]
 use verus_builtin::*;
 use verus_builtin_macros::*;
@@ -4998,7 +4194,6 @@ verus! {
 pub open spec fn seq_unique<A>(
     seq: Seq<A>,
 ) -> bool
-// where A: PartialEq + Structural
  {
     forall|i: int, j: int|
         (0 <= i < seq.len() && 0 <= j < seq.len() && i != j) ==> seq.index(i as int) !== seq.index(
@@ -5006,12 +4201,10 @@ pub open spec fn seq_unique<A>(
         )
 }
 
-/// whether two sequences are disjoint, i.e., they don't have common elements
 pub open spec fn seq_disjoint<A>(s: Seq<A>, t: Seq<A>) -> bool {
     forall|i, j| 0 <= i < s.len() && 0 <= j < t.len() ==> s.index(i) !== t.index(j)
 }
 
-/// recursive definition of seq to set conversion
 spec fn seq_to_set_rec<A>(seq: Seq<A>) -> Set<A>
     decreases seq.len(),
     when seq.len() >= 0
@@ -5028,11 +4221,10 @@ spec fn seq_to_set_rec<A>(seq: Seq<A>) -> Set<A>
 proof fn seq_to_set_rec_decreases<A>(seq: Seq<A>) {
     if seq.len() == 0 {
     } else {
-        assert(seq.drop_last().len() < seq.len());  // INCOMPLETENESS weird incompleteness again
+        assert(seq.drop_last().len() < seq.len());  
     }
 }
 
-/// shows that the recursive definition of set_to_seq produces a finite set
 #[verifier::external_body]
 proof fn seq_to_set_rec_is_finite<A>(seq: Seq<A>)
     ensures
@@ -5042,7 +4234,6 @@ proof fn seq_to_set_rec_is_finite<A>(seq: Seq<A>)
     unimplemented!()
 }
 
-/// shows that the resulting set contains all elements of the sequence
 #[verifier::external_body]
 proof fn seq_to_set_rec_contains<A>(seq: Seq<A>)
     ensures
@@ -5091,7 +4282,6 @@ pub open spec fn map_contains_value<K, V>(
     map: Map<K, V>,
     val: V,
 ) -> bool
-// where K: PartialEq + Structural
  {
     exists|i: K| #[trigger] map.contains_key(i) && map.index(i) == val
 }
@@ -5116,20 +4306,12 @@ pub proof fn int_mod_less_than_same(i: int, len: int)
     unimplemented!()
 }
 
-} // verus!
-// ===== END INLINED DEPENDENCY: src/spec/utils.rs =====
+} 
 }
 
-// the linearization proof
 pub mod linearization {
-// ===== BEGIN INLINED DEPENDENCY: src/spec/linearization.rs =====
-// Verified Node Replication Library
-// SPDX-License-Identifier: Apache-2.0 OR MIT
-//
-// The Linearization Proof
 #[allow(unused_imports)]
 use verus_builtin::*;
-// use vstd::*;
 use vstd::prelude::*;
 
 #[cfg(verus_keep_ghost)]
@@ -5150,12 +4332,6 @@ type SState<DT> = SimpleLog::State<DT>;
 #[cfg(verus_keep_ghost)]
 type AState<DT> = AsynchronousSingleton::State<DT>;
 
-////////////////////////////////////////////////////////////////////////////////////////////////////
-//                                  LINEARIZATION PROOF                                           //
-////////////////////////////////////////////////////////////////////////////////////////////////////
-// =================================================================================================
-// Refinement Theorem
-// =================================================================================================
 #[cfg(verus_keep_ghost)]
 pub tracked struct RefinementProof;
 
@@ -5165,14 +4341,11 @@ impl<DT: Dispatch> SimpleLogRefinesAsynchronousSingleton<DT> for RefinementProof
     proof fn exists_equiv_behavior(a: SimpleLogBehavior<DT>) -> (b: AsynchronousSingletonBehavior<
         DT,
     >)
-    // requires a.wf(),
-    // ensures b.wf() && behavior_equiv(a, b)
     {
         unimplemented!()
     }
 }
 
-/// The *actual* refinement proof using recursion over the behaviors
 #[verifier::external_body]
 proof fn exists_equiv_behavior_rec<DT: Dispatch>(
     a: SimpleLogBehavior<DT>,
@@ -5191,25 +4364,17 @@ proof fn exists_equiv_behavior_rec<DT: Dispatch>(
     unimplemented!()
 }
 
-// =================================================================================================
-// Validity of Requests
-// =================================================================================================
-/// checks whether the version of the request with the given ID is OK           (Dafny: FutureRidOk)
 spec fn future_rid_ok<DT: Dispatch>(s: SState<DT>, rid: ReqId, version: LogIdx) -> bool {
     &&& s.readonly_reqs.contains_key(rid)
     &&& s.readonly_reqs[rid] is Init ==> s.version <= version
     &&& s.readonly_reqs[rid] is Req ==> s.readonly_reqs[rid]->version <= version
 }
 
-/// checks whether the versions of the requests are ok                       (Dafny: FuturePointsOk)
 spec fn future_points_ok<DT: Dispatch>(s: SState<DT>, r_points: Map<ReqId, LogIdx>) -> bool {
     &&& r_points.dom().finite()
     &&& (forall|rid| #[trigger] r_points.contains_key(rid) ==> future_rid_ok(s, rid, r_points[rid]))
 }
 
-/// checks whether the readonly requests are valid                                    (Dafny: rel_r)
-/// in the simple log, we do not distinguish between requests and responses, but the AsyncSingleton
-/// does, so we need to do a case distinction here.
 spec fn readonly_requests_valid<DT: Dispatch>(
     s: SState<DT>,
     t: AState<DT>,
@@ -5223,7 +4388,6 @@ spec fn readonly_requests_valid<DT: Dispatch>(
             ==> readonly_response_is_valid(s, t, r_points, rid))
 }
 
-/// checks whether the readonly request is valid                            (Dafny: readonly_is_req)
 spec fn readonly_request_is_valid<DT: Dispatch>(
     s: SState<DT>,
     t: AState<DT>,
@@ -5240,7 +4404,6 @@ spec fn readonly_request_is_valid<DT: Dispatch>(
     })
 }
 
-/// checks whether the readonly response is valid                          (Dafny: readonly_is_resp)
 spec fn readonly_response_is_valid<DT: Dispatch>(
     s: SState<DT>,
     t: AState<DT>,
@@ -5260,7 +4423,6 @@ spec fn readonly_response_is_valid<DT: Dispatch>(
     })
 }
 
-/// checks whether the update response is valid                              (Dafny: update_is_done)
 spec fn update_response_is_valid<DT: Dispatch>(
     s: SState<DT>,
     t: AState<DT>,
@@ -5278,7 +4440,6 @@ spec fn update_response_is_valid<DT: Dispatch>(
     )
 }
 
-/// checks whether the upate responses have versions that matche the log         (Dafny: HasVersion)
 spec fn update_response_with_version(
     update_resps: Map<ReqId, UpdateResp>,
     version: LogIdx,
@@ -5286,31 +4447,22 @@ spec fn update_response_with_version(
     exists|rid| #[trigger] update_resps.contains_key(rid) && update_resps[rid].0 == version
 }
 
-// =================================================================================================
-// State Refinement Relation
-// =================================================================================================
-/// Basic State Refinement Relation                                               (Dafny: rel_basic)
-/// sets the AsynchronousSingleton::State in realtion with the SimpleLog::State
 spec fn state_refinement_relation_basic<DT: Dispatch>(
     s: SState<DT>,
     t: AState<DT>,
     r_points: Map<ReqId, LogIdx>,
 ) -> bool {
-    // the version must be valid w.r.t. to the log size
     &&& (0 <= s.version && s.version
         <= s.log.len())
-    // the state corresponds to the state computed at the given version
     &&& t.state == s.nrstate_at_version(
         s.version,
     )
-    // the request ids of the readonly/update requests and responses must be unique
     &&& s.readonly_reqs.dom().disjoint(s.update_reqs.dom())
     &&& s.readonly_reqs.dom().disjoint(s.update_resps.dom())
     &&& s.update_reqs.dom().disjoint(s.update_resps.dom())
     &&& t.reqs.dom().disjoint(
         t.resps.dom(),
     )
-    // requests are complete: if a request in present in the AState then it must be present in the SState
     &&& (forall|rid|
         (#[trigger] s.readonly_reqs.contains_key(rid) || #[trigger] s.update_reqs.contains_key(rid)
             || #[trigger] s.update_resps.contains_key(rid)) <==> (#[trigger] t.reqs.contains_key(
@@ -5318,7 +4470,6 @@ spec fn state_refinement_relation_basic<DT: Dispatch>(
         ) || #[trigger] t.resps.contains_key(
             rid,
         )))
-    // requests/responses in the rightmaps
     &&& (forall|rid| #[trigger]
         t.reqs.contains_key(rid) && #[trigger] t.reqs[rid].is_Read()
             ==> s.readonly_reqs.contains_key(rid))
@@ -5330,42 +4481,33 @@ spec fn state_refinement_relation_basic<DT: Dispatch>(
             || s.update_resps.contains_key(
             rid,
         ))
-    // for all log entries > version, there must be a response with the given version
     &&& (forall|v: LogIdx|
         s.version <= v && v < s.log.len() ==> update_response_with_version(
             s.update_resps,
             v,
         ))
-    // for any two update responses, if the request id differs, the version in the log must also differ
     &&& (forall|rid1, rid2| #[trigger]
         s.update_resps.contains_key(rid1) && #[trigger] s.update_resps.contains_key(rid2) && rid1
             != rid2 ==> s.update_resps[rid1]
             != s.update_resps[rid2])
-    // for all update responses, the version must be within the log
     &&& (forall|rid| #[trigger]
         s.update_resps.contains_key(rid) ==> s.update_resps[rid].0
             < s.log.len())
-    // for all update requests, they must be part of the requests and the operation must match
     &&& (forall|rid| #[trigger]
         s.update_reqs.contains_key(rid) ==> t.reqs.contains_key(rid) && t.reqs[rid]
             == InputOperation::<DT>::Write(
             s.update_reqs[rid],
         ))
-    // forall update responses larger than the current version, they must be in the requests,
-    // the update operation must match
     &&& (forall|rid| #[trigger]
         s.update_resps.contains_key(rid) && s.update_resps[rid].0 >= s.version ==> {
             &&& t.reqs.contains_key(rid)
             &&& t.reqs[rid] == InputOperation::<DT>::Write(s.log[s.update_resps[rid].0 as int])
         })
-    // for all update responses smaller than th eversion, they must be valid
     &&& (forall|rid| #[trigger]
         s.update_resps.contains_key(rid) && s.update_resps[rid].0 < s.version
             ==> update_response_is_valid(s, t, r_points, rid))
 }
 
-/// State Refinement Relation                                                           (Dafny: rel)
-/// This relates the state of the SimpleLog and the AsyncSingleton to each other
 spec fn state_refinement_relation<DT: Dispatch>(
     s: SState<DT>,
     t: AState<DT>,
@@ -5375,12 +4517,6 @@ spec fn state_refinement_relation<DT: Dispatch>(
     &&& readonly_requests_valid(s, t, r_points)
 }
 
-// =================================================================================================
-// State Transition Refinements: Read-Only Requests
-// =================================================================================================
-/// Refinement Proof of the ReadOnly_Start transition of the SimpleLog
-///
-/// This corresponds to the "Start" transition that introduces a new request into the system
 #[verifier::external_body]
 proof fn readonly_start_refines<DT: Dispatch>(
     s: SState<DT>,
@@ -5401,14 +4537,11 @@ proof fn readonly_start_refines<DT: Dispatch>(
             t,
             t2,
             aop,
-        ),  // one.Next(Is, Is', AI.Start(rid, nrifc.ROp(rop)))
+        ),  
 {
     unimplemented!()
 }
 
-/// Refinement Proof of the Readonly_ReadVersion transition of the SimpleLog
-///
-/// This corresponds to an "InternalOp" transition
 #[verifier::external_body]
 proof fn readonly_read_version_refines<DT: Dispatch>(
     s: SState<DT>,
@@ -5428,14 +4561,11 @@ proof fn readonly_read_version_refines<DT: Dispatch>(
             t,
             t2,
             aop,
-        ),  // one.Next(Is, Is', AI.InternalOp)
+        ),  
 {
     unimplemented!()
 }
 
-/// Refinement Proof of the Readonly_Finish transition of the SimpleLog
-///
-/// This corresponds to a "End" transition where a response leaves the system
 #[verifier::external_body]
 proof fn readonly_finish_refines<DT: Dispatch>(
     s: SState<DT>,
@@ -5456,17 +4586,11 @@ proof fn readonly_finish_refines<DT: Dispatch>(
             t,
             t2,
             aop,
-        ),  // one.Next(Is, Is', AI.End(rid, return_value))
+        ),  
 {
     unimplemented!()
 }
 
-// =================================================================================================
-// State Transition Refinements: Update Requests
-// =================================================================================================
-/// Refinement Proof of the Update_Start transition of the SimpleLog
-///
-/// This corresponds to the "Start" transition that introduces a new request into the system
 #[verifier::external_body]
 proof fn update_start_refines<DT: Dispatch>(
     s: SState<DT>,
@@ -5486,14 +4610,11 @@ proof fn update_start_refines<DT: Dispatch>(
             t,
             t2,
             aop,
-        ),  //  one.Next(Is, Is', AI.Start(rid, nrifc.UOp(uop)))
+        ),  
 {
     unimplemented!()
 }
 
-/// Refinement Proof of the Update_AddUpdateToLog transition of the SimpleLog
-///
-/// This corresponds to an "InternalOp transition"
 #[verifier::external_body]
 proof fn update_add_update_to_log_refines<DT: Dispatch>(
     s: SState<DT>,
@@ -5512,14 +4633,11 @@ proof fn update_add_update_to_log_refines<DT: Dispatch>(
             t,
             t2,
             aop,
-        ),  //  one.Next(Is, Is', AI.InternalOp)
+        ),  
 {
     unimplemented!()
 }
 
-/// Refinement Proof ot the Update_Finish transition of the SimpleLog
-///
-/// This corresponds to the "End" transition that removes a response from the system
 #[verifier::external_body]
 proof fn update_finish_refines<DT: Dispatch>(
     s: SState<DT>,
@@ -5539,14 +4657,11 @@ proof fn update_finish_refines<DT: Dispatch>(
             t,
             t2,
             aop,
-        ),  //  one.Next(Is, Is', AI.End(rid, return_value))
+        ),  
 {
     unimplemented!()
 }
 
-/// Refinement Proof of the Update_IncrVersion transition of the SimpleLog
-///
-/// This corresponds to an internal, or next transition
 #[verifier::external_body]
 proof fn update_incr_version_refines<DT: Dispatch>(
     a: SimpleLogBehavior<DT>,
@@ -5584,7 +4699,7 @@ proof fn update_incr_version_1_refines<DT: Dispatch>(
         a.wf(),
         future_points_ok(a2.get_last(), r_points),
         a.is_Stepped() && a2.is_Stepped(),
-        a.get_Stepped_2() == a2.get_Stepped_2(),  // a.tail == a'.tail
+        a.get_Stepped_2() == a2.get_Stepped_2(),  
         a.get_Stepped_1().is_Internal() && a2.get_Stepped_1().is_Internal(),
         simple_log_state_equiv_inc_version(a.get_last(), a2.get_last()),
         a.get_last().version + 1 <= a.get_last().log.len(),
@@ -5600,7 +4715,6 @@ proof fn update_incr_version_1_refines<DT: Dispatch>(
 }
 
 spec fn simple_log_state_equiv_inc_version<DT: Dispatch>(a: SState<DT>, a2: SState<DT>) -> bool {
-    // a'.s == a.s.(ctail := a.s.ctail + 1)
     &&& a2.log == a.log
     &&& a2.version == a.version + 1
     &&& a2.readonly_reqs == a.readonly_reqs
@@ -5671,10 +4785,6 @@ proof fn update_incr_version_1_read_reqs<DT: Dispatch>(
     unimplemented!()
 }
 
-// =================================================================================================
-// Utility Functions
-// =================================================================================================
-/// Shows that adding an entry to the log doesn't change the state
 #[verifier::external_body]
 proof fn state_at_version_preserves<DT: Dispatch>(
     a: Seq<DT::WriteOperation>,
@@ -5693,8 +4803,6 @@ proof fn state_at_version_preserves<DT: Dispatch>(
     unimplemented!()
 }
 
-/// Removes an element from the set, returning it, maintaining finitenes property
-/// XXX: something like this shoudl go intot he stdlib...
 #[verifier::external_body]
 proof fn pop_rid(t: Set<ReqId>) -> (res: (Set<ReqId>, ReqId))
     requires
@@ -5709,7 +4817,6 @@ proof fn pop_rid(t: Set<ReqId>) -> (res: (Set<ReqId>, ReqId))
     unimplemented!()
 }
 
-/// Shows the behavior equivalency under specific condition
 #[verifier::external_body]
 proof fn trick_equiv<DT: Dispatch>(
     a: SimpleLogBehavior<DT>,
@@ -5730,8 +4837,6 @@ proof fn trick_equiv<DT: Dispatch>(
     unimplemented!()
 }
 
-/// Constructs a set of Requests IDs that corresponds to ReadOnly requests and that are currently
-/// in the r_points set and have a version that matches the input
 spec fn all_reads_for<DT: Dispatch>(
     readonly_reqs: Map<ReqId, ReadReq<DT::ReadOperation>>,
     r_points: Map<ReqId, LogIdx>,
@@ -5747,17 +4852,10 @@ spec fn all_reads_for<DT: Dispatch>(
     )
 }
 
-} // verus!
-// end verus!
-// ===== END INLINED DEPENDENCY: src/spec/linearization.rs =====
+} 
 }
 
-// the simple log model
 pub mod simple_log {
-// ===== BEGIN INLINED DEPENDENCY: src/spec/simple_log.rs =====
-// Verified Node Replication Library
-// SPDX-License-Identifier: Apache-2.0 OR MIT
-//
 use verus_builtin::*;
 use verus_builtin_macros::*;
 use verus_state_machines_macros::*;
@@ -5767,44 +4865,16 @@ use vstd::prelude::*;
 use crate::spec::types::*;
 use crate::{AsyncLabel, Dispatch, InputOperation, OutputOperation};
 
-////////////////////////////////////////////////////////////////////////////////////////////////////
-//
-// Simple Log
-// ==========
-//
-// The Simple Log is capturing requests to a data structure in an abstract and unbouned log
-// represented as a mathematical sequence. In contrast to the node replication algorithm, the
-// Simple Log does not store / wrap a data structure. Instead, it stores all update operations
-// in the sequence. The state of the data structure is derived based on the version after N update
-// operations have been applied. The version of the data structure is defined by the value of the
-// completion tail (version) at the time the operation is dispatched.
-//
-////////////////////////////////////////////////////////////////////////////////////////////////////
 
-////////////////////////////////////////////////////////////////////////////////////////////////////
-// Simple Log State Machine
-////////////////////////////////////////////////////////////////////////////////////////////////////
 
 verus! {
 
-/// Tracks the progress of a read-only query on the data structure.
-///
-/// Read requests enter the system and during the read the version of the data structure is
-/// being read. That version defines the state the data structure is queried against.
-///
-/// Readonly operations are carried out in two steps:
-///  1. When a 'ReadReq' request begins record the version of the log.
-///  2. When it ends, we must return the answer at some version >= the recorded value.
-///
 pub ghost enum ReadReq<R> {
-    /// a new read request that has entered the system
     Init { op: R },
-    /// a request that has been dispatched at a specific version
     Req { version: LogIdx, op: R },
 }
 
 impl<R> ReadReq<R> {
-    /// Extracts the operation from the ReadReq
     pub open spec fn op(self) -> R {
         match self {
             ReadReq::Init { op } => op,
@@ -5813,48 +4883,33 @@ impl<R> ReadReq<R> {
     }
 }
 
-/// Tracks the progress of an update query on the data structure.
-///
-/// Update requests are placed into the log. The
 pub ghost struct UpdateResp(pub LogIdx);
 
 state_machine! {
     SimpleLog<DT: Dispatch> {
     fields {
-        /// a sequence of update operations,
         pub log: Seq<DT::WriteOperation>,
-        /// the completion tail current index into the log
         pub version: LogIdx,
-        /// in flight read requests
         pub readonly_reqs: Map<ReqId, ReadReq<DT::ReadOperation>>,
-        /// inflight update requests
         pub update_reqs: Map<ReqId, DT::WriteOperation>,
-        /// responses to update requests that haven't been returned
         pub update_resps: Map<ReqId, UpdateResp>,
     }
 
-    /// Label for the requests
     pub type Label<DT> = AsyncLabel<DT>;
 
-    ////////////////////////////////////////////////////////////////////////////////////////////
-    // Invariant
-    ////////////////////////////////////////////////////////////////////////////////////////////
 
 
-    /// the version of the log must be less than the length of the log
     #[invariant]
     pub fn inv_version(&self) -> bool {
         0 <= self.version <= self.log.len()
     }
 
-    /// all update responses must have version that are less than the length of the log
     #[invariant]
     pub fn inv_update_resp_version(&self) -> bool {
         forall |rid: ReqId| #[trigger] self.update_resps.contains_key(rid)
             ==> self.update_resps[rid].0 < self.log.len()
     }
 
-    /// all readonly requests must have a version that is less or equal to the log version
     #[invariant]
     pub fn inv_readonly_req_version(&self) -> bool {
         forall |rid: ReqId| #[trigger] self.readonly_reqs.contains_key(rid) && self.readonly_reqs[rid] is Req
@@ -5862,9 +4917,6 @@ state_machine! {
     }
 
 
-    ////////////////////////////////////////////////////////////////////////////////////////////
-    // State Machine Initialization
-    ////////////////////////////////////////////////////////////////////////////////////////////
 
 
     init!{
@@ -5878,29 +4930,16 @@ state_machine! {
     }
 
 
-    ////////////////////////////////////////////////////////////////////////////////////////////
-    // Constructing the DataStructureSpec
-    ////////////////////////////////////////////////////////////////////////////////////////////
 
 
-    /// constructs the state of the data structure at a specific version given the log
-    ///
-    /// This function recursively applies the update operations to the initial state of the
-    /// data structure and returns the state of the data structure at the given  version.
     pub open spec fn nrstate_at_version(&self, version: LogIdx) -> DT::View
         recommends 0 <= version <= self.log.len()
     {
         compute_nrstate_at_version::<DT>(self.log, version)
     }
 
-    ////////////////////////////////////////////////////////////////////////////////////////////
-    // Read Operation Transitions
-    ////////////////////////////////////////////////////////////////////////////////////////////
 
 
-    /// Read Request: Enter the read request operation into the system
-    ///
-    /// The supplied request id must not yet be know to the system
     transition!{
         readonly_start(label: Label<DT>, rid: ReqId, op: DT::ReadOperation) {
             require label == AsyncLabel::<DT>::Start(rid, InputOperation::Read(op));
@@ -5913,9 +4952,6 @@ state_machine! {
         }
     }
 
-    /// Read Request: Read the current version of the log
-    ///
-    /// This records the current version of the log the read-only request was submitted
     transition!{
         readonly_read_version(label: Label<DT>, rid: ReqId) {
             require label.is_Internal();
@@ -5927,11 +4963,6 @@ state_machine! {
         }
     }
 
-    /// Read Request: Remove the request from the system
-    ///
-    /// The actual version at which the read request was executed may be newer than when the
-    /// read request entered the system. Thus, the supplied version must be larger or equal to
-    /// the version that was read before, and less or equal to the current current length of the log.
     transition!{
         readonly_finish(label: Label<DT>, rid: ReqId, version: LogIdx, ret: DT::Response) {
             require label == AsyncLabel::<DT>::End(rid, OutputOperation::Read(ret));
@@ -5948,21 +4979,10 @@ state_machine! {
     }
 
 
-    ////////////////////////////////////////////////////////////////////////////////////////////////
-    // Update Operation Transitions
-    ////////////////////////////////////////////////////////////////////////////////////////////////
 
 
-    // Update operation happen in four steps:
-    //  1. add the update to the local update requests
-    //  2. collect the updates and store them in the log
-    //  3. increase the version of the log
-    //  4. return the version of the log at the update
 
 
-    /// Update Request: place an update request in the system
-    ///
-    /// The request id here must not be in the system yet.
     transition!{
         update_start(label: Label<DT>, rid: ReqId, op: DT::WriteOperation) {
             require label == AsyncLabel::<DT>::Start(rid, InputOperation::Write(op));
@@ -5975,10 +4995,6 @@ state_machine! {
         }
     }
 
-    /// Update Request: Add the update operations to the log
-    ///
-    /// Place the update with the given request id into the log and record its version.
-    /// The update moves from the requests to the responses and the log grows by one element.
     transition!{
         update_add_op_to_log(label: Label<DT>, rid: ReqId) {
             require label.is_Internal();
@@ -5991,10 +5007,6 @@ state_machine! {
         }
     }
 
-    /// Update: Increasing the version of the log
-    ///
-    /// The version value is monotonically increasing and must not be larger than the
-    /// length of the log.
     transition!{
         update_incr_version(label: Label<DT>, new_version: LogIdx) {
             require label.is_Internal();
@@ -6005,10 +5017,6 @@ state_machine! {
         }
     }
 
-    /// Update: Finish the update operation
-    ///
-    /// This removes the update response from the update responses. The supplied return value
-    /// must match the value when we apply the update to the data structure at the give version.
     transition!{
         update_finish(label: Label<DT>, rid: nat, ret: DT::Response) {
             require label == AsyncLabel::<DT>::End(rid, OutputOperation::Write(ret));
@@ -6024,12 +5032,8 @@ state_machine! {
     }
 
 
-    ////////////////////////////////////////////////////////////////////////////////////////////////
-    // Stutter Step
-    ////////////////////////////////////////////////////////////////////////////////////////////////
 
 
-    /// No-Op transition
     transition!{
         no_op(label: Label<DT>, ) {
             require label.is_Internal();
@@ -6037,9 +5041,6 @@ state_machine! {
     }
 
 
-    ////////////////////////////////////////////////////////////////////////////////////////////////
-    // Inductiveness Proofs
-    ////////////////////////////////////////////////////////////////////////////////////////////////
 
 
     #[inductive(initialize)]
@@ -6069,12 +5070,7 @@ state_machine! {
     #[inductive(no_op)]
     fn no_op_inductive(pre: Self, post: Self, label: Label<DT>) { }
 
-}}  // state_machine! SimpleLog
-/// constructs the state of the data structure at a specific version given the log
-///
-/// This function recursively applies the update operations to the initial state of the
-/// data structure and returns the state of the data structure at the given version. The
-/// version must be within the log's range.
+}}  
 
 
 pub open spec fn compute_nrstate_at_version<DT: Dispatch>(
@@ -6095,18 +5091,11 @@ pub open spec fn compute_nrstate_at_version<DT: Dispatch>(
     }
 }
 
-} // verus!
-// ===== END INLINED DEPENDENCY: src/spec/simple_log.rs =====
+} 
 }
 
-// unbounded log and refinement
 #[macro_use]
 pub mod unbounded_log {
-// ===== BEGIN INLINED DEPENDENCY: src/spec/unbounded_log.rs =====
-// Verified Node Replication Library
-// SPDX-License-Identifier: Apache-2.0 OR MIT
-//
-// rust_verify/tests/example.rs ignore
 #[allow(unused_imports)]
 use verus_builtin::*;
 use verus_builtin_macros::*;
@@ -6124,49 +5113,11 @@ use super::utils::*;
 
 verus! {
 
-////////////////////////////////////////////////////////////////////////////////////////////////////
-//
-// Unbounded Log
-// =============
-//
-// The UnboundedLog is the first Refinement of the SimpleLog. As its name suggests, it also uses
-// an unbounded log to represent updates to the data structure, however the log itself is represented
-// by a map instead of a sequence. Moreover, the state machine also manages the data structure
-// replicas.
-//
-////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////
-// Read Only Operations
-////////////////////////////////////////////////////////////////////////////////////////////////////
-/// ReadonlyState: Tracking the progress of read-only queries
-///
-/// Used to track the progress of a read-only queries on the data structure.
-///
-/// A readonly query takes place on a given node (`nid`), and follows the following algorithm:
-///
-///  1. Read the global value 'version_upper_bound'.
-///  2. Wait until node-local value 'local_head' is greater than the value
-///     of 'version_upper_bound' that was read in step 1.
-///  3. Execute the query against the node-local replica and return the result.
-///
-/// (In real life, the thread does not just sit around 'waiting' in step 2;
-/// it might run a combiner phase in order to advance the local_head.)
-///
-/// These 3 steps progress the status of the request through the cycle
-///    Init -> VersionUpperBound -> ReadyToRead -> Done
-///
-/// Note that the request itself does not "care" which nodeId it takes place on;
-/// we only track the nodeId to make sure that steps 2 and 3 use the same node.
-///
 #[is_variant]
 pub ghost enum ReadonlyState<DT: Dispatch> {
-    /// a new read request that has come in
     Init { op: DT::ReadOperation },
-    /// has read the version upper bound value
     VersionUpperBound { op: DT::ReadOperation, version_upper_bound: LogIdx },
-    /// ready to read
     ReadyToRead { op: DT::ReadOperation, version_upper_bound: LogIdx, node_id: NodeId },
-    /// read request is done
     Done { op: DT::ReadOperation, version_upper_bound: LogIdx, node_id: NodeId, ret: DT::Response },
 }
 
@@ -6181,153 +5132,11 @@ impl<DT: Dispatch> ReadonlyState<DT> {
     }
 }
 
-////////////////////////////////////////////////////////////////////////////////////////////////////
-// Update Operation
-////////////////////////////////////////////////////////////////////////////////////////////////////
-////////// Updates and the combiner phase
-//
-// This part is a lot more complex; the lifecycle of an "update" is inherently
-// tied to the lifecycle of the combiner, so I have to explain the entire combiner
-// cycle for this to make sense.
-//
-// In particular, the combiner cycle starts with some (potentially empty) bulk collection
-// of Update requests, which all start in UpdateState::Init.
-// By the end of the combiner cycle (when it has gone back to 'Ready'), all the updates
-// in that collection will be in UpdateState::Done.
-//
-// The combiner works as follows (keep in mind this is abstracted a bit from the
-// real implementation).
-//
-//  1. Advance the 'tail' value by 1 for each update in the collection.
-//     This creates a "LogEntry" for the given op at the given index.
-//     It also updates the update from UpdateState::Init to UpdateState::Placed.
-//
-//      Note: This always appends to the log; there are never any "holes" in the log,
-//      and the 'tail' always marks the end of the log. The log is unbounded
-//      and not garbage-collected.
-//      Keep in mind that the 'log' here is just an abstraction, and the "cyclic buffer"
-//      that physically stores the log entries in real life has additional complexities.
-//      We do not handle those complexities at this level of abstraction.
-//
-//      Note: Even when we have a bulk collection of updates, we still append the log
-//      entries one at a time, once for each update. This means the log entries might
-//      interleave with those of another thread.
-//      This is more permissive than the real implementation, which advances the
-//      'tail' with a single CAS operation, meaning that all the log entries
-//      for the cycle will be contiguous in the log.
-//      In the original Linear Dafny NR project, we modeled this step as a bulk update,
-//      matching the implemenation. However, it turned out that:
-//          (i) modeling 'bulk update' steps is kind of annoying
-//          (ii) we never took advantage of the contiguity in the invariants
-//      Since the single-step version is easier to model, and we don't lose anything for it,
-//      that's what we do here.
-//
-//  2. Read the 'local_head' value for the given node.
-//
-//  3. Read the global 'tail' value.
-//
-//  4. Process all log entries in the range local_head..tail.
-//     (This should include both the log entries we just creates, plus maybe some other
-//     log entries from other nodes.)
-//
-//      NOTE: the global 'tail' value might change over the course of execution,
-//      but we're going to stick with the local copy that we just read
-//      (i.e., the value on the stack).
-//
-//     To process a log entry, we first apply the operation to the replica, and get
-//     back a "return value". Next, we check if the log entry is for the given nodeId,
-//     classifying it as "remote" or "local".
-//      - If it's remote, we're done.
-//      - If it's local, then we find the Update object in our bulk collection, and
-//        update it from UpdateState::Placed to UpdateState::Applied, recording the
-//        return value.
-//
-//  5. Update the global value of 'version_upper_bound'.
-//     This step lets us move all the updates to UpdateState::Done.
-//
-//  6. Update the value of 'local_head'.
-//
-// Now, there are a bunch of things we need to prove so that the whole thing makes sense
-// and so that the implementation can actually follow along and return data to the clients.
-//
-// Specifically, we have a sequence of "return ids" (recorded in the 'queued_ops' field)
-// that need to get processed. When the implementation handles a "local" operation off the
-// log, it appends the return value into a buffer; when it's done, it expects the buffer
-// of return values to line up with all the update requests that it started with.
-//
-// What this means is that we need to show:
-//   - When we process a "local" operation, its ReqId corresponds to the next
-//     ReqId recorded in the queued_ops (i.e., the one at 'queue_index'.)
-//   - When we have finished the entire loop, we have finished processing all
-//     the ReqIds we expected (i.e., `queue_index == queued_ops.len()`).
-//
-// This means we need to establish an invariant between the combiner state and the
-// log state at all times. Specifically, we need an invariant that relates the combiner
-// state to the log entries whose node_ids match the combiner's node, describing where
-// they are and in what order.
-//
-// The invariant roughly says that during step (4), (the "Loop" state):
-//   The ReqIds in `queued_ops`, sliced from queue_index .. queued_ops.len()
-//   match
-//   The ReqIds in the log that are local, sliced from
-//          local_head .. tail
-// (Note that queue_index and local_head are the cursors that advance throughout the loop,
-// while tail is the one recorded in step 3, so it's fixed.)
-// Furthermore:
-//   There are no local operations in the log between
-//   the recorded tail and the global tail.
-// See the invariant `wf_combiner_for_node_id`, as well as the predicates
-// `LogRangeMatchesQueue` and `LogRangeNoNodeId`.
-//
-// Example: suppose N is the local node_id, and [a, b, c, d] are the request ids.
-// We might be in a state that looks like this: (Here, '...' indicates remote entries,
-// and '(N, x)' means a log entry with node id N that corresponds to request id x.)
-//
-//       CombinerState                                           CombinerState   global
-//       local_head                                              tail     tail
-//          |                                                              |               |
-//       ===================================================================================
-//          |          |       |       |        |       |          |       |       |       |
-//  Log:    |  (N, b)  |  ...  |  ...  | (N, c) |  ...  |  (N, d)  |  ...  |  ...  |  ...  |
-//          |          |       |       |        |       |          |       |       |       |
-//       ===================================================================================
-//
-//  ---- Combiner state (in `CombinerState::Loop` phase).
-//
-//      queued_ops =  [  a,   b,   c,   d   ]
-//                          ^
-//                          |
-//                  queue_index = 1
-//
-// ---- Update state:
-//
-//    a => UpdateState::Applied { ... }
-//    b => UpdateState::Placed { ... }
-//    c => UpdateState::Placed { ... }
-//    d => UpdateState::Placed { ... }
-//
-// In the example, `LogRangeMatchesQueue` is the relation that shows that (b, c, d)
-// agree between the queued_ops and the log; whereas `LogRangeNoNodeId` shows that there
-// are no more local entries between the Combiner tail and the global tail.
-//
-// And again, in the real implementation, b, c, d will actually be contiguous in the log,
-// but the state shown above is permitted by the model here.
-// If we _were_ going to make use of contiguity, then the place to do it would probably
-// be the definition of `LogRangeMatchesQueue`, but as I explained earlier, I didn't
-// find it helpful.
-//
-// Another technical note: the LogEntry doesn't actually store the ReqId on it;
-// `LogRangeMatchesQueue` has to connect the request id to the UpdateState, which then
-// has a pointer into the log via `idx`. (It's possible that this could be simplified.)
 #[is_variant]
 pub ghost enum UpdateState<DT: Dispatch> {
-    /// upated request has entered the system
     Init { op: DT::WriteOperation },
-    /// update has been placed into the log
     Placed { op: DT::WriteOperation, idx: LogIdx },
-    /// the update has been applied to the data structure
     Applied { ret: DT::Response, idx: LogIdx },
-    /// the update is ready to be returned
     Done { ret: DT::Response, idx: LogIdx },
 }
 
@@ -6337,13 +5146,9 @@ pub ghost enum CombinerState {
     Placed { queued_ops: Seq<ReqId> },
     LoadedLocalVersion { queued_ops: Seq<ReqId>, lversion: LogIdx },
     Loop {
-        /// sequence of request ids of the local node
         queued_ops: Seq<ReqId>,
-        /// version of the local replica
         lversion: LogIdx,
-        /// index into the queued ops
         idx: nat,
-        /// the global tail we'v read
         tail: LogIdx,
     },
     UpdatedVersion { queued_ops: Seq<ReqId>, tail: LogIdx },
@@ -6365,12 +5170,10 @@ impl CombinerState {
     }
 }
 
-} // verus!
-// end verus!
+} 
 tokenized_state_machine! {
 UnboundedLog<DT: Dispatch> {
     fields {
-        /// the number of replicas
         #[sharding(constant)]
         pub num_replicas: nat,
 
@@ -6384,10 +5187,10 @@ UnboundedLog<DT: Dispatch> {
         pub replicas: Map<NodeId, DT::View>,
 
         #[sharding(map)]
-        pub local_versions: Map<NodeId, LogIdx>, // previously called "local tails"
+        pub local_versions: Map<NodeId, LogIdx>, 
 
         #[sharding(variable)]
-        pub version_upper_bound: LogIdx, // previously called "ctail"
+        pub version_upper_bound: LogIdx, 
 
         #[sharding(map)]
         pub local_reads: Map<ReqId, ReadonlyState<DT>>,
@@ -6400,9 +5203,6 @@ UnboundedLog<DT: Dispatch> {
     }
 
 
-    ////////////////////////////////////////////////////////////////////////////////////////////
-    // Invariant
-    ////////////////////////////////////////////////////////////////////////////////////////////
 
     #[invariant]
     pub fn inv_request_ids_finite(&self) -> bool {
@@ -6411,21 +5211,8 @@ UnboundedLog<DT: Dispatch> {
         &&& self.combiner.dom().finite()
     }
 
-    // /// there must be a replicat for all nodes
-    // #[invariant]
-    // pub fn inv_replicas_complete(&self) -> bool {
-    //     forall |node_id: NodeId| 0 <= node_id < self.num_replicas <==>
-    //         self.replicas.contains_key(node_id)
-    // }
 
-    // /// ther emust be a local version for all nodes
-    // #[invariant]
-    // pub fn inv_local_versions_complete(&self) -> bool {
-    //     forall |node_id: NodeId| 0 <= node_id < self.num_replicas <==>
-    //         self.local_versions.contains_key(node_id)
-    // }
 
-    /// there must be a combiner for all node
     #[invariant]
     pub fn inv_local_combiner_complete(&self) -> bool {
         forall |node_id: NodeId| 0 <= node_id < self.num_replicas <==>
@@ -6450,28 +5237,16 @@ UnboundedLog<DT: Dispatch> {
     }
 
 
-    // #[invariant]
-    // pub fn inv_queued_ops_in_local_updates(&self) -> bool {
-    //     forall |node_id, rid|
-    //         (#[trigger] self.combiner.contains_key(node_id) && !(#[trigger] self.local_updates.contains_key(rid)))
-    //             ==> !self.combiner[node_id].queued_ops().contains(rid)
-    // }
 
 
 
-    // && Inv_WF(s)
-    // && Inv_GlobalTailCompleteTailOrdering(s)
 
-    /// the version upper bound must be smaller or equal to the global tail
-    /// Inv_GlobalTailCompleteTailOrdering
     #[invariant]
     pub fn inv_version_in_range(&self) -> bool {
         self.version_upper_bound <= self.tail
     }
 
 
-    /// all local versions are less or equal to the version upper bound
-    /// Inv_CompletedTailLowerBound && Inv_GlobalTailLowerBound(s)
     #[invariant]
     pub fn inv_local_version_upper_bound_heads(&self) -> bool {
         forall |node_id| (#[trigger]  self.local_versions.contains_key(node_id))
@@ -6479,8 +5254,6 @@ UnboundedLog<DT: Dispatch> {
     }
 
 
-    /// The read request states are valid
-    /// Inv_ReadRequest_WF(s) && Inv_ReadOnlyCtailsCompleteTailOrdering(s) && Inv_ReadOnlyStateNodeIdExists(s)
     #[invariant]
     pub fn inv_readonly_requests_wf(&self) -> bool {
         forall |rid| (#[trigger] self.local_reads.contains_key(rid))
@@ -6509,8 +5282,6 @@ UnboundedLog<DT: Dispatch> {
     }
 
 
-    /// the combiner states are wellformed
-    /// Inv_CombinerStateValid(s)
     #[invariant]
     pub open spec fn combiner_states_wf(&self) -> bool {
         forall |node_id| (#[trigger] self.combiner.contains_key(node_id))
@@ -6522,37 +5293,23 @@ UnboundedLog<DT: Dispatch> {
     {
         match self.combiner[node_id] {
             CombinerState::Ready => {
-                // from other inv
-                // &&& self.local_versions.contains_key(node_id)
-                // &&& self.local_versions[node_id] <= self.tail
                 &&& LogRangeNoNodeId(self.log, self.local_versions[node_id], self.tail, node_id)
             }
             CombinerState::Placed { queued_ops } => {
-                // &&& self.local_versions.contains_key(node_id)
-                // &&& self.local_versions[node_id] <= self.tail
                 &&& LogRangeMatchesQueue(queued_ops, self.log, 0, self.local_versions[node_id], self.tail, node_id, self.local_updates)
                 &&& QueueRidsUpdatePlaced(queued_ops, self.local_updates, 0)
                 &&& seq_unique(queued_ops)
             }
             CombinerState::LoadedLocalVersion{ queued_ops, lversion } => {
-               // we've just read the local tail value, and no-one else should modify that
                 &&& lversion == self.local_versions[node_id]
-                // by transitivity we have lversion <= self.version_upper_bound and self.tail
-                // the local tail should be smaller or equal than the ctail
-                // &&& lversion <= self.version_upper_bound
-                // &&& lversion <= self.tail
                 &&& LogRangeMatchesQueue(queued_ops, self.log, 0, lversion, self.tail, node_id, self.local_updates)
                 &&& QueueRidsUpdatePlaced(queued_ops, self.local_updates, 0)
                 &&& seq_unique(queued_ops)
             }
             CombinerState::Loop{ queued_ops, idx, lversion, tail } => {
-                // the global tail may have already advanced...
                 &&& tail <= self.tail
-                // we're advancing the local tail here
                 &&& lversion >= self.local_versions[node_id]
-                // the local tail should always be smaller or equal to the global tail
                 &&& lversion <= tail
-                // the log now contains all entries up to localtail
                 &&& LogContainsEntriesUpToHere(self.log, lversion)
                 &&& 0 <= idx <= queued_ops.len()
                 &&& LogRangeMatchesQueue(queued_ops, self.log, idx, lversion, tail, node_id, self.local_updates)
@@ -6562,13 +5319,8 @@ UnboundedLog<DT: Dispatch> {
                 &&& seq_unique(queued_ops)
             }
             CombinerState::UpdatedVersion{ queued_ops, tail } => {
-                // the global tail may have already advanced...
-                // tail <= self.tail // by transitivity: self.version_upper_bound <= self.tail
-                // update the ctail value
                 &&& tail <= self.version_upper_bound
-                // the local tail should be smaller than this one here
                 &&& self.local_versions[node_id] <= tail
-                // the log now contains all entries up to tail
                 &&& LogContainsEntriesUpToHere(self.log, tail)
                 &&& LogRangeNoNodeId(self.log, tail, self.tail, node_id)
                 &&& QueueRidsUpdateDone(queued_ops, self.local_updates, queued_ops.len())
@@ -6578,10 +5330,6 @@ UnboundedLog<DT: Dispatch> {
     }
 
 
-    /// the log contains entries up to the global tail
-    /// Inv_LogEntriesGlobalTail(s)
-    ///
-    /// Inv_LogEntriesUpToCTailExists(s) && Inv_LogEntriesUpToLocalTailExist(s) are implied
     #[invariant]
     pub fn inv_log_complete(&self) -> bool {
         &&& LogContainsEntriesUpToHere(self.log, self.tail)
@@ -6589,8 +5337,6 @@ UnboundedLog<DT: Dispatch> {
     }
 
 
-    /// Wellformed local update state
-    /// Inv_LocalUpdatesIdx(s)
     #[invariant]
     pub fn inv_local_updates(&self) -> bool {
         forall |rid| (#[trigger] self.local_updates.contains_key(rid))
@@ -6616,8 +5362,6 @@ UnboundedLog<DT: Dispatch> {
     }
 
 
-    /// The results of the read operation must match
-    /// Inv_ReadOnlyResult(s)
     #[invariant]
     pub fn inv_read_results(&self) -> bool {
         forall |rid| (#[trigger] self.local_reads.contains_key(rid))
@@ -6635,8 +5379,6 @@ UnboundedLog<DT: Dispatch> {
     }
 
 
-    /// The results of the updates must match
-    /// Inv_UpdateResults(s)
     #[invariant]
     pub fn inv_update_results(&self) -> bool {
         forall |rid| (#[trigger] self.local_updates.contains_key(rid))
@@ -6656,8 +5398,6 @@ UnboundedLog<DT: Dispatch> {
     }
 
 
-    /// All combiners must have distinct request ids they are working on
-    /// Inv_CombinerRidsDistinct(s)
     #[invariant]
     pub fn inv_combiner_rids_distinct(&self) -> bool
     {
@@ -6669,7 +5409,6 @@ UnboundedLog<DT: Dispatch> {
     }
 
 
-    /// the state of the replica must match the current version of the log
     #[invariant]
     pub open spec fn replica_state(&self) -> bool {
         forall |node_id| (#[trigger] self.replicas.contains_key(node_id)) ==>
@@ -6677,9 +5416,6 @@ UnboundedLog<DT: Dispatch> {
     }
 
 
-    ////////////////////////////////////////////////////////////////////////////////////////////
-    // State Machine Initialization
-    ////////////////////////////////////////////////////////////////////////////////////////////
 
     init!{
         initialize(number_of_nodes: nat) {
@@ -6697,13 +5433,7 @@ UnboundedLog<DT: Dispatch> {
         }
     }
 
-    ////////////////////////////////////////////////////////////////////////////////////////////
-    // Readonly Transitions
-    ////////////////////////////////////////////////////////////////////////////////////////////
 
-    /// Read Request: Read the version of the log
-    ///
-    /// The algorithm waits while local_version < read_version
     transition!{
         readonly_version_upper_bound(rid: ReqId) {
             remove local_reads -= [ rid => let ReadonlyState::Init { op } ];
@@ -6712,9 +5442,6 @@ UnboundedLog<DT: Dispatch> {
         }
     }
 
-    /// Read Request: wait until the version of the state has reached the version of the log
-    ///
-    /// The algorithm waits while local_version < read_version
     transition!{
         readonly_ready_to_read(rid: ReqId, node_id: NodeId) {
             remove local_reads    -= [ rid => let ReadonlyState::VersionUpperBound { op, version_upper_bound } ];
@@ -6726,7 +5453,6 @@ UnboundedLog<DT: Dispatch> {
         }
     }
 
-    /// Read Request: perform the read request on the local replica, the combiner must not be busy
     transition!{
         readonly_apply(rid: ReqId) {
             remove local_reads -= [ rid => let ReadonlyState::ReadyToRead { op, node_id, version_upper_bound } ];
@@ -6739,16 +5465,9 @@ UnboundedLog<DT: Dispatch> {
         }
     }
 
-    ////////////////////////////////////////////////////////////////////////////////////////////
-    // Update Transitions
-    ////////////////////////////////////////////////////////////////////////////////////////////
 
-    /// Combiner: Collect the operations and place them into the log
     transition!{
         update_place_ops_in_log_one(node_id: NodeId, rid: ReqId) {
-            // Only allowing a single request at a time
-            // (in contrast to the seagull one which does it in bulk).
-            // Hopefully this leads to some easier proofs.
             remove combiner      -= [ node_id => let CombinerState::Placed{ queued_ops } ];
             remove local_updates -= [ rid => let UpdateState::Init{ op }];
 
@@ -6763,27 +5482,16 @@ UnboundedLog<DT: Dispatch> {
         update_done(rid:ReqId) {
             remove local_updates -= [ rid => let UpdateState::Applied { ret, idx } ];
 
-            // we must have applied the
             require(pre.version_upper_bound > idx);
 
             add local_updates += [ rid => UpdateState::Done { ret, idx } ];
         }
     }
 
-    /*/// Update: Remove a finished update from the system
-    transition!{
-        update_finish(rid:ReqId) {
-            remove local_updates -= [ rid => let UpdateState::Done { ret, idx } ];
-        }
-    }*/
 
 
-    ////////////////////////////////////////////////////////////////////////////////////////////
-    // Combiner Execute Transitions
-    ////////////////////////////////////////////////////////////////////////////////////////////
 
 
-    /// Combiner: start the combiner to execute the update operations on the local replica
     transition!{
         exec_trivial_start(node_id: NodeId) {
             remove combiner -= [ node_id => CombinerState::Ready ];
@@ -6792,7 +5500,6 @@ UnboundedLog<DT: Dispatch> {
         }
     }
 
-    /// Combiner: read the version of the local replica
     transition!{
         exec_load_local_version(node_id: NodeId) {
             remove combiner      -= [ node_id => let CombinerState::Placed { queued_ops } ];
@@ -6803,7 +5510,6 @@ UnboundedLog<DT: Dispatch> {
         }
     }
 
-    /// Combiner: read the global tail
     transition!{
         exec_load_global_head(node_id: NodeId) {
             remove combiner -= [ node_id => let CombinerState::LoadedLocalVersion { queued_ops, lversion } ];
@@ -6812,7 +5518,6 @@ UnboundedLog<DT: Dispatch> {
         }
     }
 
-    /// Combiner: Safety condition, the queue index must be within bounds
     property!{
         pre_exec_dispatch_local(node_id: NodeId) {
             have combiner >= [ node_id => let CombinerState::Loop{ queued_ops, lversion, tail, idx } ];
@@ -6821,15 +5526,11 @@ UnboundedLog<DT: Dispatch> {
             require(log_entry.node_id == node_id);
             require(lversion < tail);
             assert(idx < queued_ops.len()) by {
-                // assert(pre.wf_combiner_for_node_id(node_id));
-                // assert(lversion < tail);
-                // assert(pre.log.index(lversion).node_id == node_id);
             };
             assert(queued_ops.len() > 0);
         }
     }
 
-    /// Combiner: dispatch a local update and apply it to the local replica and record the outcome of the update
     transition!{
         exec_dispatch_local(node_id: NodeId) {
             remove combiner      -= [ node_id => let CombinerState::Loop { queued_ops, lversion, tail, idx } ];
@@ -6839,9 +5540,7 @@ UnboundedLog<DT: Dispatch> {
 
             have log >= [lversion => let log_entry];
 
-            // require(local_update.is_Placed());
 
-            // apply all updates between lhead and global tail that were enqueued from local node
             require(lversion < tail);
             require(log_entry.node_id == node_id);
             let (new_nr_state, ret) = DT::dispatch_mut_spec(old_nr_state, log_entry.op);
@@ -6852,7 +5551,6 @@ UnboundedLog<DT: Dispatch> {
         }
     }
 
-    /// Combiner: dispatch a remote update and apply it to the local replica
     transition!{
         exec_dispatch_remote(node_id: NodeId) {
             remove combiner -= [ node_id => let CombinerState:: Loop { queued_ops, lversion, tail, idx } ];
@@ -6860,7 +5558,6 @@ UnboundedLog<DT: Dispatch> {
 
             have   log      >= [ lversion => let log_entry ];
 
-            // apply all updates between lhead and global tail that were enqueued from remote nodes
             require(lversion < tail);
             require(log_entry.node_id != node_id);
             let (new_nr_state, ret) = DT::dispatch_mut_spec(old_nr_state, log_entry.op);
@@ -6870,30 +5567,22 @@ UnboundedLog<DT: Dispatch> {
         }
     }
 
-    /// Combiner: Safety condition, if we applied all updates, idx must be the length of the list
     property!{
         pre_exec_update_version_upper_bound(node_id: NodeId) {
             have combiner >= [ node_id => let CombinerState::Loop{ queued_ops, lversion, tail, idx } ];
 
             require(lversion == tail);
             assert(idx == queued_ops.len()) by {
-                // assert(pre.wf_combiner_for_node_id(node_id));
-                // assert(lversion == tail);
             };
         }
     }
 
-    /// Combiner: update the version upper bound when all updates have been applied to the local replica
     transition!{
         exec_update_version_upper_bound(node_id: NodeId) {
             remove combiner -= [ node_id => let CombinerState::Loop { queued_ops, lversion, tail, idx, }];
 
-            // we applied all updates up to the global tail we've read
             require(lversion == tail);
 
-            // assert(idx == queued_ops.len()) by {
-            //     //assert(pre.wf_combiner_for_node_id(node_id));
-            // };
 
             update version_upper_bound = if pre.version_upper_bound >= tail {
                 pre.version_upper_bound
@@ -6904,20 +5593,17 @@ UnboundedLog<DT: Dispatch> {
         }
     }
 
-    /// Combiner: is done, bump the local version and combiner returns to ready state
     transition!{
         exec_finish(node_id: NodeId) {
             remove combiner       -= [ node_id => let CombinerState::UpdatedVersion { queued_ops, tail } ];
             remove local_versions -= [ node_id => let old_local_head ];
 
-            // here have the local updates updated to done.
 
             add    local_versions += [ node_id => tail ];
             add    combiner       += [ node_id => CombinerState::Ready ];
         }
     }
 
-    /// Combiner: is done, without any change
     transition!{
         exec_finish_no_change(node_id: NodeId) {
             remove combiner -= [ node_id => let CombinerState::LoadedLocalVersion { queued_ops, lversion } ];
@@ -6930,15 +5616,11 @@ UnboundedLog<DT: Dispatch> {
     }
 
 
-    ////////////////////////////////////////////////////////////////////////////////////////////
-    // Inductiveness Proofs
-    ////////////////////////////////////////////////////////////////////////////////////////////
 
 
     #[inductive(initialize)]
     fn initialize_inductive(post: Self, number_of_nodes: nat) {
 
-        // XXX: is it really that hard to show finetness of map domain?
         let max_dom = (post.num_replicas - 1) as nat;
         let cmap = map_new_rec(max_dom, CombinerState::Ready);
         assert(cmap.dom().finite()) by {
@@ -6959,7 +5641,6 @@ UnboundedLog<DT: Dispatch> {
             map_new_rec_dom_finite(max_dom, CombinerState::Ready);
         }
         assert(post.combiner =~= cmap);
-        // assert_maps_equal!(post.combiner, cmap);
     }
 
 
@@ -7186,7 +5867,6 @@ UnboundedLog<DT: Dispatch> {
 
     #[inductive(exec_update_version_upper_bound)]
     fn exec_update_version_upper_bound_inductive(pre: Self, post: Self, node_id: NodeId) {
-        // assert(post.log == pre.log);
         assert(post.version_upper_bound >= pre.version_upper_bound);
 
         assert forall |rid| (#[trigger] post.local_reads.contains_key(rid)) implies post.read_results_match(post.local_reads[rid]) by {
@@ -7207,11 +5887,7 @@ UnboundedLog<DT: Dispatch> {
     #[inductive(exec_finish_no_change)]
     fn exec_finish_no_change_inductive(pre: Self, post: Self, node_id: NodeId) { }
 
-    ////////////////////////////////////////////////////////////////////////////////////////////////
-    // Helper Functions
-    ////////////////////////////////////////////////////////////////////////////////////////////////
 
-    /// obtains the current local version for the given node depending on the combiner state
     pub open spec fn current_local_version(&self, node_id: NodeId) -> nat
         recommends self.combiner.contains_key(node_id) && self.local_versions.contains_key(node_id)
     {
@@ -7224,31 +5900,12 @@ UnboundedLog<DT: Dispatch> {
         }
     }
 
-    // pub open spec fn combiners_fresh_req_id(&self, rid: ReqId) -> bool {
-    //     forall |n| self.combiner.contains_key(n)
-    //         ==> !self.combiner[n].queued_ops().contains(rid)
-    // }
 }
 
-} // end tokenized_state_machine!
+} 
 
 verus! {
 
-// pub open spec fn combiner_request_ids(node_ids: Set<NodeId>, combiners: Map<NodeId, CombinerState>) -> Set<ReqId>
-//     recommends (forall |n| (#[trigger] node_ids.contains(n)) ==> #[trigger]combiners.contains_key(n))
-//     decreases node_ids.len() when (node_ids.finite() && node_ids.len() >= 0)
-// {
-//     if node_ids.finite() {
-//         if node_ids.len() == 0 {
-//             Set::empty()
-//         } else {
-//             let node_id = node_ids.choose();
-//             combiner_request_ids(node_ids.remove(node_id), combiners) + seq_to_set(combiners[node_id].queued_ops())
-//         }
-//     } else {
-//         arbitrary()
-//     }
-// }
 pub open spec fn combiner_request_ids(combiners: Map<NodeId, CombinerState>) -> Set<ReqId>
     decreases combiners.dom().len(),
     when (combiners.dom().finite() && combiners.dom().len() >= 0)
@@ -7273,7 +5930,7 @@ proof fn combiner_request_ids_decreases(combiners: Map<NodeId, CombinerState>) {
         if combiners.dom().len() == 0 {
         } else {
             let node_id = combiners.dom().choose();
-            assert(combiners.remove(node_id).dom().len() < combiners.dom().len());  // INCOMPLETENESS weird incompleteness
+            assert(combiners.remove(node_id).dom().len() < combiners.dom().len());  
         }
     } else {
     }
@@ -7319,9 +5976,6 @@ pub proof fn combiner_request_ids_finite(combiners: Map<NodeId, CombinerState>)
     unimplemented!()
 }
 
-////////////////////////////////////////////////////////////////////////////////////////////////////
-// Helper Functions
-////////////////////////////////////////////////////////////////////////////////////////////////////
 pub closed spec fn get_fresh_nat(reqs: Set<ReqId>, combiner: Map<NodeId, CombinerState>) -> nat
     recommends
         reqs.finite() && combiner.dom().finite(),
@@ -7362,7 +6016,6 @@ pub proof fn get_fresh_nat_not_in(reqs: Set<ReqId>, combiner: Map<NodeId, Combin
     unimplemented!()
 }
 
-/// the log contains all entries up to, but not including the provided end
 pub open spec fn LogContainsEntriesUpToHere<DT: Dispatch>(
     log: Map<LogIdx, LogEntry<DT>>,
     end: LogIdx,
@@ -7370,7 +6023,6 @@ pub open spec fn LogContainsEntriesUpToHere<DT: Dispatch>(
     forall|i: nat| 0 <= i < end ==> log.contains_key(i)
 }
 
-/// the log doesn't contain any entries at or above the provided start index
 pub open spec fn LogNoEntriesFromHere<DT: Dispatch>(
     log: Map<LogIdx, LogEntry<DT>>,
     start: LogIdx,
@@ -7378,7 +6030,6 @@ pub open spec fn LogNoEntriesFromHere<DT: Dispatch>(
     forall|i: nat| start <= i ==> !log.contains_key(i)
 }
 
-/// the log contains no entries with the given node id between the supplied indices
 pub open spec fn LogRangeNoNodeId<DT: Dispatch>(
     log: Map<LogIdx, LogEntry<DT>>,
     start: LogIdx,
@@ -7394,7 +6045,6 @@ pub open spec fn LogRangeNoNodeId<DT: Dispatch>(
     })
 }
 
-/// predicate that the a range in the log matches the queue of updates
 pub open spec fn LogRangeMatchesQueue<DT: Dispatch>(
     queue: Seq<ReqId>,
     log: Map<LogIdx, LogEntry<DT>>,
@@ -7407,19 +6057,15 @@ pub open spec fn LogRangeMatchesQueue<DT: Dispatch>(
     recommends([0 <= queueIndex <= queue.len(), LogContainsEntriesUpToHere(log, logIndexUpper)]);
     decreases_when(logIndexLower <= logIndexUpper);
     decreases(logIndexUpper - logIndexLower);
-    // if we hit the end of the log range, we should be at the end of the queue
     &&& (logIndexLower == logIndexUpper ==> queueIndex
         == queue.len())
-    // otherwise, we check the log
 
     &&& (logIndexLower < logIndexUpper ==> {
         &&& log.contains_key(
             logIndexLower,
         )
-        // local case: the entry has been written by the local node
 
         &&& (log.index(logIndexLower).node_id == nodeId ==> {
-            // there must be an entry in the queue that matches the log entry
             &&& queueIndex < queue.len()
             &&& updates.contains_key(queue.index(queueIndex as int))
             &&& updates.index(queue.index(queueIndex as int)).is_Placed()
@@ -7434,7 +6080,6 @@ pub open spec fn LogRangeMatchesQueue<DT: Dispatch>(
                 updates,
             )
         })
-        // remote case: the entry has been written by the local node, there is nothing to match, recourse
 
         &&& (log.index(logIndexLower).node_id != nodeId ==> LogRangeMatchesQueue(
             queue,
@@ -7448,33 +6093,6 @@ pub open spec fn LogRangeMatchesQueue<DT: Dispatch>(
     })
 }
 
-// pub open spec fn LogRangeMatchesQueue2<DT: Dispatch>(queue: Seq<ReqId>, log: Map<LogIdx, LogEntry<DT>>, queueIndex: nat,
-//     logIndexLower: LogIdx, logIndexUpper: LogIdx, nodeId: NodeId,
-//     updates: Map<ReqId, UpdateState<DT>>) -> bool
-// {
-//     recommends([ 0 <= queueIndex <= queue.len(), LogContainsEntriesUpToHere(log, logIndexUpper) ]);
-//     decreases_when(logIndexLower <= logIndexUpper);
-//     decreases(logIndexUpper - logIndexLower);
-//     // if we hit the end of the log range, we should be at the end of the queue
-//     &&& (logIndexLower == logIndexUpper ==> queueIndex == queue.len())
-//     // otherwise, we check the log
-//     &&& (logIndexLower < logIndexUpper ==> {
-//         &&& log.contains_key(logIndexLower)
-//         // local case: the entry has been written by the local node
-//         &&& (log.index(logIndexLower).node_id == nodeId ==> {
-//             // there must be an entry in the queue that matches the log entry
-//             &&& queueIndex < queue.len()
-//             // &&& updates.contains_key(queue.index(queueIndex as int))
-//             // &&& updates.index(queue.index(queueIndex as int)).is_Placed()
-//             // &&& updates.index(queue.index(queueIndex as int)).get_Placed_idx() == logIndexLower
-//             &&& LogRangeMatchesQueue2(queue, log, queueIndex + 1, logIndexLower + 1, logIndexUpper, nodeId, updates)
-//         })
-//         // remote case: the entry has been written by the local node, there is nothing to match, recourse
-//         &&& (log.index(logIndexLower).node_id != nodeId ==>
-//             LogRangeMatchesQueue2(queue, log, queueIndex, logIndexLower + 1, logIndexUpper, nodeId, updates)
-//         )
-//     })
-// }
 #[verifier::external_body]
 proof fn LogRangeMatchesQueue_update_change<DT: Dispatch>(
     queue: Seq<nat>,
@@ -7733,7 +6351,6 @@ proof fn LogRangeNoNodeId_append_other<DT: Dispatch>(
     unimplemented!()
 }
 
-/// the updates below the current pointer are either in the applied or done state.
 pub open spec fn QueueRidsUpdateDone<DT: Dispatch>(
     queued_ops: Seq<ReqId>,
     localUpdates: Map<ReqId, UpdateState<DT>>,
@@ -7742,10 +6359,6 @@ pub open spec fn QueueRidsUpdateDone<DT: Dispatch>(
     recommends
         0 <= bound <= queued_ops.len(),
 {
-    // Note that use localUpdates.contains_key(queued_ops[j]) as a *hypothesis*
-    // here. This is because the model actually allows an update to "leave early"
-    // before the combiner phase completes. (This is actually an instance of our
-    // model being overly permissive.)
     forall|j|
         0 <= j < bound ==> localUpdates.contains_key(#[trigger] queued_ops[j]) ==> {
             ||| localUpdates[queued_ops[j]].is_Applied()
@@ -7753,7 +6366,6 @@ pub open spec fn QueueRidsUpdateDone<DT: Dispatch>(
         }
 }
 
-/// the updates in the queue above or equal the current pointer are in placed state
 pub open spec fn QueueRidsUpdatePlaced<DT: Dispatch>(
     queued_ops: Seq<ReqId>,
     localUpdates: Map<ReqId, UpdateState<DT>>,
@@ -7792,10 +6404,6 @@ proof fn concat_LogRangeNoNodeId_LogRangeMatchesQueue<DT: Dispatch>(
     unimplemented!()
 }
 
-/// constructs the state of the data structure at a specific version given the log
-///
-/// This function recursively applies the update operations to the initial state of the
-/// data structure and returns the state of the data structure at the given version.
 pub open spec fn compute_nrstate_at_version<DT: Dispatch>(
     log: Map<LogIdx, LogEntry<DT>>,
     version: LogIdx,
@@ -7828,16 +6436,9 @@ pub proof fn compute_nrstate_at_version_preserves<DT: Dispatch>(
     unimplemented!()
 }
 
-} // verus!
-// end verus!
-// ===== END INLINED DEPENDENCY: src/spec/unbounded_log.rs =====
+} 
 }
 pub mod unbounded_log_refines_simplelog {
-// ===== BEGIN INLINED DEPENDENCY: src/spec/unbounded_log_refines_simplelog.rs =====
-// Verified Node Replication Library
-// SPDX-License-Identifier: Apache-2.0 OR MIT
-//
-// rust_verify/tests/example.rs ignore
 #[allow(unused_imports)]
 use verus_builtin::*;
 use verus_builtin_macros::*;
@@ -7867,14 +6468,6 @@ use super::unbounded_log::{
 };
 use super::utils::*;
 
-////////////////////////////////////////////////////////////////////////////////////////////////////
-//
-// Refinement Proof: UnboundedLog refines SimpleLog
-// ================================================
-//
-// ...
-//
-////////////////////////////////////////////////////////////////////////////////////////////////////
 
 verus! {
 
@@ -7936,9 +6529,6 @@ impl<DT: Dispatch> crate::UnboundedLogRefinesSimpleLog<DT> for RefinementProof<D
     }
 }
 
-////////////////////////////////////////////////////////////////////////////////////////////////////
-// Interpretation Function
-////////////////////////////////////////////////////////////////////////////////////////////////////
 spec fn interp_log<DT: Dispatch>(global_tail: nat, log: Map<nat, LogEntry<DT>>) -> Seq<
     DT::WriteOperation,
 > {
@@ -8010,9 +6600,6 @@ spec fn interp<DT: Dispatch>(s: UnboundedLog::State<DT>) -> SimpleLog::State<DT>
     }
 }
 
-////////////////////////////////////////////////////////////////////////////////////////////////////
-// Refinement Proof
-////////////////////////////////////////////////////////////////////////////////////////////////////
 #[verifier::external_body]
 proof fn refinement_inv<DT: Dispatch>(vars: UnboundedLog::State<DT>)
     requires
@@ -8098,18 +6685,11 @@ proof fn state_at_version_refines<DT: Dispatch>(
     unimplemented!()
 }
 
-} // verus!
-// end verus!
-// ===== END INLINED DEPENDENCY: src/spec/unbounded_log_refines_simplelog.rs =====
+} 
 }
 
-// cyclic buffer
 #[macro_use]
 pub mod cyclicbuffer {
-// ===== BEGIN INLINED DEPENDENCY: src/spec/cyclicbuffer.rs =====
-// Verified Node Replication Library
-// SPDX-License-Identifier: Apache-2.0 OR MIT
-//
 #[allow(unused_imports)]
 use verus_builtin::*;
 use verus_builtin_macros::*;
@@ -8129,31 +6709,13 @@ use super::utils::*;
 #[cfg(verus_keep_ghost)]
 use vstd::prelude::OptionAdditionalFns;
 
-////////////////////////////////////////////////////////////////////////////////////////////////////
-//
-// Cyclic Buffer
-// =============
-//
-// The cyclic buffer is a bounded log with multiple readers and writers. A writer will check whether
-// there's enough space in the log and the reserve space to place its update operations into the log.
-// Log space can be reclaimed once all readers have advanced their read pointers accordingly.
-//
-////////////////////////////////////////////////////////////////////////////////////////////////////
 
 verus! {
 
-/// Logical Log Index
-///
-/// In contrast to the unbounded log, the log entries can be "negative". This is used for the
-/// initialization where all entries are initialized with the range [-LOG_SIZE, 0)
 pub type LogicalLogIdx = int;
 
-/// The size of the log. XXX: can we get rid of this?
 use crate::constants::LOG_SIZE;
 
-/// An entry in the log
-///
-///
 pub tracked struct StoredType<DT: Dispatch> {
     pub cell_perms: PointsTo<Option<ConcreteLogEntry<DT>>>,
     pub log_entry: Option<UnboundedLog::log<DT>>,
@@ -8165,7 +6727,6 @@ pub open spec fn stored_type_inv<DT: Dispatch>(
     cell_id: CellId,
     unbounded_log_instance: UnboundedLog::Instance<DT>,
 ) -> bool {
-    // also match the cell id
     &&& st.cell_perms.mem_contents().is_init()
     &&& st.cell_perms@.pcell == cell_id
     &&& idx >= 0 ==> {
@@ -8182,27 +6743,15 @@ pub open spec fn stored_type_inv<DT: Dispatch>(
     }
 }
 
-////////////////////////////////////////////////////////////////////////////////////////////////////
-// Read Only Operations
-////////////////////////////////////////////////////////////////////////////////////////////////////
-///
 #[is_variant]
 pub tracked enum ReaderState<DT: Dispatch> {
-    ///
     Starting {
-        ///
         start: LogIdx,
     },
-    /// reader in the range
     Range { start: LogIdx, end: LogIdx, cur: LogIdx },
-    /// Guard
     Guard { start: LogIdx, end: LogIdx, cur: LogIdx, val: StoredType<DT> },
 }
 
-////////////////////////////////////////////////////////////////////////////////////////////////////
-// Combiner
-////////////////////////////////////////////////////////////////////////////////////////////////////
-/// represents the combiner
 #[is_variant]
 pub tracked enum CombinerState<DT: Dispatch> {
     Idle,
@@ -8218,13 +6767,13 @@ impl<DT: Dispatch> CombinerState<DT> {
             CombinerState::Appending { cur_idx, tail } => {
                 match other {
                     CombinerState::Reading(ReaderState::Guard { start, end, cur, val }) => {
-                        (cur_idx > cur)  // self is after the other
-                         || (tail <= cur)  // self is before the other
+                        (cur_idx > cur)  
+                         || (tail <= cur)  
 
                     },
                     CombinerState::Appending { cur_idx: cur_idx2, tail: tail2 } => {
-                        (cur_idx >= tail2)  // self is after the other
-                         || (tail <= cur_idx2)  // self is before the other
+                        (cur_idx >= tail2)  
+                         || (tail <= cur_idx2)  
 
                     },
                     _ => { true },
@@ -8243,56 +6792,36 @@ tokenized_state_machine! { CyclicBuffer<DT: Dispatch> {
         #[sharding(constant)]
         pub cell_ids: Seq<CellId>,
 
-        /// the size of the buffer
         #[sharding(constant)]
         pub buffer_size: LogIdx,
 
-        /// the number of replicas
         #[sharding(constant)]
         pub num_replicas: nat,
 
-        // Logical index into the above slice at which the log starts.
-        // Note: the head does _not_ necessarily advance monotonically.
-        // (It could go backwards in the event of two threads overlapping
-        // in their AdvancingHead cycles.)
-        // It's only guaranteed to be <= all the local heads.
 
         #[sharding(variable)]
         pub head: LogIdx,
 
-        // Logical index into the above slice at which the log ends.
-        // New appends go here.
 
         #[sharding(variable)]
         pub tail: LogIdx,
 
-        // Array consisting of the local head of each replica registered with the log.
-        // Required for garbage collection; since replicas make progress over the log
-        // independently, we want to make sure that we don't garbage collect operations
-        // that haven't been executed by all replicas.
 
         #[sharding(map)]
-        pub local_versions: Map<NodeId, LogIdx>,    // previously called local_tails
+        pub local_versions: Map<NodeId, LogIdx>,    
 
-        /// the contents of the buffer/log.
         #[sharding(storage_map)]
         pub contents: Map<LogicalLogIdx, StoredType<DT>>,
 
-        // The 'alive' bit flips back and forth. So sometimes 'true' means 'alive',
-        // and sometimes 'false' means 'alive'.
-        // entry is an index into the buffer (0 <= entry < LOG_SIZE)
 
         #[sharding(map)]
-        pub alive_bits: Map</* entry: */ LogIdx, /* bit: */ bool>,
+        pub alive_bits: Map<             LogIdx,            bool>,
 
         #[sharding(map)]
         pub combiner: Map<NodeId, CombinerState<DT>>
     }
 
 
-    ////////////////////////////////////////////////////////////////////////////////////////////
-    // Invariant
-    ////////////////////////////////////////////////////////////////////////////////////////////
 
 
     #[invariant]
@@ -8369,38 +6898,24 @@ tokenized_state_machine! { CyclicBuffer<DT: Dispatch> {
     pub closed spec fn reader_state_valid(&self, node_id: NodeId, rs: ReaderState<DT>) -> bool {
         match rs {
             ReaderState::Starting{start} => {
-                // the starting value should match the local tail
                 &&& start == self.local_versions[node_id]
                 &&& start <= self.tail
             }
             ReaderState::Range{start, end, cur} => {
-                // the start must be our local tail
                 &&& self.local_versions[node_id] == start
-                // the start must be before the end, can be equial if ltail == tail
                 &&& start <= end
-                // we've read the tail, but the tail may have moved
                 &&& (self.tail as int) - (self.buffer_size as int) <= end <= (self.tail as int)
-                // current is between start and end
                 &&& start <= cur <= end
-                // the entries up to, and including  current must be alive
                 &&& (forall |i| start <= i < cur ==> log_entry_is_alive(self.alive_bits, i, self.buffer_size))
-                // the entries up to, and including current must have something in the log
                 &&& (forall |i| start <= i < cur ==> self.contents.contains_key(i))
             }
             ReaderState::Guard{start, end, cur, val} => {
-                // the start must be our local tail
                 &&& self.local_versions[node_id] == start
-                // the start must be before the end, can be equial if ltail == tail
                 &&& start <= end
-                // we've read the tail, but the tail may have moved
                 &&& (self.tail as int) - (self.buffer_size as int) <= end <= (self.tail as int)
-                // current is between start and end
                 &&& start <= cur < end
-                // the entries up to, and including  current must be alive
                 &&& (forall |i| start <= i <= cur ==> log_entry_is_alive(self.alive_bits, i, self.buffer_size))
-                // the entries up to, and including current must have something in the log
                 &&& (forall |i| start <= i <= cur ==> self.contents.contains_key(i))
-                // the thing we are ready should match the log content
                 &&& self.contents.contains_key(cur as int)
                 &&& self.contents[cur as int] === val
             }
@@ -8416,25 +6931,18 @@ tokenized_state_machine! { CyclicBuffer<DT: Dispatch> {
     pub closed spec fn combiner_valid(&self, node_id: NodeId, cs: CombinerState<DT>) -> bool {
         match cs {
             CombinerState::Idle => true,
-            CombinerState::Reading(_) => true, // see reader_state_valid instead
+            CombinerState::Reading(_) => true, 
             CombinerState::AdvancingHead{idx, min_local_version} => {
-                // the index is always within the defined replicas
                 &&& idx <= self.num_replicas as nat
-                // forall replicas we'e seen, min_local_version is smaller than all localTails
                 &&& (forall |n| 0 <= n < idx ==> min_local_version <= self.local_versions[n])
             }
             CombinerState::AdvancingTail{observed_head} => {
-                // the observed head is smaller than all local tails
                 &&& (forall |n| 0 <= n < self.num_replicas as nat ==> observed_head <= self.local_versions[n])
             }
             CombinerState::Appending{cur_idx, tail} => {
-                // the current index is between local tails and tail.
                 &&& self.local_versions[node_id] <= cur_idx <= tail
-                // the read tail is smaller or equal to the current tail.
                 &&& tail <= self.tail
-                //
                 &&& (self.tail as int) - (self.buffer_size as int) <= cur_idx <= (self.tail as int)
-                // all the entries we're writing must not be alive.
                 &&& (forall |i : nat| cur_idx <= i < tail ==> (
                   !(log_entry_is_alive(self.alive_bits, i as int, self.buffer_size))))
             }
@@ -8442,9 +6950,6 @@ tokenized_state_machine! { CyclicBuffer<DT: Dispatch> {
     }
 
 
-    ////////////////////////////////////////////////////////////////////////////////////////////
-    // Initialization
-    ////////////////////////////////////////////////////////////////////////////////////////////
 
     init!{
         initialize(buffer_size: nat, num_replicas: nat, contents: Map<int, StoredType<DT>>, cell_ids: Seq<CellId>, unbounded_log_instance: UnboundedLog::Instance<DT>, ) {
@@ -8470,14 +6975,7 @@ tokenized_state_machine! { CyclicBuffer<DT: Dispatch> {
     }
 
 
-    ////////////////////////////////////////////////////////////////////////////////////////////////
-    // Reader Transitions
-    ////////////////////////////////////////////////////////////////////////////////////////////////
-    //
-    // The reader transitions traverse the log and read the entries in it.
-    //
 
-    /// start the reader on the provided node, the combiner must be in idle state.
     transition!{
         reader_start(node_id: NodeId) {
             have   local_versions    >= [ node_id => let local_head ];
@@ -8489,7 +6987,6 @@ tokenized_state_machine! { CyclicBuffer<DT: Dispatch> {
         }
     }
 
-    /// enter the reading phase
     transition!{
         reader_enter(node_id: NodeId) {
             remove combiner -= [
@@ -8502,7 +6999,6 @@ tokenized_state_machine! { CyclicBuffer<DT: Dispatch> {
         }
     }
 
-    /// read the value of the current entry to process it
     transition!{
         reader_guard(node_id: NodeId) {
             remove combiner -= [
@@ -8519,11 +7015,9 @@ tokenized_state_machine! { CyclicBuffer<DT: Dispatch> {
                 node_id => CombinerState::Reading( ReaderState::Guard{ start, end, cur, val })
             ];
 
-            // assert(stored_type_inv(val, cur as int));
         }
     }
 
-    /// the value of the log must not change while we're processing it
     property!{
         guard_guards(node_id: NodeId) {
             have combiner >= [
@@ -8535,7 +7029,6 @@ tokenized_state_machine! { CyclicBuffer<DT: Dispatch> {
         }
     }
 
-    /// finish processing the entry, increase current pointer
     transition!{
         reader_unguard(node_id: NodeId) {
             remove combiner -= [
@@ -8547,7 +7040,6 @@ tokenized_state_machine! { CyclicBuffer<DT: Dispatch> {
         }
     }
 
-    /// finish the reading whith, place the combiner into the idle state
     transition!{
         reader_finish(node_id: NodeId) {
             remove combiner -= [
@@ -8562,7 +7054,6 @@ tokenized_state_machine! { CyclicBuffer<DT: Dispatch> {
         }
     }
 
-    /// abort reading, place the combiner back into the idle state
     transition!{
         reader_abort(node_id: NodeId) {
             remove combiner -= [ node_id => let CombinerState::Reading(r) ];
@@ -8573,14 +7064,7 @@ tokenized_state_machine! { CyclicBuffer<DT: Dispatch> {
     }
 
 
-    ////////////////////////////////////////////////////////////////////////////////////////////////
-    // Advance Head Transitions
-    ////////////////////////////////////////////////////////////////////////////////////////////////
-    //
-    // The advance head transitions update the global head of the log with the minimum value
-    // of all local heads.
 
-    /// start the advancing of the head by reading the local head of node 0
     transition!{
         advance_head_start(node_id: NodeId) {
             have   local_versions >= [ 0 => let local_head_0 ];
@@ -8589,7 +7073,6 @@ tokenized_state_machine! { CyclicBuffer<DT: Dispatch> {
         }
     }
 
-    /// read the next local head
     transition!{
         advance_head_next(node_id: NodeId) {
             remove combiner -= [ node_id => let CombinerState::AdvancingHead { idx, min_local_version } ];
@@ -8602,7 +7085,6 @@ tokenized_state_machine! { CyclicBuffer<DT: Dispatch> {
         }
     }
 
-    /// update the head value with the current collected miniumu
     transition!{
         advance_head_finish(node_id: NodeId) {
             remove combiner -= [ node_id => let CombinerState::AdvancingHead { idx, min_local_version } ];
@@ -8613,7 +7095,6 @@ tokenized_state_machine! { CyclicBuffer<DT: Dispatch> {
         }
     }
 
-    /// stop the advancing head transition without uppdating the head
     transition!{
         advance_head_abort(node_id: NodeId) {
             remove combiner -= [ node_id => let CombinerState::AdvancingHead { .. } ];
@@ -8622,15 +7103,7 @@ tokenized_state_machine! { CyclicBuffer<DT: Dispatch> {
     }
 
 
-    ////////////////////////////////////////////////////////////////////////////////////////////////
-    // Advance Tail Transitions
-    ////////////////////////////////////////////////////////////////////////////////////////////////
-    //
-    // The advance tail transition bump the tail of the log to make space for new entries.
-    // We first read the current head as this defines the maximum value the tail can be advanced to
-    // as we need to ensure that we do not overrun existing entries.
 
-    /// start the advancing of the head tail by reading the head value
     transition!{
         advance_tail_start(node_id: NodeId) {
             remove combiner -= [ node_id => CombinerState::Idle ];
@@ -8638,17 +7111,14 @@ tokenized_state_machine! { CyclicBuffer<DT: Dispatch> {
         }
     }
 
-    /// advance the tail to the new value
     transition!{
         advance_tail_finish(node_id: NodeId, new_tail: nat) {
             remove combiner -= [ node_id => let CombinerState::AdvancingTail { observed_head } ];
             add    combiner += [ node_id => CombinerState::Appending { cur_idx: pre.tail, tail: new_tail } ];
             update tail      = new_tail;
 
-            // only allow advances and must not overwrite still active entries
             require(pre.tail <= new_tail <= observed_head + pre.buffer_size);
 
-            // construct the entries in the log we withdraw
             birds_eye let withdrawn = Map::new(
                 Set::range(pre.tail - pre.buffer_size, new_tail - pre.buffer_size),
                 |i: int| pre.contents[i],
@@ -8677,7 +7147,6 @@ tokenized_state_machine! { CyclicBuffer<DT: Dispatch> {
         }
     }
 
-    /// aborts the advancing tail transitions
     transition!{
         advance_tail_abort(node_id: NodeId) {
             remove combiner -= [ node_id => let CombinerState::AdvancingTail { .. } ];
@@ -8686,9 +7155,6 @@ tokenized_state_machine! { CyclicBuffer<DT: Dispatch> {
     }
 
 
-    ////////////////////////////////////////////////////////////////////////////////////////////////
-    // Advance Tail Transitions
-    ////////////////////////////////////////////////////////////////////////////////////////////////
 
 
     transition!{
@@ -8708,7 +7174,6 @@ tokenized_state_machine! { CyclicBuffer<DT: Dispatch> {
         }
     }
 
-    /// finish the appending parts
     transition!{
         append_finish(node_id: NodeId) {
             remove combiner -= [ node_id => let CombinerState::Appending { cur_idx, tail } ];
@@ -8718,9 +7183,6 @@ tokenized_state_machine! { CyclicBuffer<DT: Dispatch> {
         }
     }
 
-    ////////////////////////////////////////////////////////////////////////////////////////////////
-    // Proofs
-    ////////////////////////////////////////////////////////////////////////////////////////////////
 
     #[inductive(initialize)]
     fn initialize_inductive(post: Self, buffer_size: nat, num_replicas: nat, contents: Map<int, StoredType<DT>>, cell_ids: Seq<CellId>,  unbounded_log_instance: UnboundedLog::Instance<DT>, ) {
@@ -8781,13 +7243,11 @@ tokenized_state_machine! { CyclicBuffer<DT: Dispatch> {
         assert(forall |i| min_local_head <= i < min_local_head + post.buffer_size && i != myidx ==>
             log_entry_is_alive(pre.alive_bits, i, pre.buffer_size) == log_entry_is_alive(post.alive_bits, i, post.buffer_size));
 
-        // overlap check
         assert forall |i, j| post.combiner.contains_key(i) && post.combiner.contains_key(j) && i != j
             implies post.combiner[i].no_overlap_with(post.combiner[j]) by {
             assert(pre.combiner[i].no_overlap_with(pre.combiner[j]));
         }
 
-        // combiner state
         assert forall |nid| #[trigger] post.combiner.contains_key(nid) implies
             post.combiner_valid(nid, post.combiner[nid]) by
         {
@@ -8827,7 +7287,6 @@ tokenized_state_machine! { CyclicBuffer<DT: Dispatch> {
         let min_local_versions_pre = map_min_value(pre.local_versions, (pre.num_replicas - 1) as nat);
         let min_local_versions_post = map_min_value(post.local_versions, (post.num_replicas - 1) as nat);
 
-        // there was a change in the minimum of the local heads, meaning the minimum was updated by us.
         if min_local_versions_pre != min_local_versions_post {
 
             map_min_value_smallest(pre.local_versions, (pre.num_replicas - 1) as nat);
@@ -8875,7 +7334,6 @@ proof fn map_min_value_smallest(m: Map<NodeId, nat>, idx: nat)
     unimplemented!()
 }
 
-/// converts the logical to the physical log index
 pub open spec fn log_entry_idx(logical: LogicalLogIdx, buffer_size: nat) -> LogIdx
     recommends
         buffer_size == LOG_SIZE,
@@ -8883,7 +7341,6 @@ pub open spec fn log_entry_idx(logical: LogicalLogIdx, buffer_size: nat) -> LogI
     (logical % (buffer_size as int)) as nat
 }
 
-// a % b == 0 to a == b * (a / b)
 #[verifier::external_body]
 pub proof fn log_entry_idx_wrap_around(start: nat, buffer_size: nat, idx: nat)
     requires
@@ -8897,7 +7354,6 @@ pub proof fn log_entry_idx_wrap_around(start: nat, buffer_size: nat, idx: nat)
     unimplemented!()
 }
 
-/// predicate to check whether a log entry is alive
 pub open spec fn log_entry_is_alive(
     alive_bits: Map<LogIdx, bool>,
     logical: LogicalLogIdx,
@@ -8910,7 +7366,6 @@ pub open spec fn log_entry_is_alive(
     alive_bits[phys_id as nat] == log_entry_alive_value(logical, buffer_size)
 }
 
-/// the value the alive but must have for the entry to be alive, this flips on wrap around
 pub open spec fn log_entry_alive_value(logical: LogicalLogIdx, buffer_size: nat) -> bool
     recommends
         buffer_size == LOG_SIZE,
@@ -8987,16 +7442,10 @@ pub proof fn log_entry_alive_value_wrap_around(i: LogicalLogIdx, buffer_size: na
     unimplemented!()
 }
 
-} // verus!
-// ===== END INLINED DEPENDENCY: src/spec/cyclicbuffer.rs =====
+} 
 }
 
-// the flag combiner
 pub mod flat_combiner {
-// ===== BEGIN INLINED DEPENDENCY: src/spec/flat_combiner.rs =====
-// Verified Node Replication Library
-// SPDX-License-Identifier: Apache-2.0 OR MIT
-//
 #[allow(unused_imports)]
 use verus_builtin::*;
 use verus_builtin_macros::*;
@@ -9006,18 +7455,15 @@ use vstd::prelude::*;
 use verus_state_machines_macros::*;
 
 use super::types::*;
-// use super::utils::*;
 
 verus! {
 
-/// represents the state of a client thread
 #[is_variant]
 pub tracked enum ClientState {
     Idle,
     Waiting(ReqId),
 }
 
-/// represents the state of a request in the queue
 #[is_variant]
 pub tracked enum SlotState {
     Empty,
@@ -9037,7 +7483,6 @@ impl SlotState {
     }
 }
 
-/// represents the combiner state
 #[is_variant]
 pub tracked enum CombinerState {
     Collecting(Seq<Option<ReqId>>),
@@ -9073,15 +7518,12 @@ impl CombinerState {
     }
 }
 
-// The flat combiner state machine
 tokenized_state_machine! {
 FlatCombiner {
     fields {
-        /// the number of threads
         #[sharding(constant)]
         pub num_threads: nat,
 
-        /// clients of the replica
         #[sharding(map)]
         pub clients: Map<ThreadId, ClientState>,
 
@@ -9092,20 +7534,14 @@ FlatCombiner {
         pub combiner: CombinerState,
     }
 
-    ////////////////////////////////////////////////////////////////////////////////////////////
-    // Invariant
-    ////////////////////////////////////////////////////////////////////////////////////////////
 
     #[invariant]
     pub fn inv_complete(&self) -> bool {
-        // clients are complete
         &&& (forall |i| self.clients.contains_key(i) <==> i < self.num_threads)
-        // slots are complete
         &&& (forall |i| self.slots.contains_key(i) <==> i < self.num_threads)
     }
 
 
-    // && Complete(x)
     #[invariant]
     pub fn inv_client_slot_empty(&self) -> bool {
         forall |i:nat| #[trigger] self.clients.contains_key(i)
@@ -9141,15 +7577,13 @@ FlatCombiner {
     pub fn inv_combiner_slots_not_in_progress(&self) -> bool {
         match self.combiner {
             CombinerState::Collecting(elems) => {
-                // fff
                 &&& (forall |i: nat| 0 <= i < elems.len() && elems[i as int].is_none()
-                    ==> !(#[trigger] self.slots[i]).is_InProgress()) //Self::slot_in_progress(self.slots, i)))
-                // everything above is not in progress
+                    ==> !(#[trigger] self.slots[i]).is_InProgress()) 
                 &&& (forall |i: nat| elems.len() <= i < self.num_threads ==> !self.slots[i].is_InProgress())
             },
             CombinerState::Responding(elems, idx) => {
                 &&& (forall |i: nat| 0 <= i < elems.len() && elems[i as int].is_none()
-                    ==> !(#[trigger] self.slots[i]).is_InProgress()) //Self::slot_in_progress(self.slots, i)))
+                    ==> !(#[trigger] self.slots[i]).is_InProgress()) 
                 &&& (forall |i: nat| 0 <= i < idx ==> !self.slots[i].is_InProgress())
             },
         }
@@ -9172,9 +7606,6 @@ FlatCombiner {
 
 
 
-    ////////////////////////////////////////////////////////////////////////////////////////////
-    // Initialization
-    ////////////////////////////////////////////////////////////////////////////////////////////
 
 
     init!{
@@ -9189,12 +7620,8 @@ FlatCombiner {
     }
 
 
-    ////////////////////////////////////////////////////////////////////////////////////////////
-    // Combiner Collection of Requests
-    ////////////////////////////////////////////////////////////////////////////////////////////
 
 
-    /// the combiner collects no request from the client
     transition!{
         combiner_collect_empty() {
             require(pre.combiner.is_Collecting());
@@ -9208,7 +7635,6 @@ FlatCombiner {
     }
 
 
-    /// the combiner collects a request from the client
     transition!{
         combiner_collect_request() {
             require(pre.combiner.is_Collecting());
@@ -9223,7 +7649,6 @@ FlatCombiner {
     }
 
 
-    /// Safety Condition: the slot state is not in progress when collecting
     property!{
         pre_combiner_collect_request() {
             require(pre.combiner.is_Collecting());
@@ -9235,12 +7660,8 @@ FlatCombiner {
         }
     }
 
-    ////////////////////////////////////////////////////////////////////////////////////////////
-    // Combiner Responding to Requests
-    ////////////////////////////////////////////////////////////////////////////////////////////
 
 
-    /// combiner starts responding to requests
     transition!{
         combiner_responding_start() {
             require(pre.combiner.is_Collecting());
@@ -9250,7 +7671,6 @@ FlatCombiner {
         }
     }
 
-    /// combiner responds to an empty request
     transition!{
         combiner_responding_empty() {
             require(pre.combiner.is_Responding());
@@ -9263,7 +7683,6 @@ FlatCombiner {
         }
     }
 
-    /// combiner responds to a request
     transition!{
         combiner_responding_result() {
             require(pre.combiner.is_Responding());
@@ -9281,7 +7700,6 @@ FlatCombiner {
         }
     }
 
-    /// combiner is done responding to requests
     transition!{
         combiner_responding_done() {
             require(pre.combiner.is_Responding());
@@ -9292,12 +7710,8 @@ FlatCombiner {
     }
 
 
-    ////////////////////////////////////////////////////////////////////////////////////////////
-    // Sending
-    ////////////////////////////////////////////////////////////////////////////////////////////
 
 
-    /// Safety Condition: the slot state is not in progress when collecting
     property!{
         pre_send_request(tid: ThreadId) {
 
@@ -9318,7 +7732,6 @@ FlatCombiner {
         }
     }
 
-    /// Safety Condition: the slot state is not in progress when collecting
     property!{
         pre_recv_response(tid: ThreadId) {
 
@@ -9341,9 +7754,6 @@ FlatCombiner {
     }
 
 
-    ////////////////////////////////////////////////////////////////////////////////////////////
-    // Proofs
-    ////////////////////////////////////////////////////////////////////////////////////////////
 
 
     #[inductive(initialize)]
@@ -9398,19 +7808,13 @@ FlatCombiner {
             ==> #[trigger] Self::slot_in_progress(post.slots, i) == Self::slot_in_progress(pre.slots, i));
     }
 
-}}  // tokenized_state_machine! { FlatCombiner { ...
+}}  
 
 
-} // verus!
-// ===== END INLINED DEPENDENCY: src/spec/flat_combiner.rs =====
+} 
 }
 
-// the RW lock
 pub mod rwlock {
-// ===== BEGIN INLINED DEPENDENCY: src/spec/rwlock.rs =====
-// Verified Node Replication Library
-// SPDX-License-Identifier: Apache-2.0 OR MIT
-//
 #[allow(unused_imports)]
 use verus_builtin::*;
 use verus_builtin_macros::*;
@@ -9539,7 +7943,6 @@ tokenized_state_machine!{
 
         transition!{
             shared_release(val: (int, T)) {
-                // require(pre.user_inv.contains(val.1));
                 remove shared_guard -= {val};
 
                 let r = val.0;
@@ -9572,7 +7975,6 @@ tokenized_state_machine!{
         }
 
 
-        ///// Invariants and proofs
 
         #[invariant]
         pub fn sto_user_inv(&self) -> bool {
@@ -9714,10 +8116,8 @@ tokenized_state_machine!{
     }
 }
 
-} // verus!
-// ===== END INLINED DEPENDENCY: src/spec/rwlock.rs =====
+} 
 }
-// ===== END INLINED DEPENDENCY: src/spec/mod.rs =====
 }
 
 use crate::spec::simple_log::SimpleLog;
@@ -9730,43 +8130,18 @@ use crate::constants::MAX_REPLICAS;
 
 verus! {
 
-// tell the verifier that the size of usize is 8.
 global size_of usize == 8;
 
-////////////////////////////////////////////////////////////////////////////////////////////////////
-// GLobal Types
-////////////////////////////////////////////////////////////////////////////////////////////////////
-/// the type of a replica identifier
 pub type ReplicaId = usize;
 
-// $line_count$Trusted$
-/// the identifier of a node / replica
 pub type NodeId = nat;
 
-// $line_count$Trusted$
-/// the index into the log
 pub type LogIdx = nat;
 
-// $line_count$Trusted$
-/// the identifier of a update or read request
 pub type ReqId = nat;
 
-// $line_count$Trusted$
-/// the identifier of a thread on a given replica
 pub type ThreadId = nat;
 
-// $line_count$Trusted$
-////////////////////////////////////////////////////////////////////////////////////////////////////
-// Top-level Theorem
-////////////////////////////////////////////////////////////////////////////////////////////////////
-// the following theorems establish the correctness of the execution adhering to the specification.
-// See the corresponding refinement proofs etc.
-// We leverage traits that establish the required pre- and post-conditions (trusted), then we use
-// the trait constraints to show that the actual types implement the trait correctly.
-/// Theorem 1: The SimpleLog atomic state machine refines the trusted specification of the data
-///            structure expressed as an asynchronous singleton.
-///
-/// This theorem shows the linearizability of the SimpleLog atomic state machine.
 #[verus::trusted]
 proof fn theorem_1<DT: Dispatch + Sync>()
     ensures
@@ -9777,9 +8152,6 @@ proof fn theorem_1<DT: Dispatch + Sync>()
 {
 }
 
-/// Theorem 2: The UnboundedLog Global State Machine refines the SimpleLog atomic state machine.
-///
-/// This shows that the replicas are evolving correctly with respect to the SimpleLog atomic state machine.
 #[verus::trusted]
 proof fn theorem_2<DT: Dispatch + Sync>()
     ensures
@@ -9790,8 +8162,6 @@ proof fn theorem_2<DT: Dispatch + Sync>()
 {
 }
 
-/// Theorem 3: The Node Replication implementation refines the Unbounded Log and establishes
-///            local/global transition system relationship.
 #[verus::trusted]
 proof fn theorem_3<DT: Dispatch + Sync>()
     ensures
@@ -9799,113 +8169,61 @@ proof fn theorem_3<DT: Dispatch + Sync>()
 {
 }
 
-////////////////////////////////////////////////////////////////////////////////////////////////////
-// Thread Token
-////////////////////////////////////////////////////////////////////////////////////////////////////
-/// Trusted interface of a thread token used in the proofs.
-///
-/// TODO: change this to pub(trait)
 #[verus::trusted]
 pub trait ThreadTokenT<DT: Dispatch, Replica> {
-    /// returns true if the thread token is well-formed
     spec fn wf(&self, replica: &Replica) -> bool;
 
-    /// obtains the replica identifier this thread is registered with
     spec fn replica_id_spec(&self) -> nat;
 }
 
-////////////////////////////////////////////////////////////////////////////////////////////////////
-// Dispatch Trait
-////////////////////////////////////////////////////////////////////////////////////////////////////
-/// The dispatch trait defines the update/readonly operations applied to the replicate data structure
-/// and the return types. For a data structure to be used with the node-replication library, it must
-/// implement this trait.
-///
-/// Read-only Operations: These operations do not modify the state of the data structure.
-/// The node-replication library will execute [`Dispatch::dispatch`] method on the data structure
-/// with the provided `ReadOperation` argument and return a `Response` value.
-///
-/// Write Operations: These operations modify the state of the data structure. The node-replication
-/// library will execute [`Dispatch::dispatch_mut`] method on the data structure with the provided
-/// `WriteOperation` argument and return a `Response` value.
-///
-/// The dispatch trait interface is trusted by the verifier as it is the high-level interface that
-/// the data structure is verified against.
-///
 #[verus::trusted]
 pub trait Dispatch: Sized {
-    /// Type of a read-only operation. Operations of this type do not mutate the data structure.
     type ReadOperation: Sized;
 
-    /// Type of a write operation. Operations of this type may mutate the data structure.
-    /// Write operations are sent between replicas.
     type WriteOperation: Sized + Send;
 
-    /// Type of the response of either a read or write operation.
     type Response: Sized;
 
-    /// Type of the view of the data structure for specs and proofs.
     type View;
 
-    /// Constructs the view of the data structure.
-    ///
-    /// This lifts the concrete, executable representation of the data structure into a
-    /// view that can be reasoned about in specs and proofs.
-    /// This provides support for the `@` operator on the data structure
     spec fn view(&self) -> Self::View;
 
-    /// Initializes the data structure.
     fn init() -> (res: Self)
         ensures
             res@ == Self::init_spec(),
     ;
 
-    /// Clones a write operation to be copied to and read from the shared log.
     fn clone_write_op(op: &Self::WriteOperation) -> (res: Self::WriteOperation)
         ensures
             op == res,
     ;
 
-    /// Clones a response value such that it can be returned to the waiting thread
     fn clone_response(op: &Self::Response) -> (res: Self::Response)
         ensures
             op == res,
     ;
 
-    /// Executes a read-only operation against the data structure and returns the result.
     fn dispatch(&self, op: Self::ReadOperation) -> (result: Self::Response)
         ensures
             Self::dispatch_spec(self@, op) == result,
     ;
 
-    /// Executes a write operation against the data structure and returns the result.
     fn dispatch_mut(&mut self, op: Self::WriteOperation) -> (result: Self::Response)
         ensures
             Self::dispatch_mut_spec(old(self)@, op) == (final(self)@, result),
     ;
 
-    /// specification of the [`Dispatch::init`] function.
     spec fn init_spec() -> Self::View;
 
-    /// specification of the [`Dispatch::dispatch`] function.
     spec fn dispatch_spec(ds: Self::View, op: Self::ReadOperation) -> Self::Response;
 
-    /// specification of the [`Dispatch::dispatch_mut`] function.
     spec fn dispatch_mut_spec(ds: Self::View, op: Self::WriteOperation) -> (
         Self::View,
         Self::Response,
     );
 }
 
-////////////////////////////////////////////////////////////////////////////////////////////////////
-// Node Replicated Trait
-////////////////////////////////////////////////////////////////////////////////////////////////////
-/// Affinity Function
-///
-/// This structure is a wrapper around a function that changes the memory affinity
-/// when allocating/initializing replicas during the initialization of the data structure.
-///
-#[verifier(external_body)]  /* vattr */
+#[verifier(external_body)]             
 #[verus::trusted]
 pub struct AffinityFn {
     f: Box<dyn Fn(ReplicaId)>,
@@ -9913,47 +8231,31 @@ pub struct AffinityFn {
 
 #[verus::trusted]
 impl AffinityFn {
-    /// creates a new AffinityFn object that points to the given affinity function.
-    #[verifier(external_body)]  /* vattr */
+    #[verifier(external_body)]             
     pub fn new(f: impl Fn(ReplicaId) + 'static) -> Self {
         Self { f: Box::new(f) }
     }
 
-    /// calls the affinity function with the given replica id.
-    #[verifier(external_body)]  /* vattr */
+    #[verifier(external_body)]             
     pub fn call(&self, rid: ReplicaId) {
         (self.f)(rid)
     }
 }
 
-/// Node Replicated Trait
-///
-/// This is the top-level interface that users will interact with.
-///
 #[verus::trusted]
 pub trait NodeReplicatedT<DT: Dispatch + Sync>: Sized {
-    /// The type of a replica
     type Replica;
 
-    /// The type of the replica id
     type ReplicaId;
 
-    /// the type of the thread token
     type TT: ThreadTokenT<DT, Self::Replica>;
 
-    /// defines the well-formedness condition on the replicated data structure
     spec fn wf(&self) -> bool;
 
-    /// obtains a vector of replicas
     spec fn replicas(&self) -> Vec<Box<Self::Replica>>;
 
-    /// obtainst the instance to the unbounded log
     spec fn unbounded_log_instance(&self) -> UnboundedLog::Instance<DT>;
 
-    /// creates a new instance of the replicated data structure with the given number of replicas.
-    ///
-    /// The number of replicas must be at least 1 and not exceed the pre-defined maximum.
-    /// It ensures that the data structure is well-formed and has the correct number of replicas.
     fn new(num_replicas: usize, chg_mem_affinity: AffinityFn) -> (res: Self)
         requires
             0 < num_replicas && num_replicas <= MAX_REPLICAS,
@@ -9961,7 +8263,6 @@ pub trait NodeReplicatedT<DT: Dispatch + Sync>: Sized {
             res.wf() && res.replicas().len() == num_replicas,
     ;
 
-    /// registers a thread with the given replica id.
     fn register(&mut self, replica_id: ReplicaId) -> (result: Option<Self::TT>)
         requires
             old(self).wf(),
@@ -9970,7 +8271,6 @@ pub trait NodeReplicatedT<DT: Dispatch + Sync>: Sized {
             result matches Some(r) ==> r.wf(&final(self).replicas()[replica_id as int]),
     ;
 
-    /// executes an update operation against the data structure.
     fn execute_mut(
         &self,
         op: DT::WriteOperation,
@@ -9981,7 +8281,7 @@ pub trait NodeReplicatedT<DT: Dispatch + Sync>: Sized {
         (Self::TT, Tracked<UnboundedLog::local_updates<DT>>),
     >)
         requires
-            self.wf(),  // wf global node
+            self.wf(),  
             tkn.wf(&self.replicas().spec_index(tkn.replica_id_spec() as int)),
             is_update_ticket(ticket@, op, self.unbounded_log_instance()),
         ensures
@@ -9994,7 +8294,6 @@ pub trait NodeReplicatedT<DT: Dispatch + Sync>: Sized {
             result matches Err(err) ==> err == (tkn, ticket),
     ;
 
-    /// executes a read-only operation against the data structure.
     fn execute(
         &self,
         op: DT::ReadOperation,
@@ -10005,7 +8304,7 @@ pub trait NodeReplicatedT<DT: Dispatch + Sync>: Sized {
         (Self::TT, Tracked<UnboundedLog::local_reads<DT>>),
     >)
         requires
-            self.wf(),  // wf global node
+            self.wf(),  
             tkn.wf(&self.replicas()[tkn.replica_id_spec() as int]),
             is_readonly_ticket(ticket@, op, self.unbounded_log_instance()),
         ensures
@@ -10019,24 +8318,18 @@ pub trait NodeReplicatedT<DT: Dispatch + Sync>: Sized {
     ;
 }
 
-/// Spec function that checks whether the struct implements the trait properly.
 #[verus::trusted]
 spec fn implements_NodeReplicated<DT: Dispatch + Sync, N: NodeReplicatedT<DT>>() -> bool {
     true
 }
 
-////////////////////////////////////////////////////////////////////////////////////////////////////
-// Proof Functions for Node Replicated -> Unbounded Log Refinement Proof
-////////////////////////////////////////////////////////////////////////////////////////////////////
 #[verus::trusted]
 pub open spec fn is_readonly_ticket<DT: Dispatch>(
     ticket: UnboundedLog::local_reads<DT>,
     op: DT::ReadOperation,
     log: UnboundedLog::Instance<DT>,
 ) -> bool {
-    // requires ticket.val == ssm.Ticket(rid, input)
     &&& ticket.value().is_Init() && ticket.value().get_Init_op() == op
-    // requires ticket.loc == TicketStubSingletonLoc.loc()
 
     &&& ticket.instance_id() == log.id()
 }
@@ -10048,9 +8341,7 @@ pub open spec fn is_readonly_stub<DT: Dispatch>(
     result: DT::Response,
     log: UnboundedLog::Instance<DT>,
 ) -> bool {
-    // ensures stub.loc == TicketStubSingletonLoc.loc()
     &&& stub.instance_id() == log.id()
-    // ensures ssm.IsStub(rid, output, stub.val)  -> (exists ctail, op, nodeid :: stub == ReadOp(rid, ReadonlyDone(op, output, nodeid, ctail)))
 
     &&& stub.key() == rid
     &&& stub.value().is_Done()
@@ -10063,9 +8354,7 @@ pub open spec fn is_update_ticket<DT: Dispatch>(
     op: DT::WriteOperation,
     log: UnboundedLog::Instance<DT>,
 ) -> bool {
-    // requires ticket.val == ssm.Ticket(rid, input)
     &&& ticket.value().is_Init() && ticket.value().get_Init_op() == op
-    // requires ticket.loc == TicketStubSingletonLoc.loc()
 
     &&& ticket.instance_id() == log.id()
 }
@@ -10077,18 +8366,13 @@ pub open spec fn is_update_stub<DT: Dispatch>(
     result: DT::Response,
     log: UnboundedLog::Instance<DT>,
 ) -> bool {
-    // ensures stub.loc == TicketStubSingletonLoc.loc()
     &&& stub.instance_id() == log.id()
-    // ensures ssm.IsStub(rid, output, stub.val)  -> (exists log_idx :: stub == UpdateOp(rid, UpdateDone(output, log_idx)))
 
     &&& stub.key() == rid
     &&& stub.value().is_Done()
     &&& stub.value().get_Done_ret() == result
 }
 
-////////////////////////////////////////////////////////////////////////////////////////////////////
-// UnboundedLog -> SimpleLog Refinement Proof
-////////////////////////////////////////////////////////////////////////////////////////////////////
 #[verus::trusted]
 pub open spec fn add_ticket<DT: Dispatch>(
     pre: UnboundedLog::State<DT>,
@@ -10144,7 +8428,6 @@ pub open spec fn consume_stub<DT: Dispatch>(
 trait UnboundedLogRefinesSimpleLog<DT: Dispatch> {
     spec fn interp(s: UnboundedLog::State<DT>) -> SimpleLog::State<DT>;
 
-    // Prove that it is always possible to add a new ticket
     spec fn get_fresh_rid(pre: UnboundedLog::State<DT>) -> ReqId;
 
     proof fn fresh_rid_is_ok(pre: UnboundedLog::State<DT>)
@@ -10223,9 +8506,6 @@ spec fn implements_UnboundedLogRefinesSimpleLog<
     true
 }
 
-////////////////////////////////////////////////////////////////////////////////////////////////////
-/// SimpleLog -> Linearization Refinement
-////////////////////////////////////////////////////////////////////////////////////////////////////
 #[is_variant]
 #[verus::trusted]
 pub enum InputOperation<DT: Dispatch> {
@@ -10248,68 +8528,67 @@ pub enum AsyncLabel<DT: Dispatch> {
     End(ReqId, OutputOperation<DT>),
 }
 
-state_machine!{ AsynchronousSingleton<DT: Dispatch> {           // $line_count$Trusted$
-    fields {                                                    // $line_count$Trusted$
-        pub state: DT::View,                                    // $line_count$Trusted$
-        pub reqs: Map<ReqId, InputOperation<DT>>,               // $line_count$Trusted$
-        pub resps: Map<ReqId, OutputOperation<DT>>,             // $line_count$Trusted$
-    }                                                           // $line_count$Trusted$
+state_machine!{ AsynchronousSingleton<DT: Dispatch> {           
+    fields {                                                    
+        pub state: DT::View,                                    
+        pub reqs: Map<ReqId, InputOperation<DT>>,               
+        pub resps: Map<ReqId, OutputOperation<DT>>,             
+    }                                                           
 
-    pub type Label<DT> = AsyncLabel<DT>;                        // $line_count$Trusted$
+    pub type Label<DT> = AsyncLabel<DT>;                        
 
-    init!{                                                      // $line_count$Trusted$
-        initialize() {                                          // $line_count$Trusted$
-            init state = DT::init_spec();                       // $line_count$Trusted$
-            init reqs = Map::empty();                           // $line_count$Trusted$
-            init resps = Map::empty();                          // $line_count$Trusted$
-        }                                                       // $line_count$Trusted$
-    }                                                           // $line_count$Trusted$
+    init!{                                                      
+        initialize() {                                          
+            init state = DT::init_spec();                       
+            init reqs = Map::empty();                           
+            init resps = Map::empty();                          
+        }                                                       
+    }                                                           
 
-    transition!{                                                // $line_count$Trusted$
-        internal_next(label: Label<DT>, rid: ReqId, input: InputOperation<DT>, output: OutputOperation<DT>) {   // $line_count$Trusted$
-            require label.is_Internal();                     // $line_count$Trusted$
-            require pre.reqs.dom().contains(rid);            // $line_count$Trusted$
-            require pre.reqs[rid] == input;                  // $line_count$Trusted$
-            update reqs = pre.reqs.remove(rid);              // $line_count$Trusted$
-            update resps = pre.resps.insert(rid, output);    // $line_count$Trusted$
+    transition!{                                                
+        internal_next(label: Label<DT>, rid: ReqId, input: InputOperation<DT>, output: OutputOperation<DT>) {   
+            require label.is_Internal();                     
+            require pre.reqs.dom().contains(rid);            
+            require pre.reqs[rid] == input;                  
+            update reqs = pre.reqs.remove(rid);              
+            update resps = pre.resps.insert(rid, output);    
 
-            match input {                                    // $line_count$Trusted$
-                InputOperation::Read(read_op) => {           // $line_count$Trusted$
-                    require output === OutputOperation::Read(DT::dispatch_spec(pre.state, read_op));  // $line_count$Trusted$
-                }                                                                           // $line_count$Trusted$
-                InputOperation::Write(write_op) => {                                        // $line_count$Trusted$
-                    let (next_state, out) = DT::dispatch_mut_spec(pre.state, write_op);     // $line_count$Trusted$
-                    require output === OutputOperation::Write(out);                         // $line_count$Trusted$
-                    update state = next_state;                                              // $line_count$Trusted$
-                }                                                                           // $line_count$Trusted$
-            }                                                                               // $line_count$Trusted$
-        }                                                                                   // $line_count$Trusted$
-    }                                                                                       // $line_count$Trusted$
+            match input {                                    
+                InputOperation::Read(read_op) => {           
+                    require output === OutputOperation::Read(DT::dispatch_spec(pre.state, read_op));  
+                }                                                                           
+                InputOperation::Write(write_op) => {                                        
+                    let (next_state, out) = DT::dispatch_mut_spec(pre.state, write_op);     
+                    require output === OutputOperation::Write(out);                         
+                    update state = next_state;                                              
+                }                                                                           
+            }                                                                               
+        }                                                                                   
+    }                                                                                       
 
-    transition!{                                        // $line_count$Trusted$
-        no_op(label: Label<DT>) {                       // $line_count$Trusted$
-            require label.is_Internal();                // $line_count$Trusted$
-            /* stutter step */                          // $line_count$Trusted$
-        }                                               // $line_count$Trusted$
-    }                                                   // $line_count$Trusted$
+    transition!{                                        
+        no_op(label: Label<DT>) {                       
+            require label.is_Internal();                
+        }                                               
+    }                                                   
 
-    transition!{                                                            // $line_count$Trusted$
-        start(label: Label<DT>, rid: ReqId, input: InputOperation<DT>) {    // $line_count$Trusted$
-            require label == AsyncLabel::<DT>::Start(rid, input);           // $line_count$Trusted$
-            require !pre.reqs.dom().contains(rid);                          // $line_count$Trusted$
-            update reqs = pre.reqs.insert(rid, input);                      // $line_count$Trusted$
-        }                                                                   // $line_count$Trusted$
-    }                                                                       // $line_count$Trusted$
+    transition!{                                                            
+        start(label: Label<DT>, rid: ReqId, input: InputOperation<DT>) {    
+            require label == AsyncLabel::<DT>::Start(rid, input);           
+            require !pre.reqs.dom().contains(rid);                          
+            update reqs = pre.reqs.insert(rid, input);                      
+        }                                                                   
+    }                                                                       
 
-    transition!{                                                            // $line_count$Trusted$
-        end(label: Label<DT>, rid: ReqId, output: OutputOperation<DT>) {    // $line_count$Trusted$
-            require label == AsyncLabel::<DT>::End(rid, output);            // $line_count$Trusted$
-            require pre.resps.dom().contains(rid);                          // $line_count$Trusted$
-            require pre.resps[rid] == output;                               // $line_count$Trusted$
-            update resps = pre.resps.remove(rid);                           // $line_count$Trusted$
-        }                                                                   // $line_count$Trusted$
-    }                                                                       // $line_count$Trusted$
-}}  // $line_count$Trusted$
+    transition!{                                                            
+        end(label: Label<DT>, rid: ReqId, output: OutputOperation<DT>) {    
+            require label == AsyncLabel::<DT>::End(rid, output);            
+            require pre.resps.dom().contains(rid);                          
+            require pre.resps[rid] == output;                               
+            update resps = pre.resps.remove(rid);                           
+        }                                                                   
+    }                                                                       
+}}  
 
 
 #[is_variant]
@@ -10381,22 +8660,18 @@ pub open spec fn behavior_equiv<DT: Dispatch>(
 ) -> bool
     decreases a, b,
 {
-    // (a.Inited? && b.Inited?)
     ||| (a.is_Inited()
         && b.is_Inited())
-    // || (a.Stepped? && a.op.InternalOp? && equiv(a.tail, b))
 
     ||| (a.is_Stepped() && a.get_Stepped_1().is_Internal() && behavior_equiv(
         *a.get_Stepped_2(),
         b,
     ))
-    // || (b.Stepped? && b.op.InternalOp? && equiv(a, b.tail))
 
     ||| (b.is_Stepped() && b.get_Stepped_1().is_Internal() && behavior_equiv(
         a,
         *b.get_Stepped_2(),
     ))
-    // || (a.Stepped? && b.Stepped? && a.op == b.op && equiv(a.tail, b.tail))
 
     ||| (a.is_Stepped() && b.is_Stepped() && a.get_Stepped_1() == b.get_Stepped_1()
         && behavior_equiv(*a.get_Stepped_2(), *b.get_Stepped_2()))
@@ -10422,7 +8697,6 @@ spec fn implements_SimpleLogRefinesAsynchronousSingleton<
     true
 }
 
-} // verus!
-// ===== END INLINED DEPENDENCY: src/lib.rs =====
+} 
 
 fn main() {}
