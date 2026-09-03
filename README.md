@@ -21,6 +21,7 @@ Each agent has a single `Dockerfile` shared by all its entrypoints. When the ben
 ## How to run
 
 - Run the benchmark with `python3 benchmark.py`.
+- Use `--task-directory <directory>` to load `.rs` tasks from another directory (defaults to `tasks/`).
 - Use the `-j` flag to set the number of parallel workers (defaults to the number of CPU cores).
 - Use `-a <pattern>` or `--agent <pattern>` to filter agents by glob pattern (e.g. `opencode`, `open*`).
 - Use `-m <pattern>` or `--model <pattern>` to filter models by glob pattern (e.g. `gpt-5.4`, `*gpt*`).

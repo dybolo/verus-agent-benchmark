@@ -687,18 +687,20 @@ def run_tasks(
     agent_filter=None,
     model_filter=None,
     resume_id=None,
-    full_tasks=False,
+    task_directory=None,
 ):
     """Run a new benchmark or resume only the pending tasks from an existing run."""
     if resume_id:
         run = resume_run(resume_id, agent_filter, model_filter)
-        if full_tasks and run.task_directory != "full_tasks":
+        if task_directory is not None and os.path.abspath(
+            task_directory
+        ) != os.path.abspath(run.task_directory):
             raise ValueError(
-                "--full-tasks cannot be used to resume a run created from tasks/"
+                "--task-directory does not match the directory recorded for this run: "
+                f"{run.task_directory}"
             )
     else:
-        task_directory = "full_tasks" if full_tasks else "tasks"
-        run = start_new_run(agent_filter, model_filter, task_directory)
+        run = start_new_run(agent_filter, model_filter, task_directory or "tasks")
 
     timestamp = run.timestamp
     agents = run.agents
@@ -813,9 +815,9 @@ def main():
         help="Resume pending tasks from runs/<RUN_ID>.json",
     )
     parser.add_argument(
-        "--full-tasks",
-        action="store_true",
-        help="Run tasks from full_tasks/ instead of tasks/",
+        "--task-directory",
+        metavar="DIRECTORY",
+        help="Directory containing task .rs files (default: tasks/)",
     )
     args = parser.parse_args()
     try:
@@ -824,7 +826,7 @@ def main():
             agent_filter=args.agent,
             model_filter=args.model,
             resume_id=args.resume,
-            full_tasks=args.full_tasks,
+            task_directory=args.task_directory,
         )
     except ValueError as e:
         parser.error(str(e))
