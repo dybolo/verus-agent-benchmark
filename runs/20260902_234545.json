@@ -453,11 +453,16 @@
         },
         "unbounded_log_full.rs": {
           "verus_passed": false,
-          "cheat_checker_passed": false,
-          "timed_out": true,
-          "status": "pending",
+          "cheat_checker_passed": true,
+          "timed_out": false,
+          "status": "completed",
           "solution_file": "solutions/copilot/gpt-5.6-luna/20260902_234545/unbounded_log_full_verified.rs",
-          "session_error": "Detected error that invalidated the session. Check the session file."
+          "session_error": "Detected error that invalidated the session. Check the session file.",
+          "total_costs": 0.32691968,
+          "total_turns": 89,
+          "total_tool_calls": 131,
+          "duration_seconds": 698.149,
+          "session_file": "sessions/copilot/gpt-5.6-luna/20260902_234545/unbounded_log_full/session.jsonl"
         }
       }
     },
