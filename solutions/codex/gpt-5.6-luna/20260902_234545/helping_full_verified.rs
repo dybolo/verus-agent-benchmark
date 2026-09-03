@@ -219,22 +219,13 @@ impl Flag {
 
             proof {
                 if res.is_ok() {
-                    let tracked au = maybe_au.tracked_take();
-                    let tracked other_au = proto.take_offer();
-                    assert(gv@ is Some);
-                    assert(gv@->0 == other_au);
-                    try_open_atomic_update!(au, mut token => {
-                        let ghost old_auth = auth@;
-                        auth.update(&mut token.value, !old_auth);
+                    let tracked offered = proto.take_offer();
+                    try_open_atomic_update!(offered.get(), mut token => {
+                        auth.agree(&token.value);
+                        let old_value = token.value@;
+                        auth.update(&mut token.value, !old_value);
                         Tracked(Commit(token))
                     });
-                    try_open_atomic_update!(other_au.get(), mut token => {
-                        let ghost old_auth = auth@;
-                        auth.update(&mut token.value, !old_auth);
-                        Tracked(Commit(token))
-                    });
-                    assert(gv@ is Some);
-                    assert(gv@->0.resolves());
                     proto = Accepted;
                 }
                 v = (value_perm, pend_perm, auth, gv, proto);
@@ -268,8 +259,9 @@ impl Flag {
                 if res.is_ok() {
                     let tracked au = maybe_au.tracked_take();
                     try_open_atomic_update!(au, mut token => {
-                        let ghost old_auth = auth@;
-                        auth.update(&mut token.value, !old_auth);
+                        auth.agree(&token.value);
+                        let old_value = token.value@;
+                        auth.update(&mut token.value, !old_value);
                         Tracked(Commit(token))
                     });
                 }
@@ -290,8 +282,9 @@ impl Flag {
                 if res.is_ok() {
                     let tracked au = maybe_au.tracked_take();
                     try_open_atomic_update!(au, mut token => {
-                        let ghost old_auth = auth@;
-                        auth.update(&mut token.value, !old_auth);
+                        auth.agree(&token.value);
+                        let old_value = token.value@;
+                        auth.update(&mut token.value, !old_value);
                         Tracked(Commit(token))
                     });
                 }
@@ -326,17 +319,23 @@ impl Flag {
 
             proof {
                 if res.is_ok() {
-                    let tracked au = maybe_au.tracked_take();
-                    assert(proto is Empty);
-                    let tracked mut gva = proto.take_empty();
-                    assert(gva.id() == gv.id());
-                    assert(gva@ is None);
-                    gva.update(&mut gv, Some(au));
-                    auth_au = Some(gva);
-                    proto = Offering(Tracked(au));
+                    match proto {
+                        Empty(gva) => {
+                            auth_au = Some(gva);
+                            let tracked offered = maybe_au.tracked_take();
+                            let tracked mut gva = auth_au.tracked_take();
+                            gva.update(&mut gv, Some(offered));
+                            auth_au = Some(gva);
+                            proto = Offering(Tracked(offered));
+                            assert(gv@ is Some);
+                            assert(gv@->0 == au);
+                        }
+                        _ => proof_from_false(),
+                    }
                 }
                 v = (value_perm, pend_perm, auth, gv, proto);
             }
+
         });
 
         if res.is_err() {
@@ -352,25 +351,16 @@ impl Flag {
             res = self.pending.compare_exchange(Tracked(&mut pend_perm), 1, 0);
 
             proof {
+                if res.is_err() {
+                    assert(au == gv@->0);
+                }
                 if res.is_ok() {
-                    assert(proto is Offering);
-                    assert(maybe_au is None);
-                    assert(auth_au is Some);
-                    let tracked mut au = proto.take_offer();
-                    let tracked mut gva = auth_au.tracked_take();
-                    gva.agree(&gv);
+                    let tracked gva = auth_au.tracked_take();
+                    let tracked offered = proto.take_offer();
+                    let tracked mut gva = gva;
                     gva.update(&mut gv, None);
-                    assert(gva@ is None);
-                    maybe_au = Some(au.get());
                     proto = Empty(gva);
-                } else {
-                    assert(auth_au is Some);
-                    let tracked mut gva = auth_au.tracked_borrow();
-                    gva.agree(&gv);
-                    assert(proto is Accepted);
-                    assert(gva@ is Some);
-                    let ghost au = gva@->0;
-                    assert(au.resolves());
+                    maybe_au = Some(offered.get());
                 }
                 v = (value_perm, pend_perm, auth, gv, proto);
             }
@@ -382,13 +372,15 @@ impl Flag {
                 self.pending.store(Tracked(&mut pend_perm), 0);
 
                 proof {
-                    let tracked mut gva = auth_au.tracked_take();
+                    let tracked gva = auth_au.tracked_take();
+                    let tracked mut gva = gva;
                     gva.update(&mut gv, None);
                     proto = Empty(gva);
                     v = (value_perm, pend_perm, auth, gv, proto);
                 }
             });
 
+            assert(au.resolves());
             return None;
         }
 
