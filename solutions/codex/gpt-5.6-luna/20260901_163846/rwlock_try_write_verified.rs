@@ -2835,123 +2835,29 @@ impl<T               , G: SpinGuardian> RwLock<T, G> {
             update prev -> next;
             returning res;
             ghost g => {
-                lemma_consts_properties();
-                lemma_consts_properties_value(prev);
                 if res is Ok {
-                    assert(prev == 0);
-                    assert(next == WRITER);
-                    lemma_consts_properties_prev_next(prev, next);
-                    let tracked upreader_guard_token =
-                        g.upreader_guard_token.tracked_take();
-                    g.core_token.join_one_left_owner(upreader_guard_token);
+                    let tracked read_guard = g.read_guard_token.tracked_take_left();
+                    let tracked (read_perm, empty_read_guard) = read_guard.take_resource();
+                    g.read_guard_token = Sum::Right(empty_read_guard);
 
-                    let tracked read_guard_token =
-                        g.read_guard_token.tracked_take_left();
-                    let tracked (read_perm, read_guard_empty) =
-                        read_guard_token.take_resource();
-                    let tracked (read_half_cell_perm, read_knowledge) = read_perm;
-                    g.core_token.join_one_left_knowledge(read_knowledge);
-
-                    let tracked core_half_cell_perm = g.core_token.take_resource_left();
-                    let tracked mut full_cell_perm = core_half_cell_perm;
-                    full_cell_perm.combine(read_half_cell_perm);
-                    let tracked (perm, empty_frac) = full_cell_perm.take_resource();
-                    guard_perm = Some(perm);
-                    let tracked _ = g.core_token.change_to_right(empty_frac);
-                    g.read_guard_token = Sum::Right(read_guard_empty);
-                    let tracked _upread_retract_token =
-                        g.upread_retract_token.tracked_take();
-                    guard_token = Some(g.core_token.split_one_right_knowledge());
-                    assert(g.core_token.is_right());
-                    assert(g.core_token.frac() == 2);
-                    assert(g.core_token.has_resource());
-                    assert(g.read_guard_token is Right);
-                    assert(g.upreader_guard_token is None);
-                    assert(g.upread_retract_token is None);
-                    assert(g.core_token.resource_right().id() == self.frac_id());
-                    assert(g.read_guard_token.right().id() == self.read_guard_token_id());
-                    assert(g.read_retract_token.frac() == V_MAX_READ_RETRACT_FRACS);
-                    assert(g.core_token.wf());
-                    assert(g.read_retract_token.wf());
-                    assert(self.wf());
-                    assert(self.lock.well_formed());
-                    assert(next & WRITER != 0);
-                    assert(next & MAX_READER_MASK == 0);
-                    assert(next & UPGRADEABLE_READER == 0);
-                    assert(next & READER_MASK == 0);
-                } else {
-                    assert(next == prev);
-                    lemma_consts_properties_prev_next(prev, next);
-                    assert(self.wf());
-                assert(self.lock.well_formed());
-                assert(self.lock.atomic_inv@.constant().0 == self.lock.constant());
-                assert(self.lock.atomic_inv@.constant().1 == self.lock.patomic.id());
-                assert(self.lock.constant() == (self.val, self.guard, self.ghost_id));
-                use_type_invariant(self);
-                assert({
-                    let has_writer_bit = (next & WRITER) != 0;
-                    let has_upgrade_bit = (next & UPGRADEABLE_READER) != 0;
-                    let has_max_reader_bit = (next & MAX_READER) != 0;
-                    let total_reader_bits = (next & MAX_READER_MASK) as int;
-                    let reader_bits = if has_max_reader_bit { MAX_READER as int } else {
-                        (next & READER_MASK) as int
+                    let tracked mut core = g.core_token;
+                    let tracked upreader = match g.upreader_guard_token {
+                        Some(token) => token,
+                        None => proof_from_false(),
                     };
-                    let active_writer = g.core_token.is_right();
-                    let active_upgrade_guard = !active_writer && g.upreader_guard_token is None;
-                    let active_read_guards = if g.read_guard_token is Left {
-                        MAX_READER_U64 - g.read_guard_token.left().frac()
-                    } else { 0 };
-                    let pending_failed_upread_attempt = g.upread_retract_token is None;
-                    let failed_reader_attempts = V_MAX_READ_RETRACT_FRACS
-                        - g.read_retract_token.frac();
-                    &&& if g.core_token.is_left() {
-                        g.read_guard_token is Left
-                    } else {
-                        g.upreader_guard_token is None
-                        && g.read_guard_token is Right
-                    }
-                    &&& has_upgrade_bit <==> (active_upgrade_guard || pending_failed_upread_attempt)
-                    &&& !(active_upgrade_guard && pending_failed_upread_attempt)
-                    &&& total_reader_bits == active_read_guards + failed_reader_attempts
-                    &&& active_writer <==> has_writer_bit
-                    &&& 0 <= active_read_guards <= reader_bits <= total_reader_bits
-                    &&& !(active_writer && (active_read_guards
-                        + if active_upgrade_guard { 1int } else { 0 }) > 0)
-                    &&& g.core_token.id() == self.ghost_id@.core_token_id
-                    &&& g.core_token.wf()
-                    &&& g.core_token.is_right() ==> {
-                        let empty = g.core_token.resource_right();
-                        empty.id() == self.ghost_id@.frac_id
-                        && g.core_token.frac() == 2
-                        && g.core_token.has_resource()
-                    }
-                    &&& g.read_retract_token.wf()
-                    &&& g.read_retract_token.id() == self.ghost_id@.read_retract_token_id
-                    &&& g.upread_retract_token is Some ==> {
-                        let token = g.upread_retract_token->0;
-                        token.wf() && token.id() == self.ghost_id@.upread_retract_token_id
-                    }
-                    &&& g.upreader_guard_token is Some ==> {
-                        wf_upgradeable_guard_token(
-                            self.ghost_id@.core_token_id,
-                            self.ghost_id@.frac_id,
-                            self.val.id(),
-                            g.upreader_guard_token->0,
-                        )
-                    }
-                    &&& match g.read_guard_token {
-                        Sum::Left(token) => {
-                            token.wf() && token.id() == self.ghost_id@.read_guard_token_id
-                        },
-                        Sum::Right(empty) => empty.id() == self.ghost_id@.read_guard_token_id,
-                    }
-                });
-            }
-                assert(self.wf());
-                assert(self.lock.well_formed());
-                    assert(self.lock.atomic_inv@.constant().1 == self.lock.patomic.id());
-                    g.core_token.validate();
-                    assert(self.lock.atomic_inv@.constant().0 == self.lock.constant());
+                    g.upreader_guard_token = None;
+                    core.join_one_left_owner(upreader);
+
+                    let tracked mut half_perm = core.take_resource_left();
+                    half_perm.combine(read_perm.0);
+                    let tracked (perm, empty_perm) = half_perm.take_resource();
+                    core.join_one_left_knowledge(read_perm.1);
+                    let tracked _old = core.change_to_right(empty_perm);
+                    let tracked right_knowledge = core.split_one_right_knowledge();
+                    g.core_token = core;
+                    guard_perm = Some(perm);
+                    guard_token = Some(right_knowledge);
+                }
             }
         ).is_ok() {
             Some(

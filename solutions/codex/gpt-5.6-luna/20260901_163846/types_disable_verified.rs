@@ -1980,12 +1980,10 @@ impl AtomicHeapPtr {
         atomic_with_ghost!(
             &self.atomic => no_op();
             ghost g => {
-                let tracked (mut emp_token, heap_token) = g;
-                self.emp_inst.borrow().agree(self.emp.borrow(), &emp_token);
-                assert(heap_token.is_Some());
-                heap_of_page = heap_token.tracked_unwrap();
-                self.emp_inst.borrow().set(true, self.emp.borrow_mut(), &mut emp_token);
-                g = (emp_token, None);
+                let tracked (mut y, g_opt) = g;
+                self.emp_inst.borrow().set(true, self.emp.borrow_mut(), &mut y);
+                heap_of_page = g_opt.tracked_unwrap();
+                g = (y, None);
             }
         );
         Tracked(heap_of_page)

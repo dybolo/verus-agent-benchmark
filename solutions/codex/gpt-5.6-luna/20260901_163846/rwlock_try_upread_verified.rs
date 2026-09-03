@@ -2828,30 +2828,40 @@ impl<T               , G: SpinGuardian> RwLock<T, G> {
             lemma_consts_properties();
         }
         let guard = G::guard();
+        let ghost mut previous_lock: usize = 0;
+        let ghost mut next_lock: usize = 0;
+        let ghost mut acquired_upgrade: bool = false;
         let lock =
             atomic_with_ghost!(
             self.lock => fetch_or(UPGRADEABLE_READER);
             update prev -> next;
             ghost g => {
-                lemma_consts_properties_value(prev);
+                previous_lock = prev;
+                next_lock = next;
                 lemma_consts_properties_prev_next(prev, next);
                 if prev & (WRITER | UPGRADEABLE_READER) == 0 {
-                    assert((prev & WRITER) == 0);
-                    assert((prev & UPGRADEABLE_READER) == 0);
-                    assert(g.upreader_guard_token is Some);
-                    let tracked token = g.upreader_guard_token.tracked_unwrap();
-                    upgrade_guard_token = Some(token);
-                    g.upreader_guard_token = None;
+                    lemma_consts_properties_value(prev);
+                    assert(prev & WRITER == 0);
+                    assert(prev & UPGRADEABLE_READER == 0);
+                    upgrade_guard_token = Some(g.upreader_guard_token.tracked_take());
+                    acquired_upgrade = true;
                 } else if prev & (WRITER | UPGRADEABLE_READER) == WRITER {
-                    assert((prev & WRITER) != 0);
-                    assert(g.upread_retract_token is Some);
-                    let tracked token = g.upread_retract_token.tracked_unwrap();
-                    retract_upgrade_token = Some(token);
-                    g.upread_retract_token = None;
+                    lemma_consts_properties_value(prev);
+                    assert(prev & WRITER == WRITER);
+                    retract_upgrade_token = Some(g.upread_retract_token.tracked_take());
                 }
             }
         )
             & (WRITER | UPGRADEABLE_READER);
+        proof {
+            if lock == 0 {
+                assert(lock == previous_lock & (WRITER | UPGRADEABLE_READER));
+                assert(previous_lock & (WRITER | UPGRADEABLE_READER) == 0);
+                assert(lock == 0 ==> acquired_upgrade);
+                assert(acquired_upgrade ==> upgrade_guard_token is Some);
+                assert(upgrade_guard_token is Some);
+            }
+        }
         if lock == 0 {
             return Some(
                 RwLockUpgradeableGuard {
@@ -2861,23 +2871,15 @@ impl<T               , G: SpinGuardian> RwLock<T, G> {
                 },
             );
         } else if lock == WRITER {
-            proof {
-                use_type_invariant(self);
-                assert(retract_upgrade_token is Some);
-            }
             atomic_with_ghost!(
                 self.lock => fetch_sub(UPGRADEABLE_READER);
                 update prev -> next;
                 ghost g => {
-                    use_type_invariant(self);
-                    assert(g.upread_retract_token is None);
-                    assert((prev as usize) & UPGRADEABLE_READER != 0);
-                    lemma_consts_properties_value(prev as usize);
+                    assert(lock == WRITER);
+                    assert(lock == previous_lock & (WRITER | UPGRADEABLE_READER));
                     lemma_consts_properties_prev_next(prev as usize, next as usize);
                     assert(prev >= UPGRADEABLE_READER as int);
-                    assert(retract_upgrade_token is Some);
-                    let tracked token = retract_upgrade_token.tracked_unwrap();
-                    g.upread_retract_token = Some(token);
+                    g.upread_retract_token = Some(retract_upgrade_token.tracked_unwrap());
                 }
             );
         }

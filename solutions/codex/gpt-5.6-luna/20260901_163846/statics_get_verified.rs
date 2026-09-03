@@ -83,13 +83,13 @@ impl<T: Initializable> Lazy<T> {
             let tracked mut readonly_points_to: Option<&'static PointsTo<Option<T>>> = None;
             let cur_state =
                 atomic_with_ghost!(&self.state => load(); ghost g => {
-                match &g {
-                    GhostState::Initialized(points_to) => {
-                        readonly_points_to = Some(*points_to);
-                    },
-                    _ => { }
-                }
-            });
+                    match &g {
+                        GhostState::Initialized(points_to) => {
+                            readonly_points_to = Some(points_to);
+                        }
+                        _ => { }
+                    }
+                });
             if cur_state == 2 {
                 return self.cell.borrow(
                     Tracked(readonly_points_to.tracked_borrow()),
@@ -101,18 +101,17 @@ impl<T: Initializable> Lazy<T> {
                     let res =
                         atomic_with_ghost!(&self.state => compare_exchange(0, 1);
                         returning res; ghost g =>
-                    {
-                        if res.is_ok() {
-                            let tracked old_g = g;
-                            g = match old_g {
-                                GhostState::Uninitialized(pt) => {
-                                    points_to = Some(pt);
-                                    GhostState::Initializing
-                                },
-                                other => other,
-                            };
-                        }
-                    });
+                        {
+                            if res.is_ok() {
+                                g = match g {
+                                    GhostState::Uninitialized(old_points_to) => {
+                                        points_to = Some(old_points_to);
+                                        GhostState::Initializing
+                                    }
+                                    _ => { assert(false); GhostState::Initializing }
+                                };
+                            }
+                        });
                     if res.is_err() {
                         do_initialization = false;
                     }

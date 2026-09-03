@@ -1445,40 +1445,39 @@ tokenized_state_machine!{ Mim {
 
     #[inductive(page_mk_block_tokens)]
     fn page_mk_block_tokens_inductive(pre: Self, post: Self, thread_id: ThreadId, page_id: PageId, old_num_blocks: nat, new_num_blocks: nat, block_size: nat) {
+        let ts = pre.thread_local_state[thread_id];
         assert forall |block_id: BlockId| #[trigger] post.block.dom().contains(block_id)
             implies post.inv_block_id_valid_for_block(block_id)
         by {
             if pre.block.dom().contains(block_id) {
+                assert(pre.inv_block_id_valid_for_block(block_id));
                 assert(post.inv_block_id_valid_for_block(block_id));
             } else {
-                assert(range_block_ids(old_num_blocks, new_num_blocks, page_id, block_size).contains(block_id));
+                assert(range_block_ids(old_num_blocks, new_num_blocks, page_id, block_size)
+                    .contains(block_id));
                 assert(block_id.page_id == page_id);
                 assert(old_num_blocks <= block_id.idx < new_num_blocks);
-                assert(pre.thread_local_state[thread_id].pages[page_id].num_blocks == old_num_blocks);
-                assert(pre.thread_local_state[thread_id].pages[page_id].block_size == block_size);
-                assert(Self::okay_to_add_block(pre.thread_local_state[thread_id], page_id, block_id.idx, block_size));
-                let slice_id = block_id.page_id_for_slice();
-                assert(post.thread_of_segment.dom().contains(block_id.page_id.segment_id));
+                assert(Self::okay_to_add_block(ts, page_id, block_id.idx, block_size));
+                assert(post.thread_of_segment.dom().contains(page_id.segment_id));
+                assert(post.thread_local_state.dom().contains(thread_id));
                 assert(post.thread_local_state[thread_id].pages.dom().contains(page_id));
                 assert(post.thread_local_state[thread_id].pages[page_id].is_enabled);
                 assert(post.thread_local_state[thread_id].pages[page_id].offset == 0);
-                assert(post.thread_local_state[thread_id].pages[page_id].block_size == block_id.block_size);
-                assert(0 <= block_id.idx < post.thread_local_state[thread_id].pages[page_id].num_blocks);
-                assert(post.thread_local_state[thread_id].pages.dom().contains(slice_id));
-                assert(post.thread_local_state[thread_id].pages[slice_id].is_enabled);
-                assert(post.thread_local_state[thread_id].pages[slice_id].shared_access == post.block[block_id].page_slice_shared_access);
-                assert(slice_id.idx - block_id.page_id.idx == post.thread_local_state[thread_id].pages[slice_id].offset);
-                assert(post.thread_local_state[thread_id].segments[block_id.page_id.segment_id].is_enabled);
-                assert(pre.segment_shared_access.dom().contains(block_id.page_id.segment_id));
-                assert(pre.segment_shared_access[block_id.page_id.segment_id]
-                    == pre.thread_local_state[thread_id].segments[block_id.page_id.segment_id].shared_access);
-                assert(post.block[block_id].segment_shared_access
-                    == pre.segment_shared_access[block_id.page_id.segment_id]);
-                assert(post.thread_local_state[thread_id].segments[block_id.page_id.segment_id].shared_access == post.block[block_id].segment_shared_access);
-                assert(Self::block_properties(post.thread_local_state[thread_id], block_id, post.block[block_id]));
+                assert(post.thread_local_state[thread_id].pages[page_id].block_size == block_size);
+                assert(post.block[block_id].page_shared_access == ts.pages[page_id].shared_access);
+                assert(pre.thread_local_state.dom().contains(thread_id));
+                assert(ts.segments.dom().contains(page_id.segment_id));
+                assert(pre.thread_of_segment.dom().contains(page_id.segment_id));
+                assert(pre.thread_of_segment[page_id.segment_id] == thread_id);
+                assert(pre.segment_shared_access.dom().contains(page_id.segment_id));
+                assert(pre.segment_shared_access[page_id.segment_id] ==
+                    ts.segments[page_id.segment_id].shared_access);
+                assert(post.block[block_id].segment_shared_access ==
+                    ts.segments[page_id.segment_id].shared_access);
+                assert(post.block[block_id].heap_id == None);
                 assert(post.inv_block_id_valid_for_block(block_id));
             }
-        };
+        }
     }
 
     proof fn block_map_with_len(blocks: Map<BlockId, BlockState>, page_id: PageId, len: int)

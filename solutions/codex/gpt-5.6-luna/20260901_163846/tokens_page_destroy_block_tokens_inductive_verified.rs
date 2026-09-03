@@ -1513,42 +1513,46 @@ tokenized_state_machine!{ Mim {
     #[inductive(page_destroy_block_tokens)]
     fn page_destroy_block_tokens_inductive(pre: Self, post: Self, thread_id: ThreadId, page_id: PageId, blocks: Map<BlockId, BlockState>) {
         let ts = pre.thread_local_state[thread_id];
-        let n = ts.pages[page_id].num_blocks as int;
-        assert(blocks.len() >= n);
-        assert forall |block_id: BlockId| blocks.dom().contains(block_id) implies
-            block_id.page_id == page_id && 0 <= block_id.idx < n
+        let num_blocks = ts.pages[page_id].num_blocks as int;
+
+        assert forall |block_id: BlockId| #[trigger] blocks.dom().contains(block_id)
+            implies block_id.page_id == page_id && 0 <= block_id.idx < num_blocks
         by {
             assert(pre.block.dom().contains(block_id));
             assert(pre.inv_block_id_valid_for_block(block_id));
-            assert(pre.inv_block_id_valid_for_block(block_id));
         }
-        assert forall |bid1: BlockId, bid2: BlockId| blocks.dom().contains(bid1)
-            && blocks.dom().contains(bid2) && bid1.page_id == bid2.page_id
-            && bid1.idx == bid2.idx implies bid1 == bid2 by {
+        assert forall |bid1: BlockId, bid2: BlockId|
+            blocks.dom().contains(bid1) && blocks.dom().contains(bid2)
+            && bid1.page_id == bid2.page_id && bid1.idx == bid2.idx
+            implies bid1 == bid2
+        by {
             assert(pre.block.dom().contains(bid1));
             assert(pre.block.dom().contains(bid2));
             assert(pre.inv_block_id_at_idx_uniq());
+            assert(bid1 == bid2);
         }
-        Self::block_map_with_len(blocks, page_id, n);
+        Self::block_map_with_len(blocks, page_id, num_blocks);
+
         assert forall |block_id: BlockId| #[trigger] post.block.dom().contains(block_id)
             implies post.inv_block_id_valid_for_block(block_id)
         by {
-            if post.block.dom().contains(block_id) {
-                assert(pre.block.dom().contains(block_id));
-                assert(pre.inv_block_id_valid_for_block(block_id));
-                if block_id.page_id == page_id {
-                    assert(0 <= (block_id.idx as int) && (block_id.idx as int) < blocks.len());
-                    assert(Self::blocks_has(blocks, page_id, block_id.idx as int));
-                    let removed = choose |b: BlockId| blocks.dom().contains(b)
-                        && b.page_id == page_id && b.idx == block_id.idx;
-                    assert(blocks.dom().contains(removed));
-                    assert(removed.page_id == page_id);
-                    assert(removed.idx == block_id.idx);
+            assert(pre.block.dom().contains(block_id));
+            assert(!blocks.dom().contains(block_id));
+            assert(post.thread_of_segment.dom().contains(block_id.page_id.segment_id));
+            assert(pre.inv_block_id_valid_for_block(block_id));
+            if block_id.page_id == page_id {
+                assert(0 <= block_id.idx < num_blocks);
+                assert(Self::blocks_has(blocks, page_id, block_id.idx as int));
+                let removed = choose |bid: BlockId| blocks.dom().contains(bid)
+                    && bid.page_id == page_id && bid.idx == block_id.idx;
+                assert(block_id == removed) by {
+                    assert(pre.block.dom().contains(block_id));
                     assert(pre.block.dom().contains(removed));
                     assert(pre.inv_block_id_at_idx_uniq());
-                    assert(removed == block_id);
-                    assert(!pre.block.dom().contains(block_id));
-                }
+                    assert(block_id == removed);
+                };
+                assert(false);
+            } else {
                 assert(post.inv_block_id_valid_for_block(block_id));
             }
         }

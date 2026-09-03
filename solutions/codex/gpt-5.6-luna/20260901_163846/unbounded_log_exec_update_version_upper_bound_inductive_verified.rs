@@ -849,28 +849,39 @@ UnboundedLog<DT: Dispatch> {
 
     #[inductive(exec_update_version_upper_bound)]
     fn exec_update_version_upper_bound_inductive(pre: Self, post: Self, node_id: NodeId) {
-        assert(post.local_reads =~= pre.local_reads);
-        assert(post.log =~= pre.log);
-        assert(post.inv_read_results()) by {
-            assert forall |rid| #[trigger] post.local_reads.contains_key(rid)
-                implies post.read_results_match(post.local_reads[rid]) by {
-                assert(pre.local_reads.contains_key(rid));
-                assert(pre.read_results_match(pre.local_reads[rid]));
-                match post.local_reads[rid] {
-                    ReadonlyState::Done { ret, version_upper_bound, op, .. } => {
-                        assert(exists |v: nat| #[trigger]
-                            rangeincl(version_upper_bound, v, pre.version_upper_bound)
-                            && ret == DT::dispatch_spec(
-                                compute_nrstate_at_version(pre.log, v), op));
-                        assert forall |v: nat| #[trigger]
-                            rangeincl(version_upper_bound, v, pre.version_upper_bound)
-                            implies rangeincl(version_upper_bound, v,
-                                post.version_upper_bound) by {
-                            assert(pre.version_upper_bound <= post.version_upper_bound);
-                        }
+        assert(post.version_upper_bound >= pre.version_upper_bound) by {
+            match pre.combiner[node_id] {
+                CombinerState::Loop { tail, .. } => {
+                    if pre.version_upper_bound >= tail {
+                        assert(post.version_upper_bound == pre.version_upper_bound);
+                    } else {
+                        assert(post.version_upper_bound == tail);
+                        assert(pre.version_upper_bound <= tail);
                     }
-                    _ => {}
                 }
+                _ => { }
+            }
+        }
+        assert forall |rid| #[trigger] post.local_reads.contains_key(rid)
+            implies post.read_results_match(post.local_reads[rid]) by {
+            assert(pre.local_reads.contains_key(rid));
+            assert(post.local_reads[rid] == pre.local_reads[rid]);
+            match post.local_reads[rid] {
+                ReadonlyState::Done { ret, version_upper_bound, op, .. } => {
+                    assert(pre.read_results_match(pre.local_reads[rid]));
+                    assert(exists |v: nat| (#[trigger] rangeincl(version_upper_bound, v,
+                        pre.version_upper_bound))
+                        && ret == DT::dispatch_spec(
+                            compute_nrstate_at_version(pre.log, v), op));
+                    assert forall |v: nat| #[trigger] rangeincl(version_upper_bound, v,
+                        pre.version_upper_bound)
+                        implies rangeincl(version_upper_bound, v, post.version_upper_bound) by {
+                        assert(v <= pre.version_upper_bound);
+                        assert(v <= post.version_upper_bound);
+                    }
+                    assert(post.log =~= pre.log);
+                }
+                _ => { }
             }
         }
     }

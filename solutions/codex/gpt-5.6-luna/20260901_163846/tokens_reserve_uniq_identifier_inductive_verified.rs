@@ -1578,22 +1578,35 @@ tokenized_state_machine!{ Mim {
 
     #[inductive(reserve_uniq_identifier)]
     fn reserve_uniq_identifier_inductive(pre: Self, post: Self) {
-        let u = heap_get_unused_uniq_field(pre.heap_shared_access.dom() + pre.reserved_uniq);
-        lemma_heap_get_unused_uniq_field(pre.heap_shared_access.dom() + pre.reserved_uniq);
         assert forall |hid1: HeapId, hid2: HeapId|
             post.reserved_uniq.contains(hid1)
             && post.heap_shared_access.dom().contains(hid2)
             implies hid1.uniq != hid2.uniq
         by {
-            if hid1 == (HeapId { id: 0, uniq: u, provenance: Provenance::null() }) {
-                assert(post.heap_shared_access.dom() =~= pre.heap_shared_access.dom());
+            assert(post.heap_shared_access.dom() =~= pre.heap_shared_access.dom());
+            assert(post.reserved_uniq.contains(hid1) ==>
+                pre.reserved_uniq.contains(hid1)
+                || hid1 == HeapId {
+                    id: 0,
+                    uniq: heap_get_unused_uniq_field(
+                        pre.heap_shared_access.dom() + pre.reserved_uniq),
+                    provenance: Provenance::null(),
+                });
+            if pre.reserved_uniq.contains(hid1) {
+                assert(pre.inv_reserved2());
+            } else {
+                assert(hid1 == HeapId {
+                    id: 0,
+                    uniq: heap_get_unused_uniq_field(
+                        pre.heap_shared_access.dom() + pre.reserved_uniq),
+                    provenance: Provenance::null(),
+                });
+                lemma_heap_get_unused_uniq_field(
+                    pre.heap_shared_access.dom() + pre.reserved_uniq);
                 assert(pre.heap_shared_access.dom().contains(hid2));
                 assert((pre.heap_shared_access.dom() + pre.reserved_uniq).contains(hid2));
-                assert(hid1.uniq != hid2.uniq);
-            } else {
-                assert(pre.reserved_uniq.contains(hid1));
-                assert(pre.heap_shared_access.dom().contains(hid2));
-                assert(hid1.uniq != hid2.uniq);
+                assert(hid2.uniq != heap_get_unused_uniq_field(
+                    pre.heap_shared_access.dom() + pre.reserved_uniq));
             }
         }
     }

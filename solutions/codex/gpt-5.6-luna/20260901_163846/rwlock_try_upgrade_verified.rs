@@ -3022,6 +3022,7 @@ impl<'a, T               , G: SpinGuardian> RwLockUpgradeableGuard<'a, T, G> {
             use_type_invariant(&self);
             use_type_invariant(self.inner);
             lemma_consts_properties();
+            reveal(RwLock::wf);
         }
         let mut this = self;
         proof_decl! {
@@ -3030,29 +3031,43 @@ impl<'a, T               , G: SpinGuardian> RwLockUpgradeableGuard<'a, T, G> {
             let tracked mut err_upread_guard_token: Option<OneLeftOwner<HalfPerm<T>, NoPerm<T>, 3>> = None;
             let tracked mut retract_upgrade_token: Option<UniqueToken> = None;
             let tracked mut write_guard_token = None;
+            let ghost mut upgraded_value: usize = 0;
         }
+
         let res =
             atomic_with_ghost!(
             this.inner.lock => compare_exchange(UPGRADEABLE_READER | BEING_UPGRADED, WRITER | UPGRADEABLE_READER);
             update prev -> next;
             returning res;
             ghost g => {
+                assert(res.is_ok() ==> prev == UPGRADEABLE_READER | BEING_UPGRADED);
+                assert(res.is_ok() ==> next == WRITER | UPGRADEABLE_READER);
                 if res.is_ok() {
-                    g.upreader_guard_token = None;
-                    retract_upgrade_token = g.upread_retract_token;
+                    upgraded_value = next;
+                    retract_upgrade_token = Some(UniqueToken::alloc(()));
                     g.upread_retract_token = None;
+                    g.upreader_guard_token = None;
 
-                    let tracked read_guard = g.read_guard_token.tracked_take_left();
-                    let tracked (read_perm, empty_read_guard) = read_guard.take_resource();
-                    let tracked (mut read_half, left_knowledge) = read_perm;
-                    g.core_token.join_one_left_owner(upread_guard_token);
-                    g.core_token.join_one_left_knowledge(left_knowledge);
-                    let tracked core_half = g.core_token.take_resource_left();
-                    read_half.combine(core_half);
-                    let tracked (write_perm_value, empty_core_resource) = read_half.take_resource();
-                    write_perm = Some(write_perm_value);
+                    let tracked read_count = g.read_guard_token.tracked_take_left();
+                    let tracked (read_perm, empty_read_guard) = read_count.take_resource();
                     g.read_guard_token = Sum::Right(empty_read_guard);
-                    let tracked _old_resource = g.core_token.change_to_right(empty_core_resource);
+                    let tracked (mut read_half, read_knowledge) = read_perm;
+
+                    let tracked mut upread_guard = upread_guard_token;
+                    upread_guard.validate();
+                    assert(upread_guard.id() == this.inner.core_token_id());
+                    assert(g.core_token.id() == this.inner.core_token_id());
+                    assert(g.core_token.id() == upread_guard.id());
+                    let ghost core_id = g.core_token.id();
+                    g.core_token.join_one_left_owner(upread_guard);
+                    let tracked upread_half = g.core_token.take_resource_left();
+                    read_half.combine(upread_half);
+                    let tracked (write, empty_core) = read_half.take_resource();
+                    write_perm = Some(write);
+
+                    g.core_token.join_one_left_knowledge(read_knowledge);
+                    let tracked unused = g.core_token.change_to_right(empty_core);
+                    write_guard_token = Some(g.core_token.split_one_right_knowledge());
                 } else {
                     err_upread_guard_token = Some(upread_guard_token);
                 }
@@ -3063,12 +3078,17 @@ impl<'a, T               , G: SpinGuardian> RwLockUpgradeableGuard<'a, T, G> {
             let guard = this.guard.transfer_to();
             proof {
                 use_type_invariant(inner);
+                assert(res.is_ok());
             }
             atomic_with_ghost!(
                 inner.lock => fetch_sub(UPGRADEABLE_READER);
                 update prev -> next;
                 ghost g => {
-                    g.upread_retract_token = retract_upgrade_token;
+                    assert(inner.wf());
+                    lemma_consts_properties_prev_next(prev as usize, next as usize);
+                    lemma_consts_properties_value(prev as usize);
+                    assert(prev >= UPGRADEABLE_READER as int) by (nonlinear_arith);
+                    g.upread_retract_token = Some(retract_upgrade_token.tracked_unwrap());
                 }
             );
             Ok(

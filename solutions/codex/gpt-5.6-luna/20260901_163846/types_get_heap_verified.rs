@@ -3522,19 +3522,22 @@ impl PagePtr {
         ensures heap.wf(), heap.is_in(*local),
     {
         let page_ref = self.get_ref(Tracked(&*local));
+        let ghost mut loaded_heap_id;
         let h = atomic_with_ghost!(
             &page_ref.xheap.atomic => load();
             ghost g => {
                 page_ref.xheap.emp_inst.borrow().agree(page_ref.xheap.emp.borrow(), &g.0);
+                assert(!g.0.value());
                 assert(g.1.is_some());
-                assert(g.1.unwrap().instance_id() == local.instance.id());
+                loaded_heap_id = g.1.unwrap().value();
                 assert(g.1.unwrap().key() == self.page_id@);
                 local.instance.heap_of_page_agree_with_thread_state(
                     self.page_id@, local.thread_id, &local.thread_token,
                     g.1.tracked_borrow());
-                assert(g.1.unwrap().value() == local.heap_id);
+                assert(loaded_heap_id == local.heap_id);
             }
         );
+        proof { assert(is_heap_ptr(h, loaded_heap_id)); }
         HeapPtr {
             heap_ptr: h,
             heap_id: Ghost(local.heap_id),

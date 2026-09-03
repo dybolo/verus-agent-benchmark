@@ -843,83 +843,66 @@ UnboundedLog<DT: Dispatch> {
 
     #[inductive(exec_dispatch_local)]
     fn exec_dispatch_local_inductive(pre: Self, post: Self, node_id: NodeId) {
-        assert forall |n| #[trigger] post.combiner.contains_key(n)
+        assert forall |n: NodeId| #[trigger] post.combiner.contains_key(n)
             implies post.wf_combiner_for_node_id(n) by {
             if n != node_id {
                 assert(post.combiner[n] == pre.combiner[n]);
-                match post.combiner[n] {
-                    CombinerState::Ready => { }
+                assert(pre.wf_node_id(n));
+                assert(post.wf_node_id(n));
+                match pre.combiner[n] {
                     CombinerState::Placed { queued_ops } => {
-                        LogRangeMatchesQueue_update_change_2(queued_ops, post.log, 0,
-                            post.local_versions[n], post.tail, n,
-                            pre.local_updates, post.local_updates);
+                        LogRangeMatchesQueue_update_change_2(
+                            queued_ops, post.log, 0, post.local_versions[n], post.tail, n,
+                            pre.local_updates, post.local_updates,
+                        );
                     }
                     CombinerState::LoadedLocalVersion { queued_ops, lversion } => {
-                        LogRangeMatchesQueue_update_change_2(queued_ops, post.log, 0,
-                            lversion, post.tail, n,
-                            pre.local_updates, post.local_updates);
+                        LogRangeMatchesQueue_update_change_2(
+                            queued_ops, post.log, 0, lversion, post.tail, n,
+                            pre.local_updates, post.local_updates,
+                        );
                     }
-                    CombinerState::Loop { queued_ops, lversion, tail, idx } => {
-                        LogRangeMatchesQueue_update_change_2(queued_ops, post.log, idx,
-                            lversion, tail, n,
-                            pre.local_updates, post.local_updates);
-                    }
-                    CombinerState::UpdatedVersion { queued_ops, tail } => {
-                        LogRangeMatchesQueue_update_change_2(queued_ops, post.log, queued_ops.len(),
-                            tail, tail, n,
-                            pre.local_updates, post.local_updates);
-                    }
-                }
-            } else {
-                match post.combiner[n] {
-                    CombinerState::Loop { queued_ops, lversion, tail, idx } => {
-                        assert(pre.combiner[n] == CombinerState::Loop {
-                            queued_ops, lversion: (lversion - 1) as nat,
-                            tail, idx: (idx - 1) as nat,
-                        });
-                        let old_lversion = (lversion - 1) as nat;
-                        let old_idx = (idx - 1) as nat;
-                        assert(lversion == old_lversion + 1);
-                        assert(idx == old_idx + 1);
-                        assert(pre.wf_combiner_for_node_id(n));
-                        assert(pre.combiner[n].is_Loop());
-                        assert(pre.combiner[n].get_Loop_lversion() == old_lversion);
-                        assert(pre.combiner[n].get_Loop_idx() == old_idx);
-                        assert(pre.combiner[n].get_Loop_queued_ops() == queued_ops);
-                        assert(pre.combiner[n].get_Loop_tail() == tail);
-                        assert(old_lversion < tail);
-                        assert(pre.log.contains_key(old_lversion));
-                        assert(pre.log[old_lversion].node_id == n);
-                        assert(old_idx < queued_ops.len());
-                        assert(pre.local_updates.contains_key(queued_ops[old_idx as int]));
-                        assert(pre.local_updates[queued_ops[old_idx as int]].is_Placed());
-                        assert(post.combiner[n].is_Loop());
-                        let rid = queued_ops[old_idx as int];
-                        assert(pre.log[old_lversion].node_id == n);
-                        assert(pre.local_updates[rid].get_Placed_idx() == old_lversion);
-                        assert(LogRangeMatchesQueue(queued_ops, pre.log, old_idx + 1,
-                            old_lversion + 1, tail, n, pre.local_updates)) by {
-                            reveal(LogRangeMatchesQueue);
-                        }
-                        assert forall |x| #[trigger] pre.local_updates.contains_key(x)
-                            ==> pre.local_updates[x].is_Placed()
-                                && old_lversion + 1 <= pre.local_updates[x].get_Placed_idx()
-                                && pre.local_updates[x].get_Placed_idx() < tail
-                                ==> post.local_updates.contains_key(x)
-                                && post.local_updates[x] === pre.local_updates[x] by {
-                            if x == rid {
-                                assert(pre.local_updates[rid].get_Placed_idx() == old_lversion);
-                            }
-                        }
-                        LogRangeMatchesQueue_update_change(
-                            queued_ops, post.log, old_idx + 1, old_lversion + 1, tail, n,
-                            pre.local_updates, post.local_updates);
-                        assert(LogRangeMatchesQueue(queued_ops, post.log, idx, lversion,
-                            tail, n, post.local_updates));
-                        assert(post.wf_combiner_for_node_id(n));
+                    CombinerState::Loop { queued_ops, idx, lversion, tail } => {
+                        LogRangeMatchesQueue_update_change_2(
+                            queued_ops, post.log, idx, lversion, tail, n,
+                            pre.local_updates, post.local_updates,
+                        );
                     }
                     _ => { }
                 }
+            } else {
+                assert(post.combiner[n] == CombinerState::Loop {
+                    queued_ops: pre.combiner[n].get_Loop_queued_ops(),
+                    lversion: pre.combiner[n].get_Loop_lversion() + 1,
+                    tail: pre.combiner[n].get_Loop_tail(),
+                    idx: pre.combiner[n].get_Loop_idx() + 1,
+                });
+                let queued_ops = pre.combiner[n].get_Loop_queued_ops();
+                let lversion = pre.combiner[n].get_Loop_lversion();
+                let tail = pre.combiner[n].get_Loop_tail();
+                let idx = pre.combiner[n].get_Loop_idx();
+                assert(pre.wf_node_id(n));
+                assert(post.wf_node_id(n));
+                assert(pre.wf_combiner_for_node_id(n));
+                assert(0 <= idx < queued_ops.len());
+                assert(pre.log[lversion].node_id == n);
+                assert(pre.local_updates[queued_ops.index(idx as int)].is_Placed());
+                assert(pre.local_updates[queued_ops.index(idx as int)].get_Placed_idx() == lversion);
+                assert(post.log =~= pre.log);
+                assert(post.local_versions =~= pre.local_versions);
+                assert(post.tail == pre.tail);
+                assert(post.version_upper_bound == pre.version_upper_bound);
+                assert(LogContainsEntriesUpToHere(post.log, lversion + 1));
+                LogRangeMatchesQueue_update_change(
+                    queued_ops, post.log, idx + 1, lversion + 1, tail, n,
+                    pre.local_updates, post.local_updates,
+                );
+                assert(QueueRidsUpdatePlaced(queued_ops, post.local_updates, idx + 1));
+                assert(QueueRidsUpdateDone(queued_ops, post.local_updates, idx + 1));
+                assert(seq_unique(queued_ops));
+                assert(LogRangeNoNodeId(post.log, tail, post.tail, n));
+                assert(post.local_versions[n] <= tail);
+                assert(lversion + 1 <= tail);
             }
         }
     }

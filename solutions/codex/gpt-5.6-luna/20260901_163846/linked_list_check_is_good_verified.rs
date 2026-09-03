@@ -11397,7 +11397,11 @@ impl ThreadLLWithDelayBits {
                 thread_tok.value().pages[self.page_id()].num_blocks == 0,
                 tok.instance_id() == self.instance@.id(),
                 tok.key() == thread_tok.key(),
-                tok0 == tok,
+                tok0.instance_id() == tok.instance_id(),
+                tok0.key() == tok.key(),
+                tok0 == tok || tok0.value() == (crate::tokens::ThreadCheckedState {
+                    pages: tok.value().pages.insert(self.page_id()),
+                }),
         {
             let ghost mut the_ptr;
             let ghost mut the_delay;
@@ -11408,27 +11412,23 @@ impl ThreadLLWithDelayBits {
                 let tracked (delay_token, ghost_ll) = pair;
                 the_ptr = ghost_ll.ptr();
                 the_delay = delay_token.value();
-                if the_delay != DelayState::Freeing {
-                    let tracked new_tok = self.instance.borrow().page_check_delay_state(
-                        thread_tok.key(), self.page_id(), thread_tok,
-                        &delay_token, tok0);
-                    tok0 = new_tok;
+                if delay_token.value() != DelayState::Freeing {
+                    assert(delay_token.instance_id() == self.instance@.id());
+                    assert(delay_token.key() == self.page_id());
+                    if tok0 == tok {
+                        tok0 = self.instance.borrow().page_check_delay_state(
+                            thread_tok.key(), self.page_id(), thread_tok,
+                            &delay_token, tok0);
+                    }
                 }
                 g = (emp_token, Some((delay_token, ghost_ll)));
             });
 
             let old_delay = masked_ptr_delay_get_delay(tfree, Ghost(the_delay), Ghost(the_ptr));
+            assert(old_delay == the_delay.to_int());
             if unlikely(old_delay == 1) { 
                 atomic_yield();
             } else {
-                proof {
-                    assert(old_delay == the_delay.to_int());
-                    assert(the_delay != DelayState::Freeing) by {
-                        if the_delay == DelayState::Freeing {
-                            assert(the_delay.to_int() == 1);
-                        }
-                    }
-                }
                 return Tracked(tok0);
             }
         }

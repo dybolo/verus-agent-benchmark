@@ -2985,18 +2985,17 @@ impl<DT: Dispatch> Replica<DT> {
                 let resp: DT::Response = DT::clone_response(&responses[resp_idx]);
                 op_resp.resp = Some(resp);
                 self.contexts[thread_idx].batch.0.put(Tracked(&mut permission), op_resp);
+                let tracked update_req = updates.tracked_remove(resp_idx as nat);
                 atomic_with_ghost!(
                     &self.contexts[thread_idx].atomic.0 => store(0);
                     update prev -> next;
                     ghost g 
                     => {
-                        let tracked update = updates.tracked_remove(resp_idx as nat);
+                        let tracked result = self.flat_combiner_instance.borrow()
+                            .combiner_responding_result(g.slots, &mut flat_combiner);
+                        g.slots = result;
                         g.batch_perms = Some(permission);
-                        g.update = Some(update);
-                        g.slots = self.flat_combiner_instance.borrow().combiner_responding_result(
-                            g.slots,
-                            &mut flat_combiner,
-                        );
+                        g.update = Some(update_req);
                     }
                 );
                 resp_idx = resp_idx + 1;

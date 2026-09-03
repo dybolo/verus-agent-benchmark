@@ -752,153 +752,52 @@ UnboundedLog<DT: Dispatch> {
 
     #[inductive(readonly_apply)]
     fn readonly_apply_inductive(pre: Self, post: Self, rid: ReqId) {
-        assert(pre.local_reads.contains_key(rid));
-        assert(pre.local_reads[rid].is_ReadyToRead());
-        {
-        let op = pre.local_reads[rid].get_ReadyToRead_op();
-        let node_id = pre.local_reads[rid].get_ReadyToRead_node_id();
-        let version_upper_bound = pre.local_reads[rid].get_ReadyToRead_version_upper_bound();
-        assert(pre.wf_readstate(pre.local_reads[rid]));
-        assert(pre.wf_node_id(node_id));
-        assert(version_upper_bound <= pre.current_local_version(node_id));
-        assert(pre.current_local_version(node_id) <= pre.version_upper_bound);
-        assert(pre.replicas[node_id] == compute_nrstate_at_version(
-            pre.log,
-            pre.current_local_version(node_id),
-        ));
-        assert(post.replicas[node_id] == pre.replicas[node_id]);
-        assert(post.log === pre.log);
-        assert(post.version_upper_bound == pre.version_upper_bound);
-        assert(post.current_local_version(node_id) == pre.current_local_version(node_id));
-        assert(post.replicas[node_id] == compute_nrstate_at_version(
-            post.log,
-            post.current_local_version(node_id),
-        )) by {
-            assert(pre.replicas[node_id] == compute_nrstate_at_version(
-                pre.log,
-                pre.current_local_version(node_id),
-            ));
-        }
-
         assert(post.inv_read_results()) by {
             assert forall |other_rid| #[trigger] post.local_reads.contains_key(other_rid)
                 implies post.read_results_match(post.local_reads[other_rid]) by {
                 if other_rid != rid {
-                    assert(post.local_reads[other_rid] === pre.local_reads[other_rid]);
+                    assert(post.local_reads[other_rid] == pre.local_reads[other_rid]);
                     assert(pre.read_results_match(pre.local_reads[other_rid]));
-                    assert(post.read_results_match(post.local_reads[other_rid])
-                        == pre.read_results_match(pre.local_reads[other_rid])) by {
-                        reveal(UnboundedLog::State::read_results_match);
-                    }
                 } else {
-                    assert(post.local_reads[other_rid] === post.local_reads[rid]);
-                    assert(post.read_results_match(post.local_reads[other_rid])
-                        == post.read_results_match(post.local_reads[rid])) by {
-                        reveal(UnboundedLog::State::read_results_match);
-                    }
-                    assert(post.read_results_match(post.local_reads[rid])) by {
-                        assert(post.local_reads[rid] === ReadonlyState::Done {
-                            op,
-                            node_id,
-                            version_upper_bound,
-                            ret: DT::dispatch_spec(post.replicas[node_id], op),
-                        });
-                        assert(post.local_reads[rid] == ReadonlyState::Done {
-                            op,
-                            node_id,
-                            version_upper_bound,
-                            ret: DT::dispatch_spec(post.replicas[node_id], op),
-                        });
-                        assert(post.read_results_match(post.local_reads[rid]) ==
-                            post.read_results_match(ReadonlyState::Done {
-                                op,
-                                node_id,
-                                version_upper_bound,
-                                ret: DT::dispatch_spec(post.replicas[node_id], op),
-                            })) by {
-                            reveal(UnboundedLog::State::read_results_match);
-                        }
-                        assert(post.read_results_match(ReadonlyState::Done {
-                            op,
-                            node_id,
-                            version_upper_bound,
-                            ret: DT::dispatch_spec(post.replicas[node_id], op),
-                        })) by {
-                            reveal(UnboundedLog::State::read_results_match);
-                            let v = post.current_local_version(node_id);
-                            assert(post.version_upper_bound >= version_upper_bound);
-                            assert(v <= post.version_upper_bound);
-                            assert(version_upper_bound <= v);
-                            assert forall |i: nat| 0 <= i < v ==> post.log.contains_key(i) by {
-                                assert(post.inv_log_complete());
-                                assert(v <= post.tail);
+                    assert(post.local_reads[rid].is_Done());
+                    let read = post.local_reads[rid];
+                    match read {
+                        ReadonlyState::Done { op, node_id, version_upper_bound, ret } => {
+                            assert(pre.local_reads[rid].is_ReadyToRead());
+                            assert(pre.local_reads[rid].get_ReadyToRead_op() == op);
+                            assert(pre.local_reads[rid].get_ReadyToRead_node_id() == node_id);
+                            assert(pre.local_reads[rid].get_ReadyToRead_version_upper_bound()
+                                == version_upper_bound);
+                            assert(pre.wf_readstate(pre.local_reads[rid]));
+                            assert(pre.wf_node_id(node_id));
+                            assert(pre.combiner[node_id].is_Ready());
+                            assert(pre.current_local_version(node_id)
+                                == pre.local_versions[node_id]);
+                            assert(version_upper_bound <= pre.current_local_version(node_id));
+                            assert(pre.local_versions[node_id] <= pre.version_upper_bound) by {
+                                assert(pre.inv_local_version_upper_bound_heads());
                             }
-                            assert(rangeincl(version_upper_bound, v, post.version_upper_bound));
-                            assert(post.replicas[node_id] == compute_nrstate_at_version(post.log, v));
-                            compute_nrstate_at_version_preserves(post.log, post.log, v);
-                            assert(DT::dispatch_spec(post.replicas[node_id], op) ==
-                                DT::dispatch_spec(compute_nrstate_at_version(post.log, v), op));
-                            assert(exists |v: nat| #[trigger] rangeincl(version_upper_bound, v, post.version_upper_bound)
-                                && DT::dispatch_spec(post.replicas[node_id], op) == DT::dispatch_spec(
+                            assert(pre.current_local_version(node_id) <= pre.version_upper_bound);
+                            assert(ret == DT::dispatch_spec(pre.replicas[node_id], op));
+                            assert(pre.replicas[node_id]
+                                == compute_nrstate_at_version(
+                                    pre.log, pre.current_local_version(node_id)));
+                            assert(ret == DT::dispatch_spec(
+                                compute_nrstate_at_version(
+                                    pre.log, pre.current_local_version(node_id)), op));
+                            assert(exists |v: nat| (#[trigger] rangeincl(
+                                version_upper_bound, v, post.version_upper_bound))
+                                && ret == DT::dispatch_spec(
                                     compute_nrstate_at_version(post.log, v), op)) by {
-                                let v = post.current_local_version(node_id);
-                                assert(rangeincl(version_upper_bound, v, post.version_upper_bound));
-                                assert(post.replicas[node_id] == compute_nrstate_at_version(
-                                    post.log, v));
-                                assert(DT::dispatch_spec(post.replicas[node_id], op) == DT::dispatch_spec(
-                                    compute_nrstate_at_version(post.log, v), op));
+                                assert(rangeincl(version_upper_bound,
+                                    pre.current_local_version(node_id),
+                                    post.version_upper_bound));
                             }
-                            reveal(UnboundedLog::State::read_results_match);
                         }
-                        reveal(UnboundedLog::State::read_results_match);
-                        assert(post.local_reads[rid].is_Done());
-                        assert(post.local_reads[rid].get_Done_ret() == DT::dispatch_spec(
-                            compute_nrstate_at_version(post.log, post.current_local_version(node_id)),
-                            op,
-                        )) by {
-                            assert(post.local_reads[rid].get_Done_ret() == DT::dispatch_spec(
-                                post.replicas[node_id], op));
-                        }
-                        assert(exists |v: nat| rangeincl(version_upper_bound, v, post.version_upper_bound)
-                            && post.local_reads[rid].get_Done_ret() == DT::dispatch_spec(
-                                compute_nrstate_at_version(post.log, v), op)) by {
-                            let v = post.current_local_version(node_id);
-                            assert(rangeincl(version_upper_bound, v, post.version_upper_bound));
-                        }
+                        _ => { assert(false); }
                     }
                 }
             }
-            assert(post.local_reads[rid] === ReadonlyState::Done {
-                op,
-                node_id,
-                version_upper_bound,
-                ret: DT::dispatch_spec(post.replicas[node_id], op),
-            });
-            assert(post.local_reads[rid].is_Done());
-            assert(post.local_reads[rid].get_Done_ret() == DT::dispatch_spec(
-                compute_nrstate_at_version(post.log, post.current_local_version(node_id)),
-                op,
-            )) by {
-                assert(post.local_reads[rid].get_Done_ret() == DT::dispatch_spec(
-                    post.replicas[node_id], op));
-            }
-            assert(exists |v: nat| rangeincl(version_upper_bound, v, post.version_upper_bound)
-                && post.local_reads[rid].get_Done_ret() == DT::dispatch_spec(
-                    compute_nrstate_at_version(post.log, v), op)) by {
-                let v = post.current_local_version(node_id);
-                assert(rangeincl(version_upper_bound, v, post.version_upper_bound));
-            }
-        }
-        assert forall |i: nat| 0 <= i < post.current_local_version(node_id)
-            ==> post.log.contains_key(i) by {
-            assert(post.inv_log_complete());
-            assert(post.current_local_version(node_id) <= post.tail);
-        }
-        assert forall |i: nat| 0 <= i < post.version_upper_bound
-            ==> post.log.contains_key(i) by {
-            assert(post.inv_log_complete());
-            assert(post.version_upper_bound <= post.tail);
-        }
         }
     }
 

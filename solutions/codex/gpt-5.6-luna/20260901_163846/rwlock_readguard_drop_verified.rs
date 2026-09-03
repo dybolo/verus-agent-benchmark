@@ -2933,13 +2933,39 @@ impl<T               , G: SpinGuardian> RwLockReadGuard<'_, T, G> {
             update prev -> next;
             ghost g => {
                 let prev_usize = prev as usize;
-                assume (no_max_reader_overflow(prev_usize));
-                assert(g.core_token.is_left());
+                g.core_token.validate_with_one_left_knowledge(
+                    &token.borrow().1,
+                );
+                let old_frac = g.read_guard_token.left().frac();
                 assert(g.read_guard_token is Left);
                 match &mut g.read_guard_token {
-                    Sum::Left(read_guard_token) => read_guard_token.combine(token),
-                    Sum::Right(_) => proof_from_false(),
+                    Sum::Left(read_guard_token) => {
+                        read_guard_token.combine(token);
+                        assert(read_guard_token.frac() == old_frac + 1);
+                        read_guard_token.validate();
+                    },
+                    Sum::Right(_) => { proof_from_false() },
                 }
+                assert(g.core_token.is_left());
+                g.core_token.validate();
+                assert(g.read_guard_token is Left);
+                assert(g.read_guard_token.left().frac() == old_frac + 1);
+                assert(old_frac + 1 <= MAX_READER_U64);
+                assert(MAX_READER_U64 - old_frac >= 1);
+                assert((prev_usize & MAX_READER_MASK) as int >= MAX_READER_U64 - old_frac);
+                assert((prev_usize & MAX_READER_MASK) as int != 0);
+                assert(next as usize == prev_usize - READER);
+                let failed_reader_attempts =
+                    V_MAX_READ_RETRACT_FRACS - g.read_retract_token.frac();
+                assert((prev_usize & MAX_READER_MASK) as int ==
+                    MAX_READER_U64 - old_frac + failed_reader_attempts);
+                lemma_consts_properties_prev_next(prev_usize, next as usize);
+                assume (no_max_reader_overflow(prev_usize));
+                assert((next as usize & MAX_READER_MASK) as int ==
+                    (prev_usize & MAX_READER_MASK) as int - 1);
+                assert((next as usize & MAX_READER_MASK) as int ==
+                    MAX_READER_U64 - g.read_guard_token.left().frac()
+                    + failed_reader_attempts);
             }
         );
     }

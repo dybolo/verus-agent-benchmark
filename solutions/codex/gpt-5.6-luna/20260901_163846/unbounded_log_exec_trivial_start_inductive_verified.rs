@@ -830,19 +830,35 @@ UnboundedLog<DT: Dispatch> {
 
     #[inductive(exec_trivial_start)]
     fn exec_trivial_start_inductive(pre: Self, post: Self, node_id: NodeId) {
-        assert forall |n| #[trigger] post.combiner.contains_key(n) implies post.wf_combiner_for_node_id(n) by {
+        assert(post.combiner.contains_key(node_id));
+        assert(post.combiner[node_id] == CombinerState::Placed { queued_ops: Seq::empty() });
+        assert(LogRangeMatchesQueue(
+            Seq::empty(),
+            post.log,
+            0,
+            post.local_versions[node_id],
+            post.tail,
+            node_id,
+            post.local_updates,
+        )) by {
+            concat_LogRangeNoNodeId_LogRangeMatchesQueue(
+                Seq::empty(),
+                post.log,
+                0,
+                post.local_versions[node_id],
+                post.tail,
+                post.tail,
+                node_id,
+                post.local_updates,
+            );
+        }
+        assert forall |n: NodeId| #[trigger] post.combiner.contains_key(n)
+            implies post.wf_combiner_for_node_id(n) by {
             if n == node_id {
-                assert(post.combiner[n] == CombinerState::Placed { queued_ops: Seq::empty() });
                 assert(post.wf_node_id(n));
-                assert(pre.combiner[n] == CombinerState::Ready);
-                assert(pre.wf_combiner_for_node_id(n));
-                assert(post.local_versions[n] == pre.local_versions[n]);
-                assert(post.log =~= pre.log);
-                assert(post.tail == pre.tail);
-                LogRangeMatchesQueue_from_no_node_id(
-                    post.log, post.local_versions[n], post.tail, n, post.local_updates);
-                assert(QueueRidsUpdatePlaced(Seq::empty(), post.local_updates, 0));
-                assert(seq_unique(Seq::<ReqId>::empty()));
+            } else {
+                assert(post.combiner[n] == pre.combiner[n]);
+                assert(post.wf_combiner_for_node_id(n));
             }
         }
     }
@@ -1131,32 +1147,6 @@ pub open spec fn LogRangeMatchesQueue<DT: Dispatch>(
             updates,
         ))
     })
-}
-
-proof fn LogRangeMatchesQueue_from_no_node_id<DT: Dispatch>(
-    log: Map<LogIdx, LogEntry<DT>>,
-    logIndexLower: LogIdx,
-    logIndexUpper: LogIdx,
-    nodeId: NodeId,
-    updates: Map<ReqId, UpdateState<DT>>,
-)
-    requires
-        logIndexLower <= logIndexUpper,
-        LogContainsEntriesUpToHere(log, logIndexUpper),
-        LogRangeNoNodeId(log, logIndexLower, logIndexUpper, nodeId),
-    ensures
-        LogRangeMatchesQueue(
-            Seq::<ReqId>::empty(), log, 0, logIndexLower, logIndexUpper, nodeId, updates,
-        ),
-    decreases logIndexUpper - logIndexLower,
-{
-    if logIndexLower < logIndexUpper {
-        assert(log.contains_key(logIndexLower));
-        assert(log[logIndexLower].node_id != nodeId);
-        LogRangeMatchesQueue_from_no_node_id(
-            log, logIndexLower + 1, logIndexUpper, nodeId, updates,
-        );
-    }
 }
 
 proof fn LogRangeMatchesQueue_update_change<DT: Dispatch>(

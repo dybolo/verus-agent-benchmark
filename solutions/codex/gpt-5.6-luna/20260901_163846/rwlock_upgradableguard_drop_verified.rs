@@ -3046,7 +3046,25 @@ impl<T               , G: SpinGuardian> RwLockUpgradeableGuard<'_, T, G> {
             self.inner.lock => fetch_sub(UPGRADEABLE_READER);
             update prev -> next;
             ghost g => {
-                lemma_consts_properties_prev_next(prev as usize, next as usize);
+                assert(self.inner.wf());
+                g.core_token.validate_with_one_left_owner(&guard_token);
+                match &g.upreader_guard_token {
+                    Some(existing) => {
+                        guard_token.validate_with_one_left_owner(existing);
+                        assert(false);
+                    },
+                    None => { }
+                }
+                assert(!g.core_token.is_right());
+                assert(g.upread_retract_token is Some);
+                lemma_consts_properties_value(prev as usize);
+                assert((prev as usize) & UPGRADEABLE_READER != 0);
+                assert(0 <= next <= usize::MAX as int);
+                let ghost prev_usize: usize = prev as usize;
+                assert(READER_MASK == 0x0FFF_FFFF_FFFF_FFFF);
+                assert_bit_vector((prev_usize as u64) & 0x0FFF_FFFF_FFFF_FFFFu64 <= 0x0FFF_FFFF_FFFF_FFFFu64);
+                assert(prev_usize & READER_MASK < MAX_READER);
+                lemma_consts_properties_prev_next(prev_usize, next as usize);
                 g.upreader_guard_token = Some(guard_token);
             }
         );

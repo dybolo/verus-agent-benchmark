@@ -2999,27 +2999,35 @@ impl<T               , G: SpinGuardian> RwLockWriteGuard<'_, T, G> {
             update prev -> next;
             ghost g => {
                 lemma_consts_properties_prev_next(prev, next);
-                g.core_token.validate_with_one_right_knowledge(&token);
-                assert(g.core_token.is_right());
-                assert(g.core_token.is_resource_owner());
-                assert(g.core_token.has_resource());
-                assert(g.core_token.frac() + 1 == 3);
-                let tracked mut core = g.core_token;
-                core.join_one_right_knowledge(token);
-                let tracked empty = core.take_resource_right();
-                let tracked mut half = empty.put_resource(perm);
-                let tracked read_half = half.split(1);
-                core.change_to_left(half);
-                let tracked upreader = core.split_one_left_owner();
-                let tracked knowledge = core.split_one_left_knowledge();
-                let tracked read_empty = g.read_guard_token.tracked_take_right();
-                let tracked read_token = CountResource::alloc_from_empty(
-                    read_empty,
-                    (read_half, knowledge),
-                );
-                g.core_token = core;
-                g.upreader_guard_token = Some(upreader);
-                g.read_guard_token = Sum::tracked_new_left(read_token);
+                if prev & WRITER != 0 {
+                    g.core_token.join_one_right_knowledge(token);
+                    let tracked empty = g.core_token.take_resource_right();
+                    let tracked full_perm = empty.put_resource(perm);
+                    let tracked _old = g.core_token.change_to_left(full_perm);
+
+                    let tracked mut full_perm = g.core_token.take_resource_left();
+                    let tracked read_half_cell_perm = full_perm.split(1int);
+                    g.core_token.put_resource_left(full_perm);
+                    let tracked upreader_guard_token = g.core_token.split_one_left_owner();
+                    let tracked mode_knowledge = g.core_token.split_one_left_knowledge();
+                    let tracked read_perm = (read_half_cell_perm, mode_knowledge);
+                    let tracked old_read_guard_token = g.read_guard_token;
+                    let tracked empty_read_guard_token = match old_read_guard_token {
+                        Sum::Right(empty) => empty,
+                        Sum::Left(_) => proof_from_false(),
+                    };
+                    let tracked read_count = empty_read_guard_token.put_resource(read_perm);
+                    let ghost read_guard_token_id = read_count.id();
+                    let tracked read_guard_token = CountResource {
+                        r: Some(read_count),
+                        id: read_guard_token_id,
+                    };
+                    g.read_guard_token = Sum::tracked_new_left(read_guard_token);
+                    g.upreader_guard_token = Some(upreader_guard_token);
+                } else {
+                    let tracked _token = token;
+                    let tracked _perm = perm;
+                }
             }
         };
     }

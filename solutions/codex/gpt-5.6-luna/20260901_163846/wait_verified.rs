@@ -286,11 +286,14 @@ impl WaitQueue {
             proof_decl! { let tracked mut count_mirror: GhostVar<int>; }
             #[verus_spec(with => Tracked(count_mirror))]
             wakers.take_predicate_state();
-            assert(count_mirror@ > 0);
             atomic_with_ghost! {
                 self.num_wakers => fetch_sub(1);
                 update prev -> next;
                 ghost count_auth => {
+                    assert(prev == count_auth@);
+                    assert(count_auth.id() == count_mirror.id());
+                    count_auth.agree(&count_mirror);
+                    assert(prev > 0);
                     count_auth.update(&mut count_mirror, next);
                 }
             };
@@ -315,11 +318,14 @@ impl WaitQueue {
             proof_decl! { let tracked mut count_mirror: GhostVar<int>; }
             #[verus_spec(with => Tracked(count_mirror))]
             wakers.take_predicate_state();
-            assert(count_mirror@ > 0);
             atomic_with_ghost! {
                 self.num_wakers => fetch_sub(1);
                 update prev -> next;
                 ghost count_auth => {
+                    assert(prev == count_auth@);
+                    assert(count_auth.id() == count_mirror.id());
+                    count_auth.agree(&count_mirror);
+                    assert(prev > 0);
                     count_auth.update(&mut count_mirror, next);
                 }
             };
@@ -352,6 +358,9 @@ impl WaitQueue {
             update prev -> next;
             ghost count_auth => {
                 assume(prev < u32::MAX);
+                assert(prev == count_auth@);
+                assert(count_auth.id() == count_mirror.id());
+                count_auth.agree(&count_mirror);
                 count_auth.update(&mut count_mirror, next);
             }
         };
