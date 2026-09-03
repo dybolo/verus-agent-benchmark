@@ -1019,6 +1019,7 @@ impl<DT: Dispatch> NrLog<DT> {
             result.1@.key() == local_reads@.key(),
     {
         let rid_g: Ghost<ReqId> = Ghost(local_reads@.key());
+        let tracked local_reads = local_reads.get();
         let tracked new_local_reads_g: UnboundedLog::local_reads<DT>;
         let local_version = &self.local_versions[node_id as usize].0;
         let res =
@@ -1026,11 +1027,18 @@ impl<DT: Dispatch> NrLog<DT> {
             local_version => load();
             returning res;
             ghost g => {
+                if res >= version_upper_bound {
+                    new_local_reads_g = self.unbounded_log_instance.borrow().readonly_ready_to_read(
+                        rid_g@,
+                        node_id as nat,
+                        &g.0,
+                        local_reads,
+                    );
+                } else {
+                    new_local_reads_g = local_reads;
+                }
             }
         );
-        proof {
-            new_local_reads_g = local_reads.get();
-        }
         (res >= version_upper_bound, Tracked(new_local_reads_g))
     }
 

@@ -309,9 +309,17 @@ pub fn thread_routine(
         shared_state.x.fetch_add_wrapping(Tracked(&mut inner.x_perm), 1);
         proof {
             if which_thread == 0 {
-                oneshot_thread_half.perform_using_two_halves(&mut inner.oneshot0_inv_half);
+                if inner.oneshot0_inv_half@ is HalfRightToComplete {
+                    oneshot_thread_half.perform_using_two_halves(&mut inner.oneshot0_inv_half);
+                } else {
+                    oneshot_thread_half.lemma_is_complete_if_other_is(&inner.oneshot0_inv_half);
+                }
             } else {
-                oneshot_thread_half.perform_using_two_halves(&mut inner.oneshot1_inv_half);
+                if inner.oneshot1_inv_half@ is HalfRightToComplete {
+                    oneshot_thread_half.perform_using_two_halves(&mut inner.oneshot1_inv_half);
+                } else {
+                    oneshot_thread_half.lemma_is_complete_if_other_is(&inner.oneshot1_inv_half);
+                }
             }
         }
     });

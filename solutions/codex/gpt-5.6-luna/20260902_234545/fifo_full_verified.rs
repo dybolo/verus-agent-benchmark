@@ -264,11 +264,13 @@ tokenized_state_machine!{FifoQueue<T> {
 
     #[inductive(initialize)]
     fn initialize_inductive(post: Self, backing_cells: Seq<CellId>, storage: Map<nat, cell::PointsTo<T>>) {
-        reveal(FifoQueue::State::valid_storage_all);
-        reveal(FifoQueue::State::valid_storage_at_idx);
-        assert forall|i: nat| imply(0 <= i && i < post.len(), post.valid_storage_at_idx(i)) by {
+        assert(post.storage == storage);
+        assert(post.backing_cells == backing_cells);
+        assert forall|i: nat| 0 <= i && i < post.len() ==> post.valid_storage_at_idx(i) by {
             if 0 <= i && i < post.len() {
-                assert(post.valid_storage_at_idx(i));
+                assert(storage.dom().contains(i));
+                assert(storage.index(i).id() == backing_cells.index(i as int));
+                assert(storage.index(i).is_uninit());
             }
         }
     }
@@ -276,14 +278,11 @@ tokenized_state_machine!{FifoQueue<T> {
 
     #[inductive(produce_start)]
     fn produce_start_inductive(pre: Self, post: Self) {
-        reveal(FifoQueue::State::valid_storage_all);
-        reveal(FifoQueue::State::valid_storage_at_idx);
-        reveal(FifoQueue::State::produce_start);
-        assert forall|i: nat| imply(0 <= i && i < post.len(), post.valid_storage_at_idx(i)) by {
+        let tail = pre.producer.get_Idle_0();
+        assert forall|i: nat| 0 <= i && i < post.len() ==> post.valid_storage_at_idx(i) by {
             if 0 <= i && i < post.len() {
-                let tail = pre.producer.get_Idle_0();
                 if i == tail {
-                    assert(post.valid_storage_at_idx(i));
+                    assert(!post.storage.dom().contains(i));
                 } else {
                     assert(pre.valid_storage_at_idx(i));
                     assert(post.valid_storage_at_idx(i));
@@ -294,16 +293,13 @@ tokenized_state_machine!{FifoQueue<T> {
 
     #[inductive(produce_end)]
     fn produce_end_inductive(pre: Self, post: Self, perm: cell::PointsTo<T>) {
-        reveal(FifoQueue::State::valid_storage_all);
-        reveal(FifoQueue::State::valid_storage_at_idx);
-        reveal(FifoQueue::State::produce_end);
-        assert forall|i: nat| imply(0 <= i && i < post.len(), post.valid_storage_at_idx(i)) by {
+        let tail = pre.producer.get_Producing_0();
+        assert forall|i: nat| 0 <= i && i < post.len() ==> post.valid_storage_at_idx(i) by {
             if 0 <= i && i < post.len() {
-                let tail = pre.producer.get_Producing_0();
-                let next_tail = FifoQueue::State::<T>::inc_wrap(tail, pre.len());
-                if i == tail || i == next_tail {
-                    assert(pre.valid_storage_at_idx(i));
-                    assert(post.valid_storage_at_idx(i));
+                if i == tail {
+                    assert(post.storage.dom().contains(i));
+                    assert(post.storage.index(i).id() == post.backing_cells.index(i as int));
+                    assert(post.storage.index(i).is_init());
                 } else {
                     assert(pre.valid_storage_at_idx(i));
                     assert(post.valid_storage_at_idx(i));
@@ -314,14 +310,11 @@ tokenized_state_machine!{FifoQueue<T> {
 
     #[inductive(consume_start)]
     fn consume_start_inductive(pre: Self, post: Self) {
-        reveal(FifoQueue::State::valid_storage_all);
-        reveal(FifoQueue::State::valid_storage_at_idx);
-        reveal(FifoQueue::State::consume_start);
-        assert forall|i: nat| imply(0 <= i && i < post.len(), post.valid_storage_at_idx(i)) by {
+        let head = pre.consumer.get_Idle_0();
+        assert forall|i: nat| 0 <= i && i < post.len() ==> post.valid_storage_at_idx(i) by {
             if 0 <= i && i < post.len() {
-                let head = pre.consumer.get_Idle_0();
                 if i == head {
-                    assert(post.valid_storage_at_idx(i));
+                    assert(!post.storage.dom().contains(i));
                 } else {
                     assert(pre.valid_storage_at_idx(i));
                     assert(post.valid_storage_at_idx(i));
@@ -332,16 +325,13 @@ tokenized_state_machine!{FifoQueue<T> {
 
     #[inductive(consume_end)]
     fn consume_end_inductive(pre: Self, post: Self, perm: cell::PointsTo<T>) {
-        reveal(FifoQueue::State::valid_storage_all);
-        reveal(FifoQueue::State::valid_storage_at_idx);
-        reveal(FifoQueue::State::consume_end);
-        assert forall|i: nat| imply(0 <= i && i < post.len(), post.valid_storage_at_idx(i)) by {
+        let head = pre.consumer.get_Consuming_0();
+        assert forall|i: nat| 0 <= i && i < post.len() ==> post.valid_storage_at_idx(i) by {
             if 0 <= i && i < post.len() {
-                let head = pre.consumer.get_Consuming_0();
-                let next_head = FifoQueue::State::<T>::inc_wrap(head, pre.len());
-                if i == head || i == next_head {
-                    assert(pre.valid_storage_at_idx(i));
-                    assert(post.valid_storage_at_idx(i));
+                if i == head {
+                    assert(post.storage.dom().contains(i));
+                    assert(post.storage.index(i).id() == post.backing_cells.index(i as int));
+                    assert(post.storage.index(i).is_uninit());
                 } else {
                     assert(pre.valid_storage_at_idx(i));
                     assert(post.valid_storage_at_idx(i));
@@ -489,18 +479,18 @@ impl<T> Producer<T> {
             } else {
                 self.tail + 1
             };
-            let tracked mut cell_perm: Option<cell::PointsTo<T>> = None;
+            let tracked cell_perm: Option<cell::PointsTo<T>> = None;
             let head =
                 atomic_with_ghost!(&queue.head => load();
                 returning head;
                 ghost head_token => {
                     if head != next_tail as u64 {
-                        assert(head_token.value() == head as int);
-                        assert(self.producer@.value().is_Idle());
-                        cell_perm = Some(queue.instance.borrow().produce_start(
-                            &head_token,
-                            &mut self.producer,
-                        ));
+                        let tracked perm =
+                            queue.instance.borrow().produce_start(
+                                &mut head_token,
+                                &mut self.producer,
+                            );
+                        cell_perm = Option::Some(perm);
                     }
                 }
             );
@@ -547,19 +537,18 @@ impl<T> Consumer<T> {
             } else {
                 self.head + 1
             };
-            let tracked mut cell_perm: Option<cell::PointsTo<T>> = None;
+            let tracked cell_perm: Option<cell::PointsTo<T>> = None;
             let tail =
                 atomic_with_ghost!(&queue.tail => load();
                 returning tail;
                 ghost tail_token => {
                     if self.head as u64 != tail {
-                        assert(tail_token.value() == tail as int);
-                        assert(self.consumer@.value().is_Idle());
-                        let tracked (_storage, Tracked(perm)) = queue.instance.borrow().consume_start(
-                            &tail_token,
-                            &mut self.consumer,
-                        );
-                        cell_perm = Some(perm);
+                        let tracked (ghost_map, Tracked(perm)) =
+                            queue.instance.borrow().consume_start(
+                                &mut tail_token,
+                                &mut self.consumer,
+                            );
+                        cell_perm = Option::Some(perm);
                     }
                 }
             );

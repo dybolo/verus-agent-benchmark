@@ -1445,42 +1445,43 @@ tokenized_state_machine!{ Mim {
 
     #[inductive(page_mk_block_tokens)]
     fn page_mk_block_tokens_inductive(pre: Self, post: Self, thread_id: ThreadId, page_id: PageId, old_num_blocks: nat, new_num_blocks: nat, block_size: nat) {
-        assert forall |bid: BlockId| post.block.dom().contains(bid) implies
-            post.inv_block_id_valid_for_block(bid)
+        assert forall |block_id: BlockId| #[trigger] post.block.dom().contains(block_id)
+            implies post.inv_block_id_valid_for_block(block_id)
         by {
-            if pre.block.dom().contains(bid) {
-                assert(pre.inv_block_id_valid_for_block(bid));
+            if pre.block.dom().contains(block_id) {
+                assert(pre.inv_block_id_valid_for_block(block_id));
+                assert(post.inv_block_id_valid_for_block(block_id));
             } else {
-                assert(bid.page_id == page_id);
-                assert(old_num_blocks <= bid.idx < new_num_blocks);
-                assert(bid.block_size == block_size);
-                assert(bid.slice_idx == BlockId::get_slice_idx(page_id, bid.idx, block_size));
-                assert(post.thread_of_segment.dom().contains(bid.page_id.segment_id));
-                assert(post.thread_local_state.dom().contains(thread_id));
-                assert(post.thread_of_segment[bid.page_id.segment_id] == thread_id);
-                assert(post.thread_local_state[thread_id].pages.dom().contains(bid.page_id));
-                assert(post.thread_local_state[thread_id].pages[bid.page_id].is_enabled);
-                assert(post.thread_local_state[thread_id].pages[bid.page_id].offset == 0);
-                assert(post.thread_local_state[thread_id].pages[bid.page_id].block_size == block_size);
-                assert(post.thread_local_state[thread_id].pages[bid.page_id].num_blocks == new_num_blocks);
-                assert(post.block[bid].page_shared_access == post.thread_local_state[thread_id].pages[page_id].shared_access);
-                assert(post.block[bid].page_slice_shared_access == post.thread_local_state[thread_id].pages[bid.page_id_for_slice()].shared_access);
-                assert(pre.segment_shared_access.dom().contains(page_id.segment_id));
-                assert(pre.inv_segment_shared_access_eq());
-                assert(pre.segment_shared_access[page_id.segment_id] == pre.thread_local_state[thread_id].segments[page_id.segment_id].shared_access);
-                assert(post.block[bid].segment_shared_access == pre.segment_shared_access[page_id.segment_id]);
-                assert(post.block[bid].segment_shared_access == post.thread_local_state[thread_id].segments[page_id.segment_id].shared_access);
-                assert(post.block[bid].heap_id == None);
+                assert(block_id.page_id == page_id);
+                assert(old_num_blocks <= block_id.idx < new_num_blocks);
+                assert(pre.thread_local_state.dom().contains(thread_id));
+                assert(pre.thread_of_segment.dom().contains(page_id.segment_id));
+                assert(pre.thread_of_segment[page_id.segment_id] == thread_id);
+                assert(pre.thread_local_state[thread_id].pages.dom().contains(page_id));
+                assert(pre.thread_local_state[thread_id].pages[page_id].is_enabled);
+                assert(pre.thread_local_state[thread_id].pages[page_id].offset == 0);
+                assert(pre.thread_local_state[thread_id].pages[page_id].block_size == block_size);
+                assert(pre.thread_local_state[thread_id].pages[page_id].shared_access ==
+                    post.block[block_id].page_shared_access);
+                assert(pre.thread_local_state[thread_id].pages[page_id].num_blocks == old_num_blocks);
                 assert(Self::okay_to_add_block(
-                    pre.thread_local_state[thread_id], page_id, bid.idx, block_size));
-                assert(post.thread_local_state[thread_id].pages.dom().contains(bid.page_id_for_slice()));
-                assert(post.thread_local_state[thread_id].pages[bid.page_id_for_slice()].is_enabled);
-                assert(post.thread_local_state[thread_id].pages[bid.page_id_for_slice()].shared_access == post.block[bid].page_slice_shared_access);
-                assert(bid.page_id_for_slice().idx - bid.page_id.idx ==
-                    post.thread_local_state[thread_id].pages[bid.page_id_for_slice()].offset);
-                assert(post.thread_local_state[thread_id].segments[page_id.segment_id].is_enabled);
-                assert(post.thread_local_state[thread_id].segments[page_id.segment_id].shared_access == post.block[bid].segment_shared_access);
-                assert(post.inv_block_id_valid_for_block(bid));
+                    pre.thread_local_state[thread_id], page_id, block_id.idx, block_size));
+                assert(pre.thread_local_state[thread_id].pages.dom().contains(
+                    block_id.page_id_for_slice()));
+                assert(pre.thread_local_state[thread_id].pages[block_id.page_id_for_slice()].is_enabled);
+                assert(pre.thread_local_state[thread_id].pages[block_id.page_id_for_slice()].shared_access ==
+                    post.block[block_id].page_slice_shared_access);
+                assert(pre.thread_local_state[thread_id].pages[block_id.page_id_for_slice()].offset ==
+                    block_id.page_id_for_slice().idx - page_id.idx);
+                assert(pre.thread_local_state[thread_id].segments.dom().contains(page_id.segment_id));
+                assert(pre.thread_local_state[thread_id].segments[page_id.segment_id].is_enabled);
+                assert(pre.inv_segment_shared_access_eq());
+                assert(pre.segment_shared_access.dom().contains(page_id.segment_id));
+                assert(pre.segment_shared_access[page_id.segment_id] ==
+                    pre.thread_local_state[thread_id].segments[page_id.segment_id].shared_access);
+                assert(pre.thread_local_state[thread_id].segments[page_id.segment_id].shared_access ==
+                    post.block[block_id].segment_shared_access);
+                assert(post.inv_block_id_valid_for_block(block_id));
             }
         };
     }
@@ -1537,42 +1538,45 @@ tokenized_state_machine!{ Mim {
 
     #[inductive(page_destroy_block_tokens)]
     fn page_destroy_block_tokens_inductive(pre: Self, post: Self, thread_id: ThreadId, page_id: PageId, blocks: Map<BlockId, BlockState>) {
-        let n = pre.thread_local_state[thread_id].pages[page_id].num_blocks as int;
-        assert forall |b: BlockId| blocks.dom().contains(b) implies
-            0 <= b.idx < n
+        let old_num_blocks = pre.thread_local_state[thread_id].pages[page_id].num_blocks;
+        assert forall |block_id: BlockId| blocks.dom().contains(block_id)
+            implies 0 <= block_id.idx < old_num_blocks
         by {
-            assert(pre.block.dom().contains(b));
-            assert(pre.inv_block_id_valid_for_block(b));
+            assert(pre.block.dom().contains(block_id));
+            assert(pre.inv_block_id_valid());
+            assert(pre.inv_block_id_valid_for_block(block_id));
+            assert(pre.thread_of_segment[block_id.page_id.segment_id] == thread_id);
+            assert(pre.thread_local_state[thread_id].pages[block_id.page_id].num_blocks == old_num_blocks);
         };
-        assert forall |b1: BlockId, b2: BlockId|
-            blocks.dom().contains(b1) && blocks.dom().contains(b2)
-            && b1.page_id == b2.page_id && b1.idx == b2.idx
-            implies b1 == b2
+        assert(pre.inv_block_id_at_idx_uniq());
+        assert forall |bid1: BlockId, bid2: BlockId|
+            blocks.dom().contains(bid1) && blocks.dom().contains(bid2)
+            && bid1.page_id == bid2.page_id && bid1.idx == bid2.idx
+            implies bid1 == bid2
         by {
-            assert(pre.block.dom().contains(b1));
-            assert(pre.block.dom().contains(b2));
+            assert(pre.block.dom().contains(bid1));
+            assert(pre.block.dom().contains(bid2));
             assert(pre.inv_block_id_at_idx_uniq());
         };
-        Self::block_map_with_len(blocks, page_id, n);
-        assert forall |bid: BlockId| post.block.dom().contains(bid) implies
-            post.inv_block_id_valid_for_block(bid)
+        Self::block_map_with_len(blocks, page_id, old_num_blocks as int);
+        assert forall |block_id: BlockId| #[trigger] post.block.dom().contains(block_id)
+            implies post.inv_block_id_valid_for_block(block_id)
         by {
-            if bid.page_id == page_id {
-                assert(pre.inv_block_id_valid_for_block(bid));
-                let old_idx = bid.idx as int;
-                assert(0 <= old_idx < n);
-                assert(Self::blocks_has(blocks, page_id, old_idx));
+            if block_id.page_id == page_id {
+                assert(pre.inv_block_id_valid_for_block(block_id));
+                assert(0 <= block_id.idx < old_num_blocks);
+                assert(Self::blocks_has(blocks, page_id, block_id.idx as int));
                 let removed = choose |b: BlockId| blocks.dom().contains(b)
-                    && b.page_id == page_id && b.idx == old_idx;
+                    && b.page_id == page_id && b.idx == block_id.idx;
                 assert(pre.block.dom().contains(removed));
-                assert(pre.block.dom().contains(bid));
+                assert(pre.block.dom().contains(block_id));
                 assert(pre.inv_block_id_at_idx_uniq());
-                assert(removed == bid);
-                assert(!post.block.dom().contains(removed));
+                assert(removed == block_id);
+                assert(!post.block.dom().contains(block_id));
                 assert(false);
             } else {
-                assert(pre.inv_block_id_valid_for_block(bid));
-                assert(post.inv_block_id_valid_for_block(bid));
+                assert(pre.inv_block_id_valid_for_block(block_id));
+                assert(post.inv_block_id_valid_for_block(block_id));
             }
         };
     }
@@ -1598,24 +1602,23 @@ tokenized_state_machine!{ Mim {
     #[inductive(reserve_uniq_identifier)]
     fn reserve_uniq_identifier_inductive(pre: Self, post: Self) {
         let u = heap_get_unused_uniq_field(pre.heap_shared_access.dom() + pre.reserved_uniq);
-        let fresh = HeapId { id: 0, uniq: u, provenance: Provenance::null() };
-        assert(post.reserved_uniq =~= pre.reserved_uniq + set!{ fresh });
-        assert(post.heap_shared_access.dom() =~= pre.heap_shared_access.dom());
-        assert(post.inv_reserved2()) by {
-            assert forall |hid1: HeapId, hid2: HeapId|
-                post.reserved_uniq.contains(hid1)
-                && post.heap_shared_access.dom().contains(hid2)
-                implies hid1.uniq != hid2.uniq
-            by {
-                if hid1 == fresh {
-                    assert(pre.heap_shared_access.dom().contains(hid2));
-                    assert((pre.heap_shared_access.dom() + pre.reserved_uniq).contains(hid2));
-                    lemma_heap_get_unused_uniq_field(pre.heap_shared_access.dom() + pre.reserved_uniq);
-                } else {
-                    assert(pre.inv_reserved2());
-                }
-            };
+        lemma_heap_get_unused_uniq_field(pre.heap_shared_access.dom() + pre.reserved_uniq);
+        assert forall |hid1: HeapId, hid2: HeapId|
+            post.reserved_uniq.contains(hid1)
+            && post.heap_shared_access.dom().contains(hid2)
+            implies hid1.uniq != hid2.uniq
+        by {
+            if hid1 == (HeapId { id: 0, uniq: u, provenance: Provenance::null() }) {
+                assert(hid1.uniq == u);
+                assert((pre.heap_shared_access.dom() + pre.reserved_uniq).contains(hid2));
+                assert(hid2.uniq != u);
+            } else {
+                assert(pre.reserved_uniq.contains(hid1));
+                assert(pre.inv_reserved2());
+                assert(hid1.uniq != hid2.uniq);
+            }
         };
+        assert(post.inv_reserved2());
     }
 
 

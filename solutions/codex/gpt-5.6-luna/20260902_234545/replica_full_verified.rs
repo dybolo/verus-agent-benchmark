@@ -2564,17 +2564,14 @@ impl<DT: Dispatch> Replica<DT> {
         }
 
         let tid = 1u64;
-        let tracked lock_g: Option<CombinerLockStateGhost<DT>> = Option::None;
+        let tracked lock_g: Option<CombinerLockStateGhost<DT>>;
         let res =
             atomic_with_ghost!(
             &self.combiner.0 => compare_exchange(0, tid + 1);
             update prev->next;
             ghost g => {
-                if prev == 0 {
-                    let tracked old_g = g.tracked_unwrap();
-                    lock_g = Some(old_g);
-                    g = Option::None;
-                }
+                lock_g = g;
+                g = Option::None;
             }
         );
         if let Result::Ok(val) = res {
@@ -2815,57 +2812,51 @@ impl<DT: Dispatch> Replica<DT> {
         {
             let tracked update_req: std::option::Option<UnboundedLog::local_updates<DT>> = Option::None;
             let tracked batch_perms: std::option::Option<PointsTo<PendingOperation<DT>>> = Option::None;
+            let ghost old_bools = flat_combiner@.value().get_Collecting_0();
+            let ghost old_rids = request_ids;
+            let ghost mut rid: ReqId = 0;
             let num_ops =
                 atomic_with_ghost!(
                 &self.contexts[thread_idx].atomic.0 => load();
                 returning num_ops;
                 ghost g 
             => {
-                if num_ops == 0 {
-                    rids_match_add_none(
-                        flat_combiner@.value().get_Collecting_0(),
-                        request_ids,
-                        0,
-                        flat_combiner@.value().get_Collecting_0().len(),
-                        0,
-                        request_ids.len(),
-                    );
-                    self.flat_combiner_instance.borrow().combiner_collect_empty(
-                        &g.slots,
-                        flat_combiner.borrow_mut(),
-                    );
-                } else {
+                if num_ops == 1 {
                     self.flat_combiner_instance.borrow().pre_combiner_collect_request(
                         &g.slots,
-                        flat_combiner.borrow(),
+                        &flat_combiner,
                     );
-                    let tracked crate::exec::context::ContextGhost {
-                        batch_perms: old_batch_perms,
-                        slots,
-                        update: old_update,
-                    } = g;
-                    batch_perms = Some(old_batch_perms.tracked_unwrap());
-                    update_req = Some(old_update.tracked_unwrap());
-                    rids_match_add_rid(
-                        flat_combiner@.value().get_Collecting_0(),
-                        request_ids,
-                        0,
-                        flat_combiner@.value().get_Collecting_0().len(),
-                        0,
-                        request_ids.len(),
-                        update_req@.unwrap().key(),
+                    assert(g.slots.value().is_Request());
+                    rid = g.update.unwrap().key();
+                    update_req = g.update;
+                    batch_perms = g.batch_perms;
+                    assert(update_req.is_some());
+                    assert(batch_perms.is_some());
+                    g.update = Option::None;
+                    g.batch_perms = Option::None;
+                    g.slots = self.flat_combiner_instance.borrow().combiner_collect_request(
+                        g.slots,
+                        &mut flat_combiner,
                     );
-                    let tracked slots = self.flat_combiner_instance.borrow().combiner_collect_request(
-                        slots,
-                        flat_combiner.borrow_mut(),
+                } else {
+                    self.flat_combiner_instance.borrow().combiner_collect_empty(
+                        &g.slots,
+                        &mut flat_combiner,
                     );
-                    g = crate::exec::context::ContextGhost {
-                        batch_perms: None,
-                        slots,
-                        update: None,
-                    };
                 }
             });
+            proof {
+                if num_ops == 1 {
+                    rids_match_add_rid(
+                        old_bools, old_rids, 0, old_bools.len(), 0, old_rids.len(),
+                        rid,
+                    );
+                } else {
+                    rids_match_add_none(
+                        old_bools, old_rids, 0, old_bools.len(), 0, old_rids.len(),
+                    );
+                }
+            }
             if num_ops == 1 {
                 let tracked batch_token_value = batch_perms.tracked_unwrap();
                 let op = DT::clone_write_op(
@@ -3014,15 +3005,12 @@ impl<DT: Dispatch> Replica<DT> {
                     update prev -> next;
                     ghost g 
                     => {
-                        let tracked slots = self.flat_combiner_instance.borrow().combiner_responding_result(
+                        g.update = Some(update);
+                        g.batch_perms = Some(permission);
+                        g.slots = self.flat_combiner_instance.borrow().combiner_responding_result(
                             g.slots,
                             &mut flat_combiner,
                         );
-                        g = crate::exec::context::ContextGhost {
-                            batch_perms: Some(permission),
-                            slots,
-                            update: Some(update),
-                        };
                     }
                 );
                 resp_idx = resp_idx + 1;

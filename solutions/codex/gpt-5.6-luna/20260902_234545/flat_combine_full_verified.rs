@@ -188,16 +188,93 @@ tokenized_state_machine! {
         fn client_send_inductive(pre: Self,
             post: Self, j: nat, request: Request, cur_slot: bool)
         {
-            assert(pre.not_waiting_inv());
-            assert(pre.waiting_inv());
-            assert(pre.request_stored_inv());
-            assert(pre.response_stored_inv());
-            assert(pre.combiner_has_inv());
-            assert(post.not_waiting_inv());
-            assert(post.waiting_inv());
-            assert(post.request_stored_inv());
-            assert(post.response_stored_inv());
-            assert(post.combiner_has_inv());
+            assert(post.num_clients == pre.num_clients);
+            assert forall |i: nat| #[trigger] post.valid_idx(i) && post.clients.index(i).is_Idle() implies !post.slots.index(i) by {
+                if i == j {
+                    assert(post.clients.index(j).is_Waiting());
+                } else {
+                    assert(pre.not_waiting_inv());
+                    assert(post.valid_idx(i) == pre.valid_idx(i));
+                    assert(post.clients.index(i).is_Idle() == pre.clients.index(i).is_Idle());
+                    assert(pre.clients.index(i) == post.clients.index(i));
+                    assert(pre.slots.index(i) == post.slots.index(i));
+                }
+            };
+            assert forall |i: nat| #[trigger] post.client_waiting(i) implies post.request_stored(i) || post.response_stored(i) || post.combiner_has(i) by {
+                if i == j {
+                    assert(post.request_stored(j));
+                } else {
+                    assert(pre.waiting_inv());
+                    assert(post.valid_idx(i) == pre.valid_idx(i));
+                    assert(post.num_clients == pre.num_clients);
+                    assert(post.valid_idx(i));
+                    assert(pre.valid_idx(i));
+                    assert(pre.clients.dom().contains(i));
+                    assert(post.clients.index(i) == pre.clients.index(i));
+                    assert(pre.client_waiting(i));
+                    assert(pre.request_stored(i) || pre.response_stored(i) || pre.combiner_has(i));
+                }
+            };
+            assert forall |i: nat| #[trigger] post.request_stored(i) implies post.client_waiting(i)
+                && post.requests.index(i).rid == post.clients.index(i).get_Waiting_rid()
+                && post.slots.index(i) by {
+                if i == j {
+                    assert(post.request_stored(j));
+                    assert(post.client_waiting(j));
+                    assert(post.requests.index(j).rid == request.rid);
+                    assert(post.clients.index(j).get_Waiting_rid() == request.rid);
+                    assert(post.slots.index(j));
+                } else {
+                    assert(post.request_stored(i));
+                    assert(post.requests.dom().contains(i));
+                    assert(pre.requests.dom().contains(i));
+                    assert(pre.request_stored(i));
+                    assert(pre.request_stored_inv());
+                    assert(post.num_clients == pre.num_clients);
+                    assert(post.valid_idx(i) == pre.valid_idx(i));
+                    assert(post.clients.index(i) == pre.clients.index(i));
+                    assert(post.requests.index(i) == pre.requests.index(i));
+                    assert(post.slots.index(i) == pre.slots.index(i));
+                }
+            };
+            assert forall |i: nat| #[trigger] post.response_stored(i) implies
+                post.client_waiting(i) && post.responses.index(i).rid == post.clients.index(i).get_Waiting_rid()
+                && !post.slots.index(i) by {
+                if i == j {
+                    assert(pre.clients.index(j).is_Idle());
+                    assert(pre.response_stored_inv());
+                    assert(!pre.response_stored(j));
+                    assert(!post.response_stored(j));
+                } else {
+                    assert(pre.response_stored(i));
+                    assert(pre.response_stored_inv());
+                    assert(post.num_clients == pre.num_clients);
+                    assert(post.valid_idx(i) == pre.valid_idx(i));
+                    assert(post.clients.index(i) == pre.clients.index(i));
+                    assert(post.responses.index(i) == pre.responses.index(i));
+                    assert(post.slots.index(i) == pre.slots.index(i));
+                }
+            };
+            assert forall |i: nat| #[trigger] post.combiner_has(i) implies
+                post.client_waiting(i) && post.slots.index(i)
+                && post.combiner_rid(i) == post.clients.index(i).get_Waiting_rid()
+                && !post.request_stored(i) by {
+                if i == j {
+                    assert(pre.clients.index(j).is_Idle());
+                    assert(pre.combiner_has_inv());
+                    assert(!pre.combiner_has(j));
+                    assert(!post.combiner_has(j));
+                } else {
+                    assert(pre.combiner_has(i));
+                    assert(pre.combiner_has_inv());
+                    assert(post.num_clients == pre.num_clients);
+                    assert(post.valid_idx(i) == pre.valid_idx(i));
+                    assert(post.clients.index(i) == pre.clients.index(i));
+                    assert(post.combiner == pre.combiner);
+                    assert(post.request_stored(i) == pre.request_stored(i));
+                    assert(post.slots.index(i) == pre.slots.index(i));
+                }
+            };
         }
 
         transition!{
@@ -221,11 +298,57 @@ tokenized_state_machine! {
 
         #[inductive(client_recv)]
         fn client_recv_inductive(pre: Self, post: Self, j: nat) {
-            assert(post.not_waiting_inv());
-            assert(post.waiting_inv());
-            assert(post.request_stored_inv());
-            assert(post.response_stored_inv());
-            assert(post.combiner_has_inv());
+            assert forall |i: nat| #[trigger] post.valid_idx(i) && post.clients.index(i).is_Idle() implies !post.slots.index(i) by {
+                if i == j { assert(!post.slots.index(j)); }
+                else {
+                    assert(pre.not_waiting_inv());
+                    assert(post.num_clients == pre.num_clients);
+                    assert(post.valid_idx(i));
+                    assert(pre.valid_idx(i));
+                    assert(pre.clients.dom().contains(i));
+                    assert(post.clients.index(i) == pre.clients.index(i));
+                    assert(post.slots.index(i) == pre.slots.index(i));
+                }
+            };
+            assert forall |i: nat| #[trigger] post.client_waiting(i) implies post.request_stored(i) || post.response_stored(i) || post.combiner_has(i) by {
+                if i != j {
+                    assert(pre.waiting_inv());
+                    assert(pre.valid_idx(i));
+                    assert(post.valid_idx(i));
+                    assert(post.clients.index(i) == pre.clients.index(i));
+                    assert(pre.client_waiting(i));
+                    assert(pre.request_stored(i) || pre.response_stored(i) || pre.combiner_has(i));
+                }
+            };
+            assert forall |i: nat| #[trigger] post.request_stored(i) implies post.client_waiting(i)
+                && post.requests.index(i).rid == post.clients.index(i).get_Waiting_rid() && post.slots.index(i) by {
+                if i == j {
+                    assert(pre.request_stored_inv()); assert(!pre.request_stored(j)); assert(!post.request_stored(j));
+                } else {
+                    assert(pre.request_stored(i)); assert(pre.request_stored_inv());
+                    assert(post.clients.index(i) == pre.clients.index(i));
+                    assert(post.requests.index(i) == pre.requests.index(i)); assert(post.slots.index(i) == pre.slots.index(i));
+                }
+            };
+            assert forall |i: nat| #[trigger] post.response_stored(i) implies
+                post.client_waiting(i) && post.responses.index(i).rid == post.clients.index(i).get_Waiting_rid() && !post.slots.index(i) by {
+                if i == j { assert(!post.response_stored(j)); }
+                else {
+                    assert(pre.response_stored(i)); assert(pre.response_stored_inv());
+                    assert(post.clients.index(i) == pre.clients.index(i)); assert(post.responses.index(i) == pre.responses.index(i));
+                    assert(post.slots.index(i) == pre.slots.index(i));
+                }
+            };
+            assert forall |i: nat| #[trigger] post.combiner_has(i) implies
+                post.client_waiting(i) && post.slots.index(i) && post.combiner_rid(i) == post.clients.index(i).get_Waiting_rid()
+                && !post.request_stored(i) by {
+                if i == j { assert(pre.combiner_has_inv()); assert(!pre.combiner_has(j)); assert(!post.combiner_has(j)); }
+                else {
+                    assert(pre.combiner_has(i)); assert(pre.combiner_has_inv());
+                    assert(post.clients.index(i) == pre.clients.index(i)); assert(post.combiner == pre.combiner);
+                    assert(post.slots.index(i) == pre.slots.index(i)); assert(post.request_stored(i) == pre.request_stored(i));
+                }
+            };
         }
 
 
@@ -251,11 +374,38 @@ tokenized_state_machine! {
 
         #[inductive(combiner_recv)]
         fn combiner_recv_inductive(pre: Self, post: Self) {
-            assert(post.not_waiting_inv());
-            assert(post.waiting_inv());
-            assert(post.request_stored_inv());
-            assert(post.response_stored_inv());
-            assert(post.combiner_has_inv());
+            assert forall |i: nat| #[trigger] post.valid_idx(i) && post.clients.index(i).is_Idle() implies !post.slots.index(i) by {
+                assert(pre.not_waiting_inv()); assert(pre.valid_idx(i)); assert(post.clients.index(i) == pre.clients.index(i));
+                assert(post.slots.index(i) == pre.slots.index(i));
+            };
+            assert forall |i: nat| #[trigger] post.response_stored(i) implies post.client_waiting(i)
+                && post.responses.index(i).rid == post.clients.index(i).get_Waiting_rid() && !post.slots.index(i) by {
+                assert(pre.response_stored(i)); assert(pre.response_stored_inv());
+                assert(post.clients.index(i) == pre.clients.index(i)); assert(post.responses.index(i) == pre.responses.index(i));
+                assert(post.slots.index(i) == pre.slots.index(i));
+            };
+            assert forall |i: nat| #[trigger] post.combiner_has(i) implies post.client_waiting(i)
+                && post.slots.index(i) && post.combiner_rid(i) == post.clients.index(i).get_Waiting_rid()
+                && !post.request_stored(i) by {
+                if i == pre.combiner.get_Collecting_elems().len() {
+                    assert(pre.request_stored(i)); assert(pre.request_stored_inv()); assert(post.client_waiting(i));
+                    assert(post.slots.index(i)); assert(!post.request_stored(i));
+                } else { assert(pre.combiner_has(i)); assert(pre.combiner_has_inv());
+                    assert(post.clients.index(i) == pre.clients.index(i)); assert(post.slots.index(i) == pre.slots.index(i));
+                    assert(post.request_stored(i) == pre.request_stored(i)); }
+            };
+            assert forall |i: nat| #[trigger] post.request_stored(i) implies post.client_waiting(i)
+                && post.requests.index(i).rid == post.clients.index(i).get_Waiting_rid() && post.slots.index(i) by {
+                assert(pre.request_stored(i)); assert(pre.request_stored_inv());
+                assert(post.clients.index(i) == pre.clients.index(i)); assert(post.requests.index(i) == pre.requests.index(i));
+                assert(post.slots.index(i) == pre.slots.index(i));
+            };
+            assert forall |i: nat| #[trigger] post.client_waiting(i) implies post.request_stored(i) || post.response_stored(i) || post.combiner_has(i) by {
+                if i == pre.combiner.get_Collecting_elems().len() { assert(post.combiner_has(i)); }
+                else { assert(pre.waiting_inv()); assert(pre.client_waiting(i));
+                    assert(post.request_stored(i) == pre.request_stored(i)); assert(post.response_stored(i) == pre.response_stored(i));
+                    assert(post.combiner_has(i) == pre.combiner_has(i)); }
+            };
         }
 
         transition!{
@@ -273,11 +423,39 @@ tokenized_state_machine! {
 
         #[inductive(combiner_skip)]
         fn combiner_skip_inductive(pre: Self, post: Self) {
-            assert(post.not_waiting_inv());
-            assert(post.waiting_inv());
-            assert(post.request_stored_inv());
-            assert(post.response_stored_inv());
-            assert(post.combiner_has_inv());
+            assert forall |i: nat| #[trigger] post.valid_idx(i) && post.clients.index(i).is_Idle() implies !post.slots.index(i) by {
+                assert(pre.not_waiting_inv()); assert(pre.valid_idx(i)); assert(post.clients.index(i) == pre.clients.index(i));
+                assert(post.slots.index(i) == pre.slots.index(i));
+            };
+            assert forall |i: nat| #[trigger] post.client_waiting(i) implies post.request_stored(i) || post.response_stored(i) || post.combiner_has(i) by {
+                if i != pre.combiner.get_Collecting_elems().len() { assert(pre.waiting_inv()); assert(pre.client_waiting(i));
+                    assert(post.request_stored(i) == pre.request_stored(i)); assert(post.response_stored(i) == pre.response_stored(i));
+                    assert(post.combiner_has(i) == pre.combiner_has(i)); }
+                else { assert(pre.waiting_inv()); assert(pre.client_waiting(i));
+                    if pre.response_stored(i) { assert(post.response_stored(i)); }
+                    else { assert(pre.request_stored(i)); assert(post.request_stored(i)); }
+                }
+            };
+            assert forall |i: nat| #[trigger] post.request_stored(i) implies post.client_waiting(i)
+                && post.requests.index(i).rid == post.clients.index(i).get_Waiting_rid() && post.slots.index(i) by {
+                assert(pre.request_stored(i)); assert(pre.request_stored_inv());
+                assert(post.clients.index(i) == pre.clients.index(i)); assert(post.requests.index(i) == pre.requests.index(i));
+                assert(post.slots.index(i) == pre.slots.index(i));
+            };
+            assert forall |i: nat| #[trigger] post.response_stored(i) implies post.client_waiting(i)
+                && post.responses.index(i).rid == post.clients.index(i).get_Waiting_rid() && !post.slots.index(i) by {
+                assert(pre.response_stored(i)); assert(pre.response_stored_inv());
+                assert(post.clients.index(i) == pre.clients.index(i)); assert(post.responses.index(i) == pre.responses.index(i));
+                assert(post.slots.index(i) == pre.slots.index(i));
+            };
+            assert forall |i: nat| #[trigger] post.combiner_has(i) implies post.client_waiting(i)
+                && post.slots.index(i) && post.combiner_rid(i) == post.clients.index(i).get_Waiting_rid()
+                && !post.request_stored(i) by {
+                if i == pre.combiner.get_Collecting_elems().len() { assert(!post.combiner_has(i)); }
+                else { assert(pre.combiner_has(i)); assert(pre.combiner_has_inv());
+                    assert(post.clients.index(i) == pre.clients.index(i)); assert(post.slots.index(i) == pre.slots.index(i));
+                    assert(post.request_stored(i) == pre.request_stored(i)); }
+            };
         }
 
         transition!{
@@ -318,11 +496,30 @@ tokenized_state_machine! {
 
         #[inductive(combiner_send)]
         fn combiner_send_inductive(pre: Self, post: Self, response: Response, cur_slot: bool) {
-            assert(post.not_waiting_inv());
-            assert(post.waiting_inv());
-            assert(post.request_stored_inv());
-            assert(post.response_stored_inv());
-            assert(post.combiner_has_inv());
+            assert forall |i: nat| #[trigger] post.valid_idx(i) && post.clients.index(i).is_Idle() implies !post.slots.index(i) by {
+                if i == pre.combiner.get_Responding_idx() { assert(pre.combiner_has(i)); assert(pre.combiner_has_inv()); assert(pre.client_waiting(i)); assert(post.clients.index(i) == pre.clients.index(i)); }
+                else { assert(pre.not_waiting_inv()); assert(pre.valid_idx(i)); assert(post.clients.index(i) == pre.clients.index(i)); assert(post.slots.index(i) == pre.slots.index(i)); }
+            };
+            assert forall |i: nat| #[trigger] post.request_stored(i) implies post.client_waiting(i)
+                && post.requests.index(i).rid == post.clients.index(i).get_Waiting_rid() && post.slots.index(i) by {
+                if i == pre.combiner.get_Responding_idx() { assert(pre.combiner_has(i)); assert(pre.combiner_has_inv()); assert(!pre.request_stored(i)); assert(post.requests == pre.requests); assert(!post.request_stored(i)); }
+                else { assert(pre.request_stored(i)); assert(pre.request_stored_inv()); assert(post.clients.index(i) == pre.clients.index(i));
+                assert(post.requests.index(i) == pre.requests.index(i)); }
+            };
+            assert forall |i: nat| #[trigger] post.response_stored(i) implies post.client_waiting(i)
+                && post.responses.index(i).rid == post.clients.index(i).get_Waiting_rid() && !post.slots.index(i) by {
+                if i == pre.combiner.get_Responding_idx() { assert(pre.combiner_has(i)); assert(pre.combiner_has_inv()); assert(post.client_waiting(i)); assert(post.responses.index(i).rid == response.rid); }
+                else { assert(pre.response_stored(i)); assert(pre.response_stored_inv()); assert(post.clients.index(i) == pre.clients.index(i)); assert(post.responses.index(i) == pre.responses.index(i)); }
+            };
+            assert forall |i: nat| #[trigger] post.combiner_has(i) implies post.client_waiting(i)
+                && post.slots.index(i) && post.combiner_rid(i) == post.clients.index(i).get_Waiting_rid() && !post.request_stored(i) by {
+                assert(pre.combiner_has(i)); assert(pre.combiner_has_inv()); assert(post.clients.index(i) == pre.clients.index(i));
+                assert(post.slots.index(i) == pre.slots.index(i)); assert(post.request_stored(i) == pre.request_stored(i));
+            };
+            assert forall |i: nat| #[trigger] post.client_waiting(i) implies post.request_stored(i) || post.response_stored(i) || post.combiner_has(i) by {
+                if i == pre.combiner.get_Responding_idx() { assert(post.response_stored(i)); }
+                else { assert(pre.waiting_inv()); assert(pre.client_waiting(i)); assert(post.request_stored(i) == pre.request_stored(i)); assert(post.response_stored(i) == pre.response_stored(i)); }
+            };
         }
 
         transition!{
@@ -343,20 +540,52 @@ tokenized_state_machine! {
 
         #[inductive(combiner_send_skip)]
         fn combiner_send_skip_inductive(pre: Self, post: Self) {
-            assert(post.not_waiting_inv());
-            assert(post.waiting_inv());
-            assert(post.request_stored_inv());
-            assert(post.response_stored_inv());
-            assert(post.combiner_has_inv());
+            assert forall |i: nat| #[trigger] post.valid_idx(i) && post.clients.index(i).is_Idle() implies !post.slots.index(i) by {
+                assert(pre.not_waiting_inv()); assert(pre.valid_idx(i)); assert(post.clients.index(i) == pre.clients.index(i)); assert(post.slots.index(i) == pre.slots.index(i));
+            };
+            assert forall |i: nat| #[trigger] post.request_stored(i) implies post.client_waiting(i)
+                && post.requests.index(i).rid == post.clients.index(i).get_Waiting_rid() && post.slots.index(i) by {
+                assert(pre.request_stored(i)); assert(pre.request_stored_inv()); assert(post.clients.index(i) == pre.clients.index(i));
+                assert(post.requests.index(i) == pre.requests.index(i)); assert(post.slots.index(i) == pre.slots.index(i));
+            };
+            assert forall |i: nat| #[trigger] post.response_stored(i) implies post.client_waiting(i)
+                && post.responses.index(i).rid == post.clients.index(i).get_Waiting_rid() && !post.slots.index(i) by {
+                assert(pre.response_stored(i)); assert(pre.response_stored_inv()); assert(post.clients.index(i) == pre.clients.index(i));
+                assert(post.responses.index(i) == pre.responses.index(i)); assert(post.slots.index(i) == pre.slots.index(i));
+            };
+            assert forall |i: nat| #[trigger] post.client_waiting(i) implies post.request_stored(i) || post.response_stored(i) || post.combiner_has(i) by {
+                assert(pre.waiting_inv()); assert(pre.client_waiting(i)); assert(post.request_stored(i) == pre.request_stored(i)); assert(post.response_stored(i) == pre.response_stored(i));
+            };
+            assert forall |i: nat| #[trigger] post.combiner_has(i) implies post.client_waiting(i)
+                && post.slots.index(i) && post.combiner_rid(i) == post.clients.index(i).get_Waiting_rid() && !post.request_stored(i) by {
+                assert(pre.combiner_has(i)); assert(pre.combiner_has_inv()); assert(post.clients.index(i) == pre.clients.index(i));
+                assert(post.slots.index(i) == pre.slots.index(i)); assert(post.request_stored(i) == pre.request_stored(i));
+            };
         }
 
         #[inductive(combiner_go_to_responding)]
         fn combiner_go_to_responding_inductive(pre: Self, post: Self) {
-            assert(post.not_waiting_inv());
-            assert(post.waiting_inv());
-            assert(post.request_stored_inv());
-            assert(post.response_stored_inv());
-            assert(post.combiner_has_inv());
+            assert forall |i: nat| #[trigger] post.valid_idx(i) && post.clients.index(i).is_Idle() implies !post.slots.index(i) by {
+                assert(pre.not_waiting_inv()); assert(pre.valid_idx(i)); assert(post.clients.index(i) == pre.clients.index(i)); assert(post.slots.index(i) == pre.slots.index(i));
+            };
+            assert forall |i: nat| #[trigger] post.request_stored(i) implies post.client_waiting(i)
+                && post.requests.index(i).rid == post.clients.index(i).get_Waiting_rid() && post.slots.index(i) by {
+                assert(pre.request_stored(i)); assert(pre.request_stored_inv()); assert(post.clients.index(i) == pre.clients.index(i));
+                assert(post.requests.index(i) == pre.requests.index(i)); assert(post.slots.index(i) == pre.slots.index(i));
+            };
+            assert forall |i: nat| #[trigger] post.response_stored(i) implies post.client_waiting(i)
+                && post.responses.index(i).rid == post.clients.index(i).get_Waiting_rid() && !post.slots.index(i) by {
+                assert(pre.response_stored(i)); assert(pre.response_stored_inv()); assert(post.clients.index(i) == pre.clients.index(i));
+                assert(post.responses.index(i) == pre.responses.index(i)); assert(post.slots.index(i) == pre.slots.index(i));
+            };
+            assert forall |i: nat| #[trigger] post.combiner_has(i) implies post.client_waiting(i)
+                && post.slots.index(i) && post.combiner_rid(i) == post.clients.index(i).get_Waiting_rid() && !post.request_stored(i) by {
+                assert(pre.combiner_has(i)); assert(pre.combiner_has_inv()); assert(post.clients.index(i) == pre.clients.index(i));
+                assert(post.slots.index(i) == pre.slots.index(i)); assert(post.request_stored(i) == pre.request_stored(i));
+            };
+            assert forall |i: nat| #[trigger] post.client_waiting(i) implies post.request_stored(i) || post.response_stored(i) || post.combiner_has(i) by {
+                assert(pre.waiting_inv()); assert(pre.client_waiting(i)); assert(post.request_stored(i) == pre.request_stored(i)); assert(post.response_stored(i) == pre.response_stored(i));
+            };
         }
 
         transition!{
@@ -369,11 +598,22 @@ tokenized_state_machine! {
 
         #[inductive(combiner_go_to_collecting)]
         fn combiner_go_to_collecting_inductive(pre: Self, post: Self) {
-            assert(post.not_waiting_inv());
-            assert(post.waiting_inv());
-            assert(post.request_stored_inv());
-            assert(post.response_stored_inv());
-            assert(post.combiner_has_inv());
+            assert forall |i: nat| #[trigger] post.valid_idx(i) && post.clients.index(i).is_Idle() implies !post.slots.index(i) by {
+                assert(pre.not_waiting_inv()); assert(pre.valid_idx(i)); assert(post.clients.index(i) == pre.clients.index(i)); assert(post.slots.index(i) == pre.slots.index(i));
+            };
+            assert forall |i: nat| #[trigger] post.request_stored(i) implies post.client_waiting(i)
+                && post.requests.index(i).rid == post.clients.index(i).get_Waiting_rid() && post.slots.index(i) by {
+                assert(pre.request_stored(i)); assert(pre.request_stored_inv()); assert(post.clients.index(i) == pre.clients.index(i));
+                assert(post.requests.index(i) == pre.requests.index(i)); assert(post.slots.index(i) == pre.slots.index(i));
+            };
+            assert forall |i: nat| #[trigger] post.response_stored(i) implies post.client_waiting(i)
+                && post.responses.index(i).rid == post.clients.index(i).get_Waiting_rid() && !post.slots.index(i) by {
+                assert(pre.response_stored(i)); assert(pre.response_stored_inv()); assert(post.clients.index(i) == pre.clients.index(i));
+                assert(post.responses.index(i) == pre.responses.index(i)); assert(post.slots.index(i) == pre.slots.index(i));
+            };
+            assert forall |i: nat| #[trigger] post.client_waiting(i) implies post.request_stored(i) || post.response_stored(i) by {
+                assert(pre.waiting_inv()); assert(pre.client_waiting(i)); assert(post.request_stored(i) == pre.request_stored(i)); assert(post.response_stored(i) == pre.response_stored(i));
+            };
         }
 
     }

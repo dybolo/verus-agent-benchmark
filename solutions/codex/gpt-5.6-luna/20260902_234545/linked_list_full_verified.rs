@@ -11098,18 +11098,23 @@ impl ThreadLLSimple {
                 returning cas_result;
                 ghost ghost_ll =>
             {
-                let tracked mut ptr_mem = ptr_mem0;
-                let tracked raw_mem = raw_mem0;
                 if cas_result.is_ok() {
-                    let tracked block = block_token_opt.tracked_unwrap();
+                    let tracked block_token = block_token_opt.tracked_unwrap();
+                    LL::ghost_insert_block(
+                        &mut ghost_ll,
+                        ptr,
+                        ptr_mem0,
+                        raw_mem0,
+                        block_token,
+                        exposed,
+                    );
                     block_token_opt = None;
-                    LL::ghost_insert_block(mut_ref_tracked(&mut ghost_ll), ptr,
-                        ptr_mem, raw_mem, block, exposed);
                     points_to_raw = PointsToRaw::empty(ptr@.provenance);
                 } else {
-                    ptr_mem.leak_contents();
-                    assert(ptr_mem.is_uninit());
-                    points_to_raw = ptr_mem.into_raw().join(raw_mem);
+                    let tracked block_token = block_token_opt.tracked_unwrap();
+                    block_token_opt = Some(block_token);
+                    ptr_mem0.leak_contents();
+                    points_to_raw = ptr_mem0.into_raw().join(raw_mem0);
                 }
             });
 
@@ -11138,20 +11143,11 @@ impl ThreadLLSimple {
         let p = core::ptr::null_mut::<Node>();
         let res = atomic_with_ghost!(
             &self.atomic => swap(core::ptr::null_mut());
-            update old_v -> new_v;
             ghost g => {
-                let tracked old_ll = g.get();
-                let ghost old_data = LLData {
-                    fixed_page: old_ll.fixed_page(), block_size: old_ll.block_size(),
-                    page_id: old_ll.page_id(), instance: old_ll.instance(),
-                    len: 0, heap_id: old_ll.heap_id(),
-                };
-                let tracked empty_ll = LL {
-                    first: p, data: Ghost(old_data),
-                    perms: Tracked(Map::tracked_empty()),
-                };
-                ll = old_ll;
-                g = Tracked(empty_ll);
+                tracked_swap(&mut ll, &mut g);
+                g.first = p;
+                g.perms = Tracked(Map::tracked_empty());
+                g.data@.len = 0;
             }
         );
         let new_ll = LL {
@@ -11327,8 +11323,11 @@ impl ThreadLLWithDelayBits {
             update old_v -> v;
             ghost g => {
                 let tracked (mut y, _) = g;
-                self.emp_inst.borrow().set(Some(BlockSizePageId { block_size, page_id }),
-                    self.emp.borrow_mut(), &mut y);
+                self.emp_inst.borrow().set(
+                    Some(BlockSizePageId { block_size, page_id }),
+                    self.emp.borrow_mut(),
+                    &mut y,
+                );
                 g = (y, Some((delay_token, new_ll)));
             }
         );
@@ -11396,12 +11395,22 @@ impl ThreadLLWithDelayBits {
             let ghost mut the_ptr;
             let ghost mut the_delay;
             let tfree = atomic_with_ghost!(&self.atomic => load(); ghost g => {
+                let tracked (emp, pair_opt) = g;
+                self.emp_inst.borrow().agree(self.emp.borrow(), &emp);
+                assert(pair_opt.is_Some());
+                let tracked (delay, ghost_ll) = pair_opt.tracked_unwrap();
+                the_ptr = ghost_ll.ptr();
+                the_delay = delay.value();
+                g = (emp, Some((delay, ghost_ll)));
             });
 
             let old_delay = masked_ptr_delay_get_delay(tfree, Ghost(the_delay), Ghost(the_ptr));
             if unlikely(old_delay == 1) { 
                 atomic_yield();
             } else {
+                proof {
+                    assert(tok.value().pages.insert(self.page_id()) == tok.value().pages);
+                }
                 return Tracked(tok0);
             }
         }
@@ -11423,12 +11432,13 @@ impl ThreadLLWithDelayBits {
             let ghost mut the_ptr;
             let ghost mut the_delay;
             let tfree = atomic_with_ghost!(&self.atomic => load(); ghost g => {
-                assert(g.1.is_some()) by {
-                    assert(self.emp@.value().is_some());
-                }
-                let tracked pair = g.1.tracked_borrow();
-                the_delay = pair.0.value();
-                the_ptr = pair.1.ptr();
+                let tracked (emp, pair_opt) = g;
+                self.emp_inst.borrow().agree(self.emp.borrow(), &emp);
+                assert(pair_opt.is_Some());
+                let tracked (delay_token, ghost_ll) = pair_opt.tracked_unwrap();
+                the_ptr = ghost_ll.ptr();
+                the_delay = delay_token.value();
+                g = (emp, Some((delay_token, ghost_ll)));
             });
 
             let tfreex = masked_ptr_delay_set_delay(tfree, delay, Ghost(the_delay), Ghost(the_ptr));
@@ -11477,23 +11487,12 @@ impl ThreadLLWithDelayBits {
             &self.atomic => fetch_and(3);
             update old_v -> new_v;
             ghost g => {
-                let tracked (mut y, pair_opt) = g;
-                assert(pair_opt.is_some()) by {
-                    assert(self.emp@.value().is_some());
-                }
-                let tracked pair = pair_opt.tracked_unwrap();
-                let tracked (delay_token, ghost_ll) = pair;
-                let ghost empty_data = LLData {
-                    fixed_page: ghost_ll.fixed_page(), block_size: ghost_ll.block_size(),
-                    page_id: ghost_ll.page_id(), instance: ghost_ll.instance(),
-                    len: 0, heap_id: ghost_ll.heap_id(),
-                };
-                let tracked empty_ll = LL {
-                    first: p, data: Ghost(empty_data),
-                    perms: Tracked(Map::tracked_empty()),
-                };
-                ll = ghost_ll;
-                g = (y, Some((delay_token, empty_ll)));
+                let tracked (y, pair_opt) = g;
+                self.emp_inst.borrow().agree(self.emp.borrow(), &y);
+                assert(pair_opt.is_Some());
+                let tracked (delay, mut old_ll) = pair_opt.tracked_unwrap();
+                tracked_swap(&mut ll, &mut old_ll);
+                g = (y, Some((delay, old_ll)));
             }
         );
         let ret_ll = LL {

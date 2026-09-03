@@ -202,26 +202,6 @@ pub open spec fn rangeincl(low: nat, mid: nat, high: nat) -> bool {
     low <= mid && mid <= high
 }
 
-proof fn empty_queue_matches_no_node<DT: Dispatch>(
-    log: Map<LogIdx, LogEntry<DT>>,
-    a: LogIdx,
-    b: LogIdx,
-    node_id: NodeId,
-    updates: Map<ReqId, UpdateState<DT>>,
-)
-    requires
-        a <= b,
-        LogContainsEntriesUpToHere(log, b),
-        LogRangeNoNodeId(log, a, b, node_id),
-    ensures
-        LogRangeMatchesQueue(Seq::<ReqId>::empty(), log, 0, a, b, node_id, updates),
-    decreases b - a,
-{
-    if a != b {
-        empty_queue_matches_no_node(log, a + 1, b, node_id, updates);
-    }
-}
-
 #[verifier(nonlinear)]
 #[verifier::external_body]
 pub proof fn int_mod_less_than_same(i: int, len: int)
@@ -752,49 +732,40 @@ UnboundedLog<DT: Dispatch> {
 
     #[inductive(readonly_apply)]
     fn readonly_apply_inductive(pre: Self, post: Self, rid: ReqId) {
-        assert(post.inv_read_results()) by {
-            assert forall |id| #[trigger] post.local_reads.contains_key(id)
-                implies post.read_results_match(post.local_reads[id]) by {
-                if id == rid {
-                    match post.local_reads[id] {
-                        ReadonlyState::Done { ret, version_upper_bound, op, node_id } => {
-                            assert(pre.local_reads.contains_key(id));
-                            assert(pre.local_reads[id].is_ReadyToRead());
-                            assert(pre.local_reads[id].get_ReadyToRead_version_upper_bound()
-                                == version_upper_bound);
-                            assert(pre.local_reads[id].get_ReadyToRead_op() == op);
-                            assert(pre.local_reads[id].get_ReadyToRead_node_id() == node_id);
-                            assert(pre.combiner[node_id] == CombinerState::Ready);
-                            assert(pre.wf_node_id(node_id));
-                            assert(pre.local_versions[node_id] <= pre.version_upper_bound);
-                            assert(version_upper_bound <= pre.local_versions[node_id]);
-                            assert(pre.current_local_version(node_id) == pre.local_versions[node_id]) by {
-                                reveal(UnboundedLog::State::current_local_version);
-                            };
-                            assert(pre.replicas[node_id]
-                                == compute_nrstate_at_version(pre.log, pre.local_versions[node_id]));
-                            assert(ret == DT::dispatch_spec(pre.replicas[node_id], op));
-                            assert(post.version_upper_bound == pre.version_upper_bound);
-                            assert(post.log == pre.log);
-                            assert(rangeincl(version_upper_bound, pre.local_versions[node_id],
-                                post.version_upper_bound));
-                            assert(ret == DT::dispatch_spec(
-                                compute_nrstate_at_version(post.log, pre.local_versions[node_id]), op));
-                            assert(exists |v: nat| rangeincl(version_upper_bound, v,
-                                post.version_upper_bound)
-                                && ret == DT::dispatch_spec(
-                                    compute_nrstate_at_version(post.log, v), op));
+        assert forall |r| #[trigger] post.local_reads.contains_key(r)
+            implies post.read_results_match(post.local_reads[r]) by {
+            if r != rid {
+                assert(post.local_reads[r] == pre.local_reads[r]);
+                assert(pre.read_results_match(pre.local_reads[r]));
+            }
+            match post.local_reads[r] {
+                ReadonlyState::Done { ret, version_upper_bound, op, node_id } => {
+                    if r == rid {
+                        assert(post.version_upper_bound == pre.version_upper_bound);
+                        assert(post.local_versions[node_id] <= post.version_upper_bound) by {
+                            post.inv_local_version_upper_bound_heads();
                         }
-                        _ => { }
+                        assert(post.current_local_version(node_id) == post.local_versions[node_id]);
+                        assert(ret == DT::dispatch_spec(post.replicas[node_id], op));
                     }
-                } else {
-                    assert(post.local_reads[id] == pre.local_reads[id]);
-                    if post.local_reads[id].is_Done() {
-                        assert(pre.read_results_match(pre.local_reads[id]));
+                    assert(post.replicas[node_id] ==
+                        compute_nrstate_at_version(post.log, post.current_local_version(node_id)));
+                    assert(exists |v: nat|
+                        rangeincl(version_upper_bound, v, post.version_upper_bound)
+                        && ret == DT::dispatch_spec(compute_nrstate_at_version(post.log, v), op)) by {
+                        assert(version_upper_bound <= post.current_local_version(node_id));
+                        let v = post.current_local_version(node_id);
+                        if r == rid {
+                            assert(rangeincl(version_upper_bound, v, post.version_upper_bound));
+                            assert(ret == DT::dispatch_spec(compute_nrstate_at_version(post.log, v), op));
+                        } else {
+                            assert(pre.read_results_match(pre.local_reads[r]));
+                        }
                     }
                 }
+                _ => {}
             }
-        };
+        }
     }
 
     pub proof fn add_ticket_inductive(
@@ -838,33 +809,33 @@ UnboundedLog<DT: Dispatch> {
 
     #[inductive(update_done)]
     fn update_done_inductive(pre: Self, post: Self, rid: ReqId) {
-        assert(post.combiner == pre.combiner);
-        assert(post.combiner_states_wf()) by {
-            assert forall |node_id| #[trigger] post.combiner.contains_key(node_id)
-                implies post.wf_combiner_for_node_id(node_id) by {
-                assert(post.combiner[node_id] == pre.combiner[node_id]);
-                assert(pre.wf_node_id(node_id));
-                match post.combiner[node_id] {
-                    CombinerState::Placed { queued_ops } => {
-                        LogRangeMatchesQueue_update_change_2(queued_ops, post.log, 0,
-                            post.local_versions[node_id], post.tail, node_id,
-                            pre.local_updates, post.local_updates);
-                    }
-                    CombinerState::LoadedLocalVersion { queued_ops, lversion } => {
-                        LogRangeMatchesQueue_update_change_2(queued_ops, post.log, 0,
-                            lversion, post.tail, node_id, pre.local_updates,
-                            post.local_updates);
-                    }
-                    CombinerState::Loop { queued_ops, idx, lversion, tail } => {
-                        LogRangeMatchesQueue_update_change(queued_ops, post.log, idx,
-                            lversion, tail, node_id, pre.local_updates,
-                            post.local_updates);
-                    }
-                    _ => { }
+        pre.inv_local_combiner_complete();
+        pre.combiner_local_versions_domains();
+        pre.combiner_replicas_domains();
+        assert forall |n| #[trigger] post.combiner.contains_key(n)
+            implies post.wf_combiner_for_node_id(n) by {
+            assert(post.combiner[n] == pre.combiner[n]);
+            assert(pre.wf_node_id(n));
+            assert(pre.wf_combiner_for_node_id(n));
+            assert(post.wf_node_id(n));
+            reveal(UnboundedLog::State::wf_combiner_for_node_id);
+            match pre.combiner[n] {
+                CombinerState::Placed { queued_ops } => {
+                    LogRangeMatchesQueue_update_change_2(queued_ops, post.log, 0,
+                        post.local_versions[n], post.tail, n, pre.local_updates, post.local_updates);
                 }
-                assert(pre.wf_combiner_for_node_id(node_id));
+                CombinerState::LoadedLocalVersion { queued_ops, lversion } => {
+                    LogRangeMatchesQueue_update_change_2(queued_ops, post.log, 0,
+                        lversion, post.tail, n, pre.local_updates, post.local_updates);
+                }
+                CombinerState::Loop { queued_ops, lversion, tail, idx } => {
+                    LogRangeMatchesQueue_update_change_2(queued_ops, post.log, idx,
+                        lversion, tail, n, pre.local_updates, post.local_updates);
+                }
+                _ => {}
             }
-        };
+            assert(post.wf_combiner_for_node_id(n));
+        }
     }
 
     pub proof fn consume_stub_inductive(
@@ -902,158 +873,81 @@ UnboundedLog<DT: Dispatch> {
 
     #[inductive(exec_trivial_start)]
     fn exec_trivial_start_inductive(pre: Self, post: Self, node_id: NodeId) {
-        assert(post.combiner_states_wf()) by {
-            assert forall |id| #[trigger] post.combiner.contains_key(id)
-                implies post.wf_combiner_for_node_id(id) by {
-                reveal(UnboundedLog::State::wf_combiner_for_node_id);
-                assert(post.wf_node_id(id)) by {
-                    assert(pre.wf_node_id(id));
-                }
-                if id == node_id {
-                    assert(post.combiner[id] == CombinerState::Placed { queued_ops: Seq::empty() });
-                    empty_queue_matches_no_node(post.log, post.local_versions[id], post.tail,
-                        id, post.local_updates);
-                    assert(QueueRidsUpdatePlaced(Seq::empty(), post.local_updates, 0));
-                    assert(seq_unique(Seq::<ReqId>::empty()));
-                } else {
-                    assert(post.combiner[id] == pre.combiner[id]);
-                    assert(pre.wf_combiner_for_node_id(id));
-                }
+        pre.inv_local_combiner_complete();
+        pre.combiner_local_versions_domains();
+        pre.combiner_replicas_domains();
+        assert forall |n| #[trigger] post.combiner.contains_key(n)
+            implies post.wf_combiner_for_node_id(n) by {
+            if n != node_id {
+                assert(post.combiner[n] == pre.combiner[n]);
+                assert(pre.wf_node_id(n));
+                assert(pre.wf_combiner_for_node_id(n));
+                assert(post.wf_node_id(n));
+                assert(post.wf_combiner_for_node_id(n));
+            } else {
+                assert(pre.wf_combiner_for_node_id(n));
+                LogRangeNoNodeId_to_empty_queue(
+                    post.log, post.local_versions[n], post.tail, n, post.local_updates);
             }
-        };
+        }
     }
 
     #[inductive(update_place_ops_in_log_one)]
     fn update_place_ops_in_log_one_inductive(pre: Self, post: Self, node_id: NodeId, rid: ReqId) {
-        assert(post.combiner_states_wf()) by {
-            assert forall |id| #[trigger] post.combiner.contains_key(id)
-                implies post.wf_combiner_for_node_id(id) by {
+        pre.inv_local_combiner_complete();
+        pre.combiner_local_versions_domains();
+        pre.combiner_replicas_domains();
+        assert forall |n| #[trigger] post.combiner.contains_key(n)
+            implies post.wf_combiner_for_node_id(n) by {
+            if n != node_id {
+                assert(post.combiner[n] == pre.combiner[n]);
+                assert(pre.wf_node_id(n));
+                assert(pre.wf_combiner_for_node_id(n));
+                assert(post.wf_node_id(n));
                 reveal(UnboundedLog::State::wf_combiner_for_node_id);
-                assert(post.wf_node_id(id)) by {
-                    assert(pre.wf_node_id(id));
+                match pre.combiner[n] {
+                    CombinerState::Ready => {
+                        LogRangeNoNodeId_append_other(pre.log, post.log,
+                            pre.local_versions[n], pre.tail, n, post.log[pre.tail]);
+                        assert(post.wf_combiner_for_node_id(n));
+                    }
+                    CombinerState::Placed { queued_ops } => {
+                        LogRangeMatchesQueue_append_other(queued_ops, pre.log, post.log, 0,
+                            pre.local_versions[n], pre.tail, pre.tail, n,
+                            pre.local_updates, post.local_updates, rid, post.log[pre.tail]);
+                        assert(post.wf_combiner_for_node_id(n));
+                    }
+                    CombinerState::LoadedLocalVersion { queued_ops, lversion } => {
+                        LogRangeMatchesQueue_append_other(queued_ops, pre.log, post.log, 0,
+                            lversion, pre.tail, pre.tail, n,
+                            pre.local_updates, post.local_updates, rid, post.log[pre.tail]);
+                        assert(post.wf_combiner_for_node_id(n));
+                    }
+                    CombinerState::Loop { queued_ops, lversion, tail, idx } => {
+                        LogRangeMatchesQueue_append_other(queued_ops, pre.log, post.log, idx,
+                            lversion, tail, pre.tail, n,
+                            pre.local_updates, post.local_updates, rid, post.log[pre.tail]);
+                        assert(post.wf_combiner_for_node_id(n));
+                    }
+                    CombinerState::UpdatedVersion { queued_ops, tail } => {
+                        LogRangeNoNodeId_append_other(pre.log, post.log, tail, pre.tail,
+                            n, post.log[pre.tail]);
+                        assert(post.wf_combiner_for_node_id(n));
+                    }
                 }
-                if id == node_id {
-                    assert(pre.wf_node_id(id));
-                    assert(pre.wf_combiner_for_node_id(id));
-                    assert(pre.combiner[id].is_Placed());
-                    assert(post.log.contains_key(pre.tail));
-                    assert(post.log[pre.tail].node_id == node_id);
-                    match post.combiner[id] {
-                        CombinerState::Placed { queued_ops } => {
-                            LogRangeMatchesQueue_append(pre.combiner[id].get_Placed_queued_ops(),
-                                pre.log, post.log, 0, pre.local_versions[id], pre.tail,
-                                id, pre.local_updates, post.local_updates, rid,
-                                post.log[pre.tail]);
-                            assert(QueueRidsUpdatePlaced(queued_ops, post.local_updates, 0));
-                            assert(seq_unique(queued_ops));
-                        }
-                        _ => { }
+            } else {
+                match pre.combiner[n] {
+                    CombinerState::Placed { queued_ops } => {
+                        LogRangeMatchesQueue_append(
+                            queued_ops, pre.log, post.log, 0,
+                            pre.local_versions[n], pre.tail, n,
+                            pre.local_updates, post.local_updates, rid,
+                            post.log[pre.tail]);
                     }
-                } else {
-                    assert(post.combiner[id] == pre.combiner[id]);
-                    assert(pre.wf_node_id(id));
-                    assert forall |i| 0 <= i < pre.tail ==> post.log[i] == pre.log[i] by {
-                        assert(post.log == pre.log.insert(pre.tail, post.log[pre.tail]));
-                    }
-                    match post.combiner[id] {
-                        CombinerState::Placed { queued_ops } => {
-                            LogRangeMatchesQueue_append_other_augment(queued_ops, pre.log,
-                                post.log, 0, pre.local_versions[id], pre.tail, id,
-                                pre.local_updates, post.local_updates, rid,
-                                post.log[pre.tail]);
-                            assert(QueueRidsUpdatePlaced(queued_ops, post.local_updates, 0));
-                            assert(seq_unique(queued_ops));
-                        }
-                        CombinerState::LoadedLocalVersion { queued_ops, lversion } => {
-                            LogRangeMatchesQueue_append_other_augment(queued_ops, pre.log,
-                                post.log, 0, lversion, pre.tail, id, pre.local_updates,
-                                post.local_updates, rid, post.log[pre.tail]);
-                            assert(QueueRidsUpdatePlaced(queued_ops, post.local_updates, 0));
-                            assert(seq_unique(queued_ops));
-                        }
-                        CombinerState::Loop { queued_ops, idx, lversion, tail } => {
-                            LogRangeMatchesQueue_append_other(queued_ops, pre.log, post.log,
-                                idx, lversion, tail, pre.tail, id, pre.local_updates,
-                                post.local_updates, rid, post.log[pre.tail]);
-                            assert(QueueRidsUpdateDone(queued_ops, post.local_updates, idx));
-                            assert(QueueRidsUpdatePlaced(queued_ops, post.local_updates, idx));
-                            assert(seq_unique(queued_ops));
-                        }
-                        _ => { }
-                    }
+                    _ => {}
                 }
             }
-        };
-        assert(post.inv_read_results()) by {
-            assert forall |id| #[trigger] post.local_reads.contains_key(id)
-                implies post.read_results_match(post.local_reads[id]) by {
-                assert(post.local_reads[id] == pre.local_reads[id]);
-                match post.local_reads[id] {
-                    ReadonlyState::Done { ret, version_upper_bound, op, .. } => {
-                        assert(pre.read_results_match(pre.local_reads[id]));
-                        assert(pre.inv_log_complete());
-                        assert forall |v: nat| 0 <= v <= pre.version_upper_bound
-                            implies compute_nrstate_at_version(pre.log, v)
-                                == compute_nrstate_at_version(post.log, v) by {
-                            compute_nrstate_at_version_preserves(pre.log, post.log, v);
-                        }
-                        assert forall |v| rangeincl(version_upper_bound, v, pre.version_upper_bound)
-                            implies rangeincl(version_upper_bound, v, post.version_upper_bound) by {
-                        }
-                    }
-                    _ => { }
-                }
-            }
-        };
-        assert(post.inv_update_results()) by {
-            assert forall |id| #[trigger] post.local_updates.contains_key(id)
-                implies post.update_results_match(post.local_updates[id]) by {
-                if id == rid {
-                    assert(post.local_updates[id].is_Placed());
-                } else {
-                    assert(post.local_updates[id] == pre.local_updates[id]);
-                    assert(pre.update_results_match(pre.local_updates[id]));
-                    match post.local_updates[id] {
-                        UpdateState::Applied { ret, idx } | UpdateState::Done { ret, idx } => {
-                            compute_nrstate_at_version_preserves(pre.log, post.log, idx);
-                        }
-                        _ => { }
-                    }
-                }
-            }
-        };
-        assert(post.replica_state()) by {
-            assert forall |id| #[trigger] post.replicas.contains_key(id)
-                implies post.replicas[id] == compute_nrstate_at_version(post.log,
-                    post.current_local_version(id)) by {
-                assert(post.replicas[id] == pre.replicas[id]);
-                assert(pre.replica_state());
-                assert(pre.combiner_replicas_domains());
-                assert(pre.combiner_local_versions_domains());
-                assert(pre.inv_local_version_upper_bound_heads());
-                assert(pre.combiner.contains_key(id));
-                assert(pre.local_versions.contains_key(id));
-                assert(post.log == pre.log.insert(pre.tail, post.log[pre.tail]));
-                assert(pre.version_upper_bound <= pre.tail);
-                assert(post.current_local_version(id) <= pre.tail) by {
-                    match pre.combiner[id] {
-                        CombinerState::Ready | CombinerState::Placed { .. } => {
-                            assert(pre.local_versions[id] <= pre.version_upper_bound);
-                        }
-                        CombinerState::LoadedLocalVersion { lversion, .. }
-                        | CombinerState::Loop { lversion, .. } => {
-                            assert(lversion <= pre.tail);
-                        }
-                        CombinerState::UpdatedVersion { tail, .. } => {
-                            assert(tail <= pre.tail);
-                        }
-                    }
-                }
-                assert(pre.inv_log_complete());
-                compute_nrstate_at_version_preserves(pre.log, post.log,
-                    post.current_local_version(id));
-            }
-        };
+        }
     }
 
 
@@ -1065,39 +959,30 @@ UnboundedLog<DT: Dispatch> {
 
     #[inductive(exec_dispatch_local)]
     fn exec_dispatch_local_inductive(pre: Self, post: Self, node_id: NodeId) {
-        assert(post.combiner_states_wf()) by {
-            assert forall |id| #[trigger] post.combiner.contains_key(id)
-                implies post.wf_combiner_for_node_id(id) by {
-                if id == node_id {
-                    assert(post.wf_node_id(id));
-                    assert(pre.wf_node_id(id));
-                    assert(pre.wf_combiner_for_node_id(id));
-                    assert(pre.inv_local_updates());
-                    let c = pre.combiner[id];
-                    match c {
-                        CombinerState::Loop { queued_ops, lversion, tail, idx } => {
-                            assert(LogRangeMatchesQueue(queued_ops, pre.log, idx + 1,
-                                lversion + 1, tail, id, pre.local_updates));
-                            LogRangeMatchesQueue_update_change(queued_ops, pre.log, idx + 1,
-                                lversion + 1, tail, id, pre.local_updates,
-                                post.local_updates);
-                            assert(QueueRidsUpdateDone(queued_ops, post.local_updates, idx + 1));
-                            assert(QueueRidsUpdatePlaced(queued_ops, post.local_updates, idx + 1));
-                            assert(seq_unique(queued_ops));
-                            assert(tail <= pre.tail);
-                            assert(lversion + 1 <= tail);
-                            assert(LogContainsEntriesUpToHere(post.log, lversion + 1));
-                            assert(LogRangeNoNodeId(post.log, tail, post.tail, id));
-                        }
-                        _ => { }
+        pre.inv_local_combiner_complete();
+        pre.combiner_local_versions_domains();
+        pre.combiner_replicas_domains();
+        assert forall |n| #[trigger] post.combiner.contains_key(n)
+            implies post.wf_combiner_for_node_id(n) by {
+            if n != node_id {
+                assert(post.combiner[n] == pre.combiner[n]);
+                assert(pre.wf_node_id(n));
+                assert(pre.wf_combiner_for_node_id(n));
+                assert(post.wf_node_id(n));
+                assert(post.wf_combiner_for_node_id(n));
+            } else {
+                assert(pre.wf_combiner_for_node_id(n));
+                match pre.combiner[n] {
+                    CombinerState::Loop { queued_ops, lversion, tail, idx } => {
+                        LogRangeMatchesQueue_update_change(
+                            queued_ops, post.log, idx + 1, lversion + 1, tail,
+                            n, pre.local_updates, post.local_updates);
+                        assert(post.wf_combiner_for_node_id(n));
                     }
-                } else {
-                    assert(post.combiner[id] == pre.combiner[id]);
-                    assert(pre.wf_node_id(id));
-                    assert(pre.wf_combiner_for_node_id(id));
+                    _ => {}
                 }
             }
-        };
+        }
     }
 
     #[inductive(exec_dispatch_remote)]
@@ -1105,24 +990,14 @@ UnboundedLog<DT: Dispatch> {
 
     #[inductive(exec_update_version_upper_bound)]
     fn exec_update_version_upper_bound_inductive(pre: Self, post: Self, node_id: NodeId) {
-        assert(post.inv_read_results()) by {
-            assert forall |id| #[trigger] post.local_reads.contains_key(id)
-                implies post.read_results_match(post.local_reads[id]) by {
-                assert(post.local_reads[id] == pre.local_reads[id]);
-                if post.local_reads[id].is_Done() {
-                    match post.local_reads[id] {
-                        ReadonlyState::Done { version_upper_bound, .. } => {
-                            assert(pre.read_results_match(pre.local_reads[id]));
-                            assert(pre.version_upper_bound <= post.version_upper_bound);
-                            assert forall |v| rangeincl(version_upper_bound, v,
-                                pre.version_upper_bound) implies rangeincl(version_upper_bound, v,
-                                post.version_upper_bound) by { }
-                        }
-                        _ => { }
-                    }
-                }
-            }
-        };
+        assert forall |r| #[trigger] post.local_reads.contains_key(r)
+            implies post.read_results_match(post.local_reads[r]) by {
+            assert(post.local_reads[r] == pre.local_reads[r]);
+            assert(pre.read_results_match(pre.local_reads[r]));
+            assert(post.version_upper_bound >= pre.version_upper_bound);
+            reveal(UnboundedLog::State::read_results_match);
+            reveal(rangeincl);
+        }
     }
 
     #[inductive(exec_finish)]
@@ -1390,6 +1265,25 @@ pub open spec fn LogRangeMatchesQueue<DT: Dispatch>(
             updates,
         ))
     })
+}
+
+proof fn LogRangeNoNodeId_to_empty_queue<DT: Dispatch>(
+    log: Map<nat, LogEntry<DT>>,
+    start: nat,
+    end: nat,
+    node_id: nat,
+    updates: Map<ReqId, UpdateState<DT>>,
+)
+    requires
+        start <= end,
+        LogRangeNoNodeId(log, start, end, node_id),
+    ensures
+        LogRangeMatchesQueue(Seq::empty(), log, 0, start, end, node_id, updates),
+    decreases end - start,
+{
+    if start < end {
+        LogRangeNoNodeId_to_empty_queue(log, start + 1, end, node_id, updates);
+    }
 }
 
 proof fn LogRangeMatchesQueue_update_change<DT: Dispatch>(

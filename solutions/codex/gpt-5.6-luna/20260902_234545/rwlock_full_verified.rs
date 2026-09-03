@@ -2868,24 +2868,15 @@ impl<T               , G: SpinGuardian> RwLock<T, G> {
             self.lock => fetch_add(READER);
             update prev -> next;
             ghost g => {
-                let prev_usize: usize = prev as usize;
+                let ghost prev_usize = prev as usize;
                 assume (no_max_reader_overflow(prev_usize));
-                lemma_consts_properties_value(prev as usize);
-                if g.core_token.is_left() {
-                    assert(g.read_guard_token is Left);
-                    assert(g.read_guard_token.left().frac() > 0);
-                    let tracked mut read_guard = g.read_guard_token.tracked_take_left();
-                    let tracked mut retract_token = g.read_retract_token;
-                    if (prev as usize) & (WRITER | MAX_READER | BEING_UPGRADED) == 0 {
-                        assert(read_guard.not_empty());
-                        let tracked token = read_guard.split_one();
-                        read_token = Some(token);
-                    } else {
-                        let tracked token = retract_token.split_one();
-                        retract_read_token = Some(token);
-                    }
-                    g.read_guard_token = Sum::tracked_new_left(read_guard);
-                    g.read_retract_token = retract_token;
+                lemma_consts_properties_value(prev_usize);
+                lemma_consts_properties_prev_next(prev as usize, next as usize);
+                if prev_usize & (WRITER | MAX_READER | BEING_UPGRADED) == 0 {
+                    let tracked mut rg = g.read_guard_token.tracked_take_left();
+                    read_token = Some(rg.split_one());
+                    g.read_guard_token = Sum::tracked_new_left(rg);
+                    retract_read_token = Some(g.read_retract_token.split_one());
                 }
             }
         );
@@ -2902,9 +2893,12 @@ impl<T               , G: SpinGuardian> RwLock<T, G> {
                 self.lock => fetch_sub(READER);
                 update prev -> next;
                 ghost g => {
-                    assert(retract_read_token is Some);
-                    let tracked token = retract_read_token.tracked_unwrap();
-                    g.read_retract_token.combine(token);
+                    if read_token is Some {
+                        let tracked mut rg = g.read_guard_token.tracked_take_left();
+                        rg.combine(read_token.tracked_unwrap());
+                        g.read_guard_token = Sum::tracked_new_left(rg);
+                        g.read_retract_token.combine(retract_read_token.tracked_unwrap());
+                    }
                 }
             );
             None
@@ -3093,8 +3087,10 @@ impl<T               , G: SpinGuardian> RwLockReadGuard<'_, T, G> {
             self.inner.lock => fetch_sub(READER);
             update prev -> next;
             ghost g => {
-                let prev_usize: usize = prev as usize;
+                let ghost prev_usize = prev as usize;
                 assume (no_max_reader_overflow(prev_usize));
+                lemma_consts_properties_value(prev_usize);
+                lemma_consts_properties_prev_next(prev as usize, next as usize);
             }
         );
     }
@@ -3467,3 +3463,4 @@ proof fn lemma_consts_properties_prev_next(prev: usize, next: usize)
 }
 
 }
+

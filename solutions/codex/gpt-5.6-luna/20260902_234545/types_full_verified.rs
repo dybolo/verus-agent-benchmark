@@ -1980,10 +1980,10 @@ impl AtomicHeapPtr {
         atomic_with_ghost!(
             &self.atomic => no_op();
             ghost g => {
-                let tracked (mut y, heap_opt) = g;
-                self.emp_inst.borrow().set(true, self.emp.borrow_mut(), &mut y);
+                let tracked (mut emp_token, heap_opt) = g;
+                self.emp_inst.borrow().set(true, self.emp.borrow_mut(), &mut emp_token);
                 heap_of_page = heap_opt.tracked_unwrap();
-                g = (y, None);
+                g = (emp_token, None);
             }
         );
         Tracked(heap_of_page)
@@ -3524,13 +3524,18 @@ impl PagePtr {
         let page_ref = self.get_ref(Tracked(&*local));
         let h = atomic_with_ghost!(
             &page_ref.xheap.atomic => load();
-            update old_v -> new_v;
+            returning h_spec;
             ghost g => {
                 page_ref.xheap.emp_inst.borrow().agree(page_ref.xheap.emp.borrow(), &g.0);
                 assert(g.1.is_some());
-                assert(g.1.unwrap().key() == self.page_id@);
-                assert(g.1.unwrap().value() == local.heap_id);
-                assert(is_heap_ptr(new_v, local.heap_id));
+                let tracked (emp_token, heap_opt) = g;
+                let tracked heap_token = heap_opt.tracked_unwrap();
+                local.instance.heap_of_page_agree_with_thread_state(
+                    self.page_id@, local.thread_token.key(),
+                    &local.thread_token, &heap_token);
+                assert(heap_token.value() == local.heap_id);
+                assert(is_heap_ptr(h_spec, local.heap_id));
+                g = (emp_token, Some(heap_token));
             }
         );
         HeapPtr {

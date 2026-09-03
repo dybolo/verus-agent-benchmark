@@ -185,7 +185,6 @@ impl<V, F: Predicate<V>> OnceImpl<V, F> {
             self.inv().inv(v),
             self.wf(),
     {
-        proof { use_type_invariant(self); }
         let cur_state =
             atomic_with_ghost! {
             &self.state => load(); ghost g => {}
@@ -200,23 +199,32 @@ impl<V, F: Predicate<V>> OnceImpl<V, F> {
                 &self.state => compare_exchange(UNINIT, OCCUPIED);
                 returning res; ghost g => {
                     if res is Ok {
-                        let tracked p = match g {
-                            OnceState::Uninit(p) => p,
+                        g = match g {
+                            OnceState::Uninit(pt) => {
+                                points_to = Some(pt);
+                                OnceState::Occupied
+                            }
                             _ => proof_from_false(),
                         };
-                        points_to = Some(p);
-                        g = OnceState::Occupied;
                     }
                 }
             };
 
             if !res.is_err() {
+                assert(res is Ok);
                 let tracked mut points_to = points_to.tracked_unwrap();
                 self.cell.replace(Tracked(&mut points_to), Some(v));
                 let tracked static_points_to = tracked_static_ref(points_to);
                 atomic_with_ghost! {
                     &self.state => store(INITED); ghost g => {
-                        g = OnceState::Init(static_points_to);
+                        g = match g {
+                            OnceState::Occupied => OnceState::Init(static_points_to),
+                            OnceState::Init(old_points_to) => OnceState::Init(old_points_to),
+                            OnceState::Uninit(mut old_points_to) => {
+                                old_points_to.is_exclusive(static_points_to);
+                                proof_from_false()
+                            }
+                        };
                     }
                 }
                 return;
@@ -233,20 +241,20 @@ impl<V, F: Predicate<V>> OnceImpl<V, F> {
             self.wf(),
             r matches Some(res) ==> self.inv().inv(*res),
     {
-        proof { use_type_invariant(self); }
         let tracked mut points_to: Option<&'static PointsTo<Option<V>>> = None;
         let res =
             atomic_with_ghost! {
             &self.state => load(); ghost g => {
                 points_to = match g {
-                    OnceState::Init(p) => Some(p),
+                    OnceState::Init(points_to) => Some(points_to),
                     _ => None,
                 };
             }
         };
 
         if res == INITED {
-            let tracked static_points_to = points_to.tracked_unwrap();
+            let tracked points_to = points_to.tracked_unwrap();
+            let tracked static_points_to = points_to;
 
             self.cell.borrow(Tracked(static_points_to)).as_ref()
         } else {

@@ -551,21 +551,34 @@ tokenized_state_machine! { CyclicBuffer<DT: Dispatch> {
     #[inductive(advance_head_finish)]
     fn advance_head_finish_inductive(pre: Self, post: Self, node_id: NodeId) {
         assert(pre.pointer_ordering());
-        match pre.combiner[node_id] {
-            CombinerState::AdvancingHead { idx, min_local_version } => {
-                assert(idx == pre.num_replicas);
-            },
-            _ => { }
+        assert(pre.all_combiner_valid());
+        assert forall |i| 0 <= i < pre.num_replicas ==> post.head <= post.local_versions[i] by {
+            if 0 <= i < pre.num_replicas {
+            assert(pre.combiner_valid(node_id, pre.combiner[node_id]));
+            }
         }
+        assert(pre.num_replicas > 0);
+        assert(pre.local_versions.contains_key(0));
+        assert(pre.local_versions[0] <= pre.tail);
+        assert(post.local_versions[0] == pre.local_versions[0]);
+        assert(post.head <= post.local_versions[0]);
+        assert(post.local_versions[0] <= post.tail);
+        assert(post.head <= post.tail);
+        assert(post.pointer_ordering());
     }
 
     #[inductive(advance_tail_start)]
     fn advance_tail_start_inductive(pre: Self, post: Self, node_id: NodeId) {
         assert(pre.pointer_ordering());
+        assert(pre.all_combiner_valid());
         assert(pre.complete());
-        assert forall |n| 0 <= n < pre.num_replicas implies pre.head <= pre.local_versions[n] by {
-            assert(pre.local_versions.contains_key(n));
+        assert forall |n| 0 <= n < pre.num_replicas ==> pre.head <= pre.local_versions[n] by {
+            if 0 <= n < pre.num_replicas {
+                assert(pre.local_versions.contains_key(n));
+            }
         }
+        assert(post.combiner_valid(node_id, post.combiner[node_id]));
+        assert(post.all_combiner_valid());
      }
 
     #[inductive(advance_tail_abort)]
@@ -573,10 +586,14 @@ tokenized_state_machine! { CyclicBuffer<DT: Dispatch> {
 
     #[inductive(advance_tail_finish)]
     fn advance_tail_finish_inductive(pre: Self, post: Self, node_id: NodeId, new_tail: nat) {
+        assert(post.inv_buffer_contents());
+        assert(post.all_combiner_valid());
     }
 
     #[inductive(append_flip_bit)]
     fn append_flip_bit_inductive(pre: Self, post: Self, node_id: NodeId, deposited: StoredType<DT>) {
+        assert(post.ranges_no_overlap());
+        assert(post.upcoming_bits_are_not_alive());
     }
 
     #[inductive(append_finish)]
@@ -590,6 +607,85 @@ tokenized_state_machine! { CyclicBuffer<DT: Dispatch> {
 
     #[inductive(reader_guard)]
     fn reader_guard_inductive(pre: Self, post: Self, node_id: NodeId) {
+        reveal(CombinerState::no_overlap_with);
+        assert(pre.ranges_no_overlap());
+        assert(pre.all_reader_state_valid());
+        assert(pre.all_combiner_valid());
+        assert(pre.combiner.contains_key(node_id));
+        assert(pre.combiner[node_id].is_Reading());
+        assert(pre.reader_state_valid(node_id, pre.combiner[node_id].get_Reading_0()));
+        assert forall |n| post.combiner.contains_key(n) && post.combiner[n].is_Reading()
+            ==> pre.combiner.contains_key(n) && pre.combiner[n].is_Reading() by {
+            if n != node_id {
+                assert(post.combiner[n] == pre.combiner[n]);
+            }
+        }
+        match post.combiner[node_id] {
+            CombinerState::Reading(ReaderState::Guard { start, end, cur, val }) => {
+                assert(post.local_versions[node_id] == start);
+                assert(start <= end);
+                assert(post.tail - post.buffer_size <= end <= post.tail);
+                assert(start <= cur < end);
+                assert(pre.inv_buffer_contents());
+                assert(log_entry_is_alive(pre.alive_bits, cur as int, pre.buffer_size));
+                match pre.combiner[node_id] {
+                    CombinerState::Reading(ReaderState::Range { start: ps, end: pe, cur: pc }) => {
+                        assert(pre.reader_state_valid(node_id,
+                            ReaderState::Range { start: ps, end: pe, cur: pc }));
+                        assert(pre.pointer_ordering());
+                        assert(pre.complete());
+                        assert(pre.local_versions.contains_key(node_id));
+                        assert(pre.tail <= pre.local_versions[node_id] + pre.buffer_size);
+                        assert(pre.local_versions[node_id] == ps);
+                        assert(pre.tail - pre.buffer_size <= ps);
+                        assert(pre.tail - pre.buffer_size <= pe);
+                        assert(pe <= pre.tail);
+                        assert(pc < pe);
+                        assert(cur == pc);
+                        assert(end == pe);
+                    },
+                    _ => { }
+                }
+                assert(pre.tail - pre.buffer_size <= cur < pre.tail);
+                assert(pre.contents.contains_key(cur as int));
+                assert(post.contents.contains_key(cur as int));
+                assert(post.contents[cur as int] === val);
+                assert(post.reader_state_valid(node_id,
+                    ReaderState::Guard { start, end, cur, val }));
+            },
+            _ => { }
+        }
+        assert forall |i, j| post.combiner.contains_key(i) && post.combiner.contains_key(j) && i != j
+            ==> post.combiner[i].no_overlap_with(post.combiner[j]) by {
+            if post.combiner.contains_key(i) && post.combiner.contains_key(j) && i != j {
+            assert(pre.ranges_no_overlap());
+            if i != node_id && j != node_id {
+                assert(post.combiner[i] == pre.combiner[i]);
+                assert(post.combiner[j] == pre.combiner[j]);
+            } else if i != node_id && j == node_id {
+                match post.combiner[i] {
+                    CombinerState::Appending { cur_idx, tail } => {
+                        match post.combiner[j] {
+                            CombinerState::Reading(ReaderState::Guard { cur, .. }) => {
+                                assert(cur_idx > cur || tail <= cur) by {
+                                    assert(pre.combiner[i] == post.combiner[i]);
+                                    assert(pre.combiner[j].is_Reading());
+                                    assert(log_entry_is_alive(pre.alive_bits, cur as int, pre.buffer_size));
+                                    assert(pre.combiner.contains_key(i));
+                                    assert(pre.all_combiner_valid());
+                                    assert(pre.combiner_valid(i, pre.combiner[i]));
+                                };
+                            },
+                            _ => { }
+                        }
+                    },
+                    _ => { }
+                }
+            }
+            }
+        }
+        assert(post.ranges_no_overlap());
+        assert(post.all_reader_state_valid());
     }
 
     #[inductive(reader_unguard)]
@@ -597,6 +693,8 @@ tokenized_state_machine! { CyclicBuffer<DT: Dispatch> {
 
     #[inductive(reader_finish)]
     fn reader_finish_inductive(pre: Self, post: Self, node_id: NodeId) {
+        assert(post.upcoming_bits_are_not_alive());
+        assert(post.inv_buffer_contents());
     }
 
     #[inductive(reader_abort)]

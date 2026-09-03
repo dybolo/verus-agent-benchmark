@@ -255,28 +255,24 @@ impl<DT: Dispatch> Context<DT> {
         let tracked mut batch_perms = batch_perms.tracked_unwrap();
         let tracked local_updates = local_updates.tracked_unwrap();
         self.batch.0.put(Tracked(&mut batch_perms), PendingOperation::new(op));
-        let tracked send_request_result: ();
         let res =
             atomic_with_ghost!(
             &self.atomic.0 => store(1);
             update prev->next;
             ghost g => {
                 self.flat_combiner_instance.borrow().pre_send_request(
-                    self.thread_id_g@,
-                    &fc_clients,
-                    &g.slots,
-                );
-                let tracked (fc_clients_new, slots_new) = self.flat_combiner_instance.borrow()
-                    .send_request(
+                    self.thread_id_g@, &fc_clients, &g.slots);
+                let tracked (Tracked(new_fc_clients), Tracked(new_slots)) =
+                    self.flat_combiner_instance.borrow().send_request(
                         self.thread_id_g@,
                         local_updates.key(),
                         fc_clients,
                         g.slots,
                     );
-                fc_clients = fc_clients_new.get();
-                g.slots = slots_new.get();
-                g.update = Some(local_updates);
+                fc_clients = new_fc_clients;
+                g.slots = new_slots;
                 g.batch_perms = Some(batch_perms);
+                g.update = Some(local_updates);
             }
         );
         let tracked new_context_ghost = FCClientRequestResponseGhost {
@@ -309,32 +305,27 @@ impl<DT: Dispatch> Context<DT> {
             local_updates: mut local_updates,
             fc_clients: mut fc_clients,
         } = context_ghost.get();
-        let tracked recv_response_result: ();
         let res =
             atomic_with_ghost!(
             &self.atomic.0 => load();
             returning res;
             ghost g => {
                 if res == 0 {
-                    let rid = fc_clients.value().get_Waiting_0();
                     self.flat_combiner_instance.borrow().pre_recv_response(
-                        self.thread_id_g@,
-                        &fc_clients,
-                        &g.slots,
-                    );
-                    let tracked (fc_clients_new, slots_new) = self.flat_combiner_instance.borrow()
-                        .recv_response(
+                        self.thread_id_g@, &fc_clients, &g.slots);
+                    batch_perms = g.batch_perms;
+                    local_updates = g.update;
+                    g.batch_perms = None;
+                    g.update = None;
+                    let tracked (Tracked(new_fc_clients), Tracked(new_slots)) =
+                        self.flat_combiner_instance.borrow().recv_response(
                             self.thread_id_g@,
-                            rid,
+                            fc_clients.value().get_Waiting_0(),
                             fc_clients,
                             g.slots,
                         );
-                    fc_clients = fc_clients_new.get();
-                    g.slots = slots_new.get();
-                    local_updates = g.update;
-                    g.update = None;
-                    batch_perms = g.batch_perms;
-                    g.batch_perms = None;
+                    fc_clients = new_fc_clients;
+                    g.slots = new_slots;
                 }
             }
         );
