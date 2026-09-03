@@ -5,11 +5,11 @@ from typing import Protocol, runtime_checkable
 # USD per one million tokens. Keep benchmark pricing here so every agent uses
 # the same rates independently of costs reported by the agent itself.
 MODEL_PRICING = {
-    "claude-sonnet-5": {
-        "input": 2.00,
-        "cached_input": 0.20,
-        "cached_write": 2.50,
-        "output": 10.00,
+    "claude-sonnet-4.6": {
+        "input": 3.00,
+        "cached_input": 0.30,
+        "cached_write": 3.75,
+        "output": 15.00,
     },
     "gpt-5.6-luna": {
         "input": 0.20,
@@ -21,7 +21,7 @@ MODEL_PRICING = {
 
 MODEL_ALIASES = {
     # Pi records Bedrock's inference profile ID in its session events.
-    "global.anthropic.claude-sonnet-5": "claude-sonnet-5",
+    "global.anthropic.claude-sonnet-4-6": "claude-sonnet-4.6",
 }
 
 

@@ -9,5 +9,5 @@ export XDG_CACHE_HOME="$OPENCODE_RUNTIME_DIR/cache"
 export OPENCODE_PERMISSION='{"websearch":"deny","webfetch":"deny","bash":{"*":"allow","curl":"deny","curl *":"deny","wget":"deny","wget *":"deny"}}'
 
 opencode run --auto --format json \
-    -m amazon-bedrock/global.anthropic.claude-sonnet-5 "$TASK_PROMPT" \
+    -m amazon-bedrock/global.anthropic.claude-sonnet-4-6 "$TASK_PROMPT" \
     > "$SESSION/session.jsonl"
