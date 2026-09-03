@@ -1,0 +1,6 @@
+#!/bin/sh
+set -eu
+
+pi --tools read,write,edit,bash,grep,find,ls \
+    --model amazon-bedrock/global.anthropic.claude-sonnet-5 \
+    --session "$SESSION/session.jsonl" -p "$TASK_PROMPT"

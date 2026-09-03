@@ -5,12 +5,23 @@ from typing import Protocol, runtime_checkable
 # USD per one million tokens. Keep benchmark pricing here so every agent uses
 # the same rates independently of costs reported by the agent itself.
 MODEL_PRICING = {
+    "claude-sonnet-5": {
+        "input": 2.00,
+        "cached_input": 0.20,
+        "cached_write": 2.50,
+        "output": 10.00,
+    },
     "gpt-5.6-luna": {
         "input": 0.20,
         "cached_input": 0.02,
         "cached_write": 0.25,
         "output": 1.20,
     },
+}
+
+MODEL_ALIASES = {
+    # Pi records Bedrock's inference profile ID in its session events.
+    "global.anthropic.claude-sonnet-5": "claude-sonnet-5",
 }
 
 
@@ -22,7 +33,7 @@ def calculate_price(
     output: int,
 ) -> float:
     """Calculate a model call's USD price from mutually exclusive token counts."""
-    pricing = MODEL_PRICING.get(model)
+    pricing = MODEL_PRICING.get(MODEL_ALIASES.get(model, model))
     if pricing is None:
         raise ValueError(f"no fixed pricing configured for model {model!r}")
 

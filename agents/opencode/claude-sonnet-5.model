@@ -1,0 +1,13 @@
+#!/bin/bash
+set -euo pipefail
+
+OPENCODE_RUNTIME_DIR=$(mktemp -d)
+trap 'rm -rf "$OPENCODE_RUNTIME_DIR"' EXIT
+export XDG_DATA_HOME="$OPENCODE_RUNTIME_DIR/data"
+export XDG_STATE_HOME="$OPENCODE_RUNTIME_DIR/state"
+export XDG_CACHE_HOME="$OPENCODE_RUNTIME_DIR/cache"
+export OPENCODE_PERMISSION='{"websearch":"deny","webfetch":"deny","bash":{"*":"allow","curl":"deny","curl *":"deny","wget":"deny","wget *":"deny"}}'
+
+opencode run --auto --format json \
+    -m amazon-bedrock/global.anthropic.claude-sonnet-5 "$TASK_PROMPT" \
+    > "$SESSION/session.jsonl"
