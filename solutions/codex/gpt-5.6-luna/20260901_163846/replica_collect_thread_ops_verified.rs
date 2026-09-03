@@ -2814,57 +2814,60 @@ impl<DT: Dispatch> Replica<DT> {
                 ),
             decreases num_registered_threads - thread_idx
         {
-            let tracked mut update_req: std::option::Option<UnboundedLog::local_updates<DT>> = Option::None;
-            let tracked mut batch_perms: std::option::Option<PointsTo<PendingOperation<DT>>> = Option::None;
-            let ghost old_combiner_elems = flat_combiner@.value().get_Collecting_0();
+            let tracked update_req: std::option::Option<UnboundedLog::local_updates<DT>> = None;
+            let tracked batch_perms: std::option::Option<PointsTo<PendingOperation<DT>>> = None;
             let num_ops =
                 atomic_with_ghost!(
                 &self.contexts[thread_idx].atomic.0 => load();
                 returning num_ops;
                 ghost g 
             => {
-                if num_ops == 1 {
-                    self.flat_combiner_instance.borrow().pre_combiner_collect_request(
-                        &g.slots,
-                        &flat_combiner,
-                    );
-                    assert(g.slots.value().is_Request());
-                    assert(g.batch_perms.is_some());
-                    assert(g.update.is_some());
-                    let ghost rid = g.update.unwrap().key();
-                    batch_perms = g.batch_perms;
-                    update_req = g.update;
-                    g.batch_perms = None;
-                    g.update = None;
-                    g.slots = self.flat_combiner_instance.borrow().combiner_collect_request(
-                        g.slots,
-                        &mut flat_combiner,
-                    );
-                    rids_match_add_rid(
-                        old_combiner_elems,
-                        request_ids,
-                        0,
-                        old_combiner_elems.len(),
-                        0,
-                        request_ids.len(),
-                        rid,
-                    );
-                } else {
+                if num_ops == 0 {
+                    proof {
+                        rids_match_add_none(
+                            flat_combiner@.value().get_Collecting_0(),
+                            request_ids,
+                            0,
+                            flat_combiner@.value().get_Collecting_0().len(),
+                            0,
+                            request_ids.len(),
+                        );
+                    }
                     self.flat_combiner_instance.borrow().combiner_collect_empty(
                         &g.slots,
                         &mut flat_combiner,
                     );
-                    rids_match_add_none(
-                        old_combiner_elems,
-                        request_ids,
-                        0,
-                        old_combiner_elems.len(),
-                        0,
-                        request_ids.len(),
+                } else {
+                    self.flat_combiner_instance.borrow().pre_combiner_collect_request(
+                        &g.slots,
+                        &flat_combiner,
+                    );
+                    batch_perms = g.batch_perms;
+                    update_req = g.update;
+                    g.batch_perms = None;
+                    g.update = None;
+                    proof {
+                        rids_match_add_rid(
+                            flat_combiner@.value().get_Collecting_0(),
+                            request_ids,
+                            0,
+                            flat_combiner@.value().get_Collecting_0().len(),
+                            0,
+                            request_ids.len(),
+                            update_req.tracked_unwrap().key(),
+                        );
+                    }
+                    g.slots = self.flat_combiner_instance.borrow().combiner_collect_request(
+                        g.slots,
+                        &mut flat_combiner,
                     );
                 }
             });
             if num_ops == 1 {
+                proof {
+                    assert(batch_perms.is_some());
+                    assert(update_req.is_some());
+                }
                 let tracked batch_token_value = batch_perms.tracked_unwrap();
                 let op = DT::clone_write_op(
                     &self.contexts[thread_idx].batch.0.borrow(Tracked(&batch_token_value)).op,

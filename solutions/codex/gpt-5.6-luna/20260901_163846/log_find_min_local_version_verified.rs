@@ -1928,11 +1928,8 @@ impl<DT: Dispatch> NrLog<DT> {
             &self.local_versions[0].0 => load();
             returning ret;
             ghost g => {
-                g_cb_comb_new = self.cyclic_buffer_instance.borrow().advance_head_start(
-                    g_node_id,
-                    &g.1,
-                    g_cb_comb_new,
-                );
+                g_cb_comb_new = self.cyclic_buffer_instance.borrow()
+                    .advance_head_start(g_node_id, &g.1, g_cb_comb_new);
             });
         let mut idx: usize = 1;
         while idx < num_replicas
@@ -1953,11 +1950,8 @@ impl<DT: Dispatch> NrLog<DT> {
                 &self.local_versions[idx].0 => load();
                 returning ret;
                 ghost g => {
-                    g_cb_comb_new = self.cyclic_buffer_instance.borrow().advance_head_next(
-                        g_node_id,
-                        &g.1,
-                        g_cb_comb_new,
-                    );
+                    g_cb_comb_new = self.cyclic_buffer_instance.borrow()
+                        .advance_head_next(g_node_id, &g.1, g_cb_comb_new);
                 });
             if cur_local_tail < min_local_version {
                 min_local_version = cur_local_tail;

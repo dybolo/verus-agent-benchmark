@@ -553,11 +553,25 @@ tokenized_state_machine! { CyclicBuffer<DT: Dispatch> {
 
     #[inductive(advance_tail_start)]
     fn advance_tail_start_inductive(pre: Self, post: Self, node_id: NodeId) {
-        assert forall |n| 0 <= n < pre.num_replicas implies pre.head <= pre.local_versions[n] by {
-            assert(pre.local_versions.contains_key(n));
-            assert(pre.pointer_ordering());
-        };
-        assert(post.combiner_valid(node_id, post.combiner[node_id]));
+        assert forall |i| #[trigger] post.combiner.contains_key(i) implies
+            post.combiner_valid(i, post.combiner[i]) by {
+            assert(post.combiner.contains_key(i));
+            if i == node_id {
+                assert(post.combiner[i].is_AdvancingTail());
+                assert(post.combiner[i].get_AdvancingTail_observed_head() == pre.head);
+                assert forall |n| 0 <= n < pre.num_replicas as nat implies
+                    pre.head <= pre.local_versions[n] by {
+                    assert(pre.complete());
+                    assert(pre.local_versions.contains_key(n));
+                    assert(pre.head <= pre.local_versions[n]);
+                }
+            } else {
+                assert(pre.combiner.contains_key(i));
+                assert(post.combiner[i] == pre.combiner[i]);
+                assert(pre.all_combiner_valid());
+                assert(pre.combiner_valid(i, pre.combiner[i]));
+            }
+        }
     }
 
     #[inductive(advance_tail_abort)]

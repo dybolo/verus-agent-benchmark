@@ -574,161 +574,93 @@ tokenized_state_machine! { CyclicBuffer<DT: Dispatch> {
 
     #[inductive(reader_guard)]
     fn reader_guard_inductive(pre: Self, post: Self, node_id: NodeId) {
-        assert(post.ranges_no_overlap()) by {
-            assert forall |i, j|
-                post.combiner.contains_key(i) && post.combiner.contains_key(j) && i != j
-                    implies post.combiner[i].no_overlap_with(post.combiner[j]) by {
-                if i == node_id {
-                    assert(post.combiner[i].is_Reading());
-                    match post.combiner[i] {
-                        CombinerState::Appending { .. } => { assert(false); },
-                        _ => { reveal(CombinerState::no_overlap_with); }
+        assert(pre.combiner[node_id].is_Reading());
+        assert(pre.combiner[node_id].get_Reading_0().is_Range());
+        assert(post.combiner[node_id].is_Reading());
+        assert(post.combiner[node_id].get_Reading_0().is_Guard());
+        assert forall |n| #[trigger] post.combiner.contains_key(n) implies
+            (post.combiner[n].is_Reading() ==>
+            post.reader_state_valid(n, post.combiner[n].get_Reading_0())) by {
+            if n == node_id {
+                let rs = post.combiner[n].get_Reading_0();
+                assert(rs.is_Guard());
+                let start = rs.get_Guard_start();
+                let end = rs.get_Guard_end();
+                let cur = rs.get_Guard_cur();
+                let val = rs.get_Guard_val();
+                assert(pre.combiner[n].is_Reading());
+                let old = pre.combiner[n].get_Reading_0();
+                assert(old.is_Range());
+                assert(pre.reader_state_valid(n,
+                    ReaderState::Range { start, end, cur }));
+                assert(pre.local_versions[n] == start);
+                assert(start <= end);
+                assert((pre.tail as int) - (pre.buffer_size as int) <= end <= (pre.tail as int));
+                assert(start <= cur < end);
+                assert forall |i| start <= i <= cur implies
+                    log_entry_is_alive(post.alive_bits, i, post.buffer_size) by {
+                    if i < cur {
+                        assert(log_entry_is_alive(pre.alive_bits, i, pre.buffer_size));
+                    } else {
+                        assert(i == cur);
+                        assert(pre.alive_bits[log_entry_idx(cur as int, pre.buffer_size)]
+                            == log_entry_alive_value(cur as int, pre.buffer_size));
                     }
-                } else if j == node_id {
-                    assert(post.combiner[j].is_Reading());
-                    match post.combiner[i] {
-                        CombinerState::Appending { .. } => {
-                            match post.combiner[i] {
-                                CombinerState::Appending { cur_idx, tail } => {
-                                    match post.combiner[j].get_Reading_0() {
-                                        ReaderState::Guard { start, end, cur, val } => {
-                                            assert(pre.combiner[i] === post.combiner[i]);
-                                            assert(pre.combiner[i] ===
-                                                CombinerState::Appending { cur_idx, tail });
-                                            assert(pre.combiner[j].is_Reading());
-                                            assert(pre.combiner[j] ===
-                                                CombinerState::Reading(ReaderState::Range { start, end, cur }));
-                                            assert(pre.reader_state_valid(j, pre.combiner[j].get_Reading_0()));
-                                            assert(pre.combiner_valid(i, pre.combiner[i]));
-                                            assert(pre.combiner_valid(i,
-                                                CombinerState::Appending { cur_idx, tail }));
-                                            assert(pre.all_combiner_valid());
-                                            assert(pre.combiner[i] ===
-                                                CombinerState::Appending { cur_idx, tail });
-                                            assert forall |x: nat| cur_idx <= x < tail
-                                                implies !log_entry_is_alive(pre.alive_bits, x as int,
-                                                    pre.buffer_size) by {};
-                                            assert(pre.local_versions[i] <= cur_idx);
-                                            assert(start == pre.local_versions[j]);
-                                            assert(pre.reader_state_valid(j,
-                                                ReaderState::Range { start, end, cur }));
-                                            assert(cur < end);
-                                            assert(tail <= pre.tail);
-                                            if cur_idx <= cur {
-                                                if tail <= cur {
-                                                } else {
-                                                    assert(cur < tail);
-                                                    if cur_idx < start {
-                                                        assert(cur_idx <= start < tail);
-                                                        assert(!log_entry_is_alive(pre.alive_bits, start as int,
-                                                            pre.buffer_size));
-                                                        if start < cur {
-                                                            assert(log_entry_is_alive(pre.alive_bits, start as int,
-                                                                pre.buffer_size));
-                                                        } else {
-                                                            assert(log_entry_is_alive(pre.alive_bits, cur as int,
-                                                                pre.buffer_size));
-                                                        }
-                                                    } else {
-                                                        assert(cur_idx <= cur < tail);
-                                                        assert(!log_entry_is_alive(pre.alive_bits, cur_idx as int,
-                                                            pre.buffer_size));
-                                                        assert(log_entry_is_alive(pre.alive_bits, cur_idx as int,
-                                                            pre.buffer_size));
-                                                    }
-                                                }
-                                            }
-                                            reveal(CombinerState::no_overlap_with);
-                                        },
-                                        _ => { assert(false); }
-                                    }
-                                },
-                                _ => { assert(false); }
-                            }
-                        },
-                        _ => { reveal(CombinerState::no_overlap_with); }
+                };
+                assert forall |i| start <= i <= cur implies post.contents.contains_key(i) by {
+                    if i < cur {
+                        assert(pre.contents.contains_key(i));
+                    } else {
+                        assert(i == cur);
+                        assert(pre.pointer_ordering());
+                        assert(pre.local_versions.contains_key(node_id));
+                        assert(pre.tail <= pre.local_versions[node_id] + pre.buffer_size);
+                        assert(pre.tail - pre.buffer_size <= cur < pre.tail);
+                        assert(pre.inv_buffer_contents());
+                        assert(pre.contents.contains_key(cur as int));
                     }
-                } else {
-                    assert(pre.combiner[i] === post.combiner[i]);
-                    assert(pre.combiner[j] === post.combiner[j]);
-                    assert(pre.combiner[i].no_overlap_with(pre.combiner[j]));
+                };
+                assert(post.contents[cur as int] === val);
+            } else {
+                assert(pre.combiner.contains_key(n));
+                assert(post.combiner[n] === pre.combiner[n]);
+                assert(pre.combiner[n].is_Reading() == post.combiner[n].is_Reading());
+                if post.combiner[n].is_Reading() {
+                    assert(pre.reader_state_valid(n, pre.combiner[n].get_Reading_0()));
+                    assert(post.reader_state_valid(n, post.combiner[n].get_Reading_0()));
                 }
-            };
+            }
         };
 
-        assert(post.all_reader_state_valid()) by {
-            assert forall |id| #![trigger post.combiner[id]]
-                post.combiner.contains_key(id) && post.combiner[id].is_Reading()
-                    implies post.reader_state_valid(id, post.combiner[id].get_Reading_0()) by {
-                if id == node_id {
-                                    assert(pre.reader_state_valid(id, pre.combiner[id].get_Reading_0()));
-                    assert(pre.pointer_ordering());
-                    assert(pre.pointer_differences());
-                    assert(pre.combiner[id].get_Reading_0().is_Range());
-                    assert(post.combiner[id].get_Reading_0().is_Guard());
-                    match pre.combiner[id].get_Reading_0() {
-                        ReaderState::Range { start, end, cur } => {
-                            match post.combiner[id].get_Reading_0() {
-                                ReaderState::Guard { start: start2, end: end2, cur: cur2, val } => {
-                                    assert(start2 == start);
-                                    assert(end2 == end);
-                                    assert(cur2 == cur);
-                                    assert(pre.local_versions[id] == start);
-                                    assert(start <= end);
-                                    assert((pre.tail as int) - (pre.buffer_size as int) <= end <= pre.tail);
-                                            assert(start <= cur < end);
-                                            assert(pre.reader_state_valid(id,
-                                                ReaderState::Range { start, end, cur }));
-                                            assert(pre.local_versions[id] <= pre.tail);
-                                            assert(pre.local_versions.contains_key(id));
-                                            assert(pre.tail <= pre.local_versions[id] + pre.buffer_size) by {
-                                                assert forall |x| #[trigger] pre.local_versions.contains_key(x)
-                                                    implies pre.tail <= pre.local_versions[x] + pre.buffer_size by {
-                                                    assert(pre.pointer_ordering());
-                                                };
-                                            };
-                                            assert(pre.tail <= pre.local_versions[id] + pre.buffer_size);
-                                    assert forall |i| start <= i <= cur implies log_entry_is_alive(
-                                        post.alive_bits, i, post.buffer_size) by {
-                                        if i == cur {
-                                            assert(post.alive_bits[log_entry_idx(cur as int,
-                                                post.buffer_size)] == log_entry_alive_value(cur as int,
-                                                post.buffer_size));
-                                        } else {
-                                            assert(pre.reader_state_valid(id,
-                                                pre.combiner[id].get_Reading_0()));
-                                        }
-                                    };
-                                    assert forall |i| start <= i <= cur implies post.contents.contains_key(i) by {
-                                        if i == cur {
-                                            assert(pre.inv_buffer_contents());
-                                            assert((pre.tail as int) - (pre.buffer_size as int) <= end);
-                                            assert(cur <= end);
-                                            assert((pre.tail as int) - (pre.buffer_size as int) <= cur);
-                                            assert(cur < pre.tail);
-                                            assert(log_entry_is_alive(pre.alive_bits, cur as int,
-                                                pre.buffer_size));
-                                            assert(pre.contents.contains_key(cur as int));
-                                            assert(post.contents.contains_key(cur as int));
-                                        } else {
-                                            assert(pre.reader_state_valid(id,
-                                                pre.combiner[id].get_Reading_0()));
-                                        }
-                                    };
-                                    assert(post.contents.contains_key(cur as int));
-                                    assert(post.contents[cur as int] === val);
-                                    assert(pre.contents[cur as int] === val);
-                                },
-                                _ => { assert(false); }
-                            }
-                        },
-                        _ => { assert(false); }
-                    }
+        assert forall |i, j| post.combiner.contains_key(i) && post.combiner.contains_key(j) && i != j implies
+            post.combiner[i].no_overlap_with(post.combiner[j]) by {
+            if i == node_id || j == node_id {
+                if i == node_id {
+                    assert(post.combiner[i].is_Reading());
+                    assert(post.combiner[i].no_overlap_with(post.combiner[j]));
                 } else {
-                    assert(pre.combiner[id] === post.combiner[id]);
-                    assert(pre.reader_state_valid(id, pre.combiner[id].get_Reading_0()));
+                    assert(post.combiner[j].is_Reading());
+                    let cs = post.combiner[i];
+                    if cs.is_Appending() {
+                        let cur_idx = cs.get_Appending_cur_idx();
+                        let tail = cs.get_Appending_tail();
+                        let rs = post.combiner[j].get_Reading_0();
+                        let cur = rs.get_Guard_cur();
+                        if !(cur_idx > cur) {
+                            assert(cur_idx <= cur);
+                            if !(tail <= cur) {
+                                assert(cur < tail);
+                                assert(!log_entry_is_alive(pre.alive_bits, cur as int, pre.buffer_size));
+                                assert(log_entry_is_alive(post.alive_bits, cur as int, post.buffer_size));
+                            }
+                        }
+                    }
                 }
-            };
+            } else {
+                assert(post.combiner[i] === pre.combiner[i]);
+                assert(post.combiner[j] === pre.combiner[j]);
+                assert(pre.combiner[i].no_overlap_with(pre.combiner[j]));
+            }
         };
     }
 

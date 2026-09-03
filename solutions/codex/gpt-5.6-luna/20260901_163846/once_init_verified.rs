@@ -198,13 +198,15 @@ impl<V, F: Predicate<V>> OnceImpl<V, F> {
                 atomic_with_ghost! {
                 &self.state => compare_exchange(UNINIT, OCCUPIED);
                 returning res; ghost g => {
-                    if res.is_ok() {
-                        let tracked points_to_new = match g {
-                            OnceState::Uninit(points_to) => points_to,
+                    if !res.is_err() {
+                        let tracked old_g = g;
+                        g = match old_g {
+                            OnceState::Uninit(points_to_) => {
+                                points_to = Some(points_to_);
+                                OnceState::Occupied
+                            }
                             _ => proof_from_false(),
                         };
-                        points_to = Some(points_to_new);
-                        g = OnceState::Occupied;
                     }
                 }
             };

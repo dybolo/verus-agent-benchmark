@@ -11403,24 +11403,32 @@ impl ThreadLLWithDelayBits {
             let ghost mut the_delay;
             let tfree = atomic_with_ghost!(&self.atomic => load(); ghost g => {
                 self.emp_inst.borrow().agree(self.emp.borrow(), &g.0);
-                the_ptr = g.1.unwrap().1.ptr();
-                the_delay = g.1.unwrap().0.value();
+                let tracked (emp_token, pair_opt) = g;
+                let tracked pair = pair_opt.tracked_unwrap();
+                let tracked (delay_token, ghost_ll) = pair;
+                the_ptr = ghost_ll.ptr();
+                the_delay = delay_token.value();
                 if the_delay != DelayState::Freeing {
-                    let tracked (emp_token, pair_opt) = g;
-                    let tracked pair = pair_opt.tracked_unwrap();
-                    let tracked (delay_token, ghost_ll) = pair;
                     let tracked new_tok = self.instance.borrow().page_check_delay_state(
                         thread_tok.key(), self.page_id(), thread_tok,
                         &delay_token, tok0);
                     tok0 = new_tok;
-                    g = (emp_token, Some((delay_token, ghost_ll)));
                 }
+                g = (emp_token, Some((delay_token, ghost_ll)));
             });
 
             let old_delay = masked_ptr_delay_get_delay(tfree, Ghost(the_delay), Ghost(the_ptr));
             if unlikely(old_delay == 1) { 
                 atomic_yield();
             } else {
+                proof {
+                    assert(old_delay == the_delay.to_int());
+                    assert(the_delay != DelayState::Freeing) by {
+                        if the_delay == DelayState::Freeing {
+                            assert(the_delay.to_int() == 1);
+                        }
+                    }
+                }
                 return Tracked(tok0);
             }
         }

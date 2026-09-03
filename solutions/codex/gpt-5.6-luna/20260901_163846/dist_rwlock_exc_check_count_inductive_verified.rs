@@ -191,26 +191,48 @@ tokenized_state_machine!{
         #[inductive(exc_check_count)]
         fn exc_check_count_inductive(pre: Self, post: Self) {
             assert(pre.exc_inv());
-            assert(pre.shared_counts_agree());
-            assert(post.exc_pending is Some);
-            assert(post.exc_guard is None);
-            assert forall |x| post.shared_guard.count(x) > 0 implies !(0 <= x.0 < post.exc_pending->0) by {
-                if 0 <= x.0 < post.exc_pending->0 {
-                    assert(pre.exc_pending is Some);
-                    let r = pre.exc_pending->0;
-                    assert(post.exc_pending->0 == r + 1);
-                    assert(pre.ref_counts.index(r) == 0);
-                    assert(pre.shared_pending.count(r) as int >= 0);
-                    assert(Self::filter_r(pre.shared_guard, r).len() as int >= 0);
-                    assert(pre.shared_pending.count(r) as int +
-                        Self::filter_r(pre.shared_guard, r).len() as int == 0);
-                    assert(Self::filter_r(pre.shared_guard, r).len() == 0);
-                    assert(x.0 == r);
-                    assert(Self::filter_r(pre.shared_guard, r).count(x) ==
-                        pre.shared_guard.count(x));
-                    assert(pre.shared_guard.count(x) == 0);
+            assert(pre.ref_counts_domain());
+            assert(pre.shared_guard_in_range());
+            assert(pre.exc_pending is Some);
+            assert(post.exc_locked == pre.exc_locked);
+            assert(post.exc_guard == pre.exc_guard);
+            assert(post.storage == pre.storage);
+            assert(post.shared_guard == pre.shared_guard);
+            assert(post.shared_pending == pre.shared_pending);
+            assert(post.ref_counts == pre.ref_counts);
+            assert(post.exc_locked <==> (post.exc_pending is Some || post.exc_guard is Some));
+            assert(post.storage is Some <==> post.exc_guard is None);
+            assert(if let Option::Some(cur_r) = post.exc_pending {
+                0 <= cur_r <= post.rc_width
+            } else { true });
+            assert forall |x| post.shared_guard.count(x) > 0 implies {
+                if let Option::Some(cur_r) = post.exc_pending {
+                    !(0 <= x.0 < cur_r)
+                } else { true }
+            } by {
+                assert(pre.exc_inv());
+                if let Option::Some(cur_r) = post.exc_pending {
+                    assert(pre.exc_pending == Option::Some(cur_r - 1));
+                    assert(cur_r > 0);
+                    assert(pre.ref_counts.index(cur_r - 1) == 0);
+                    assert(pre.shared_counts_agree());
+                    assert(pre.shared_pending.count(cur_r - 1) as int >= 0);
+                    assert(Self::filter_r(pre.shared_guard, cur_r - 1).len() as int >= 0);
+                    assert(Self::filter_r(pre.shared_guard, cur_r - 1).len() as int == 0) by {
+                        assert(pre.ref_counts.index(cur_r - 1) ==
+                            pre.shared_pending.count(cur_r - 1) as int +
+                            Self::filter_r(pre.shared_guard, cur_r - 1).len() as int);
+                    }
+                    assert forall |x| post.shared_guard.count(x) > 0 implies x.0 != cur_r - 1 by {
+                        assert(pre.shared_guard == post.shared_guard);
+                        if x.0 == cur_r - 1 {
+                            assert(pre.shared_guard.count(x) > 0);
+                            assert(Self::filter_r(pre.shared_guard, cur_r - 1).count(x) > 0);
+                            assert(Self::filter_r(pre.shared_guard, cur_r - 1).len() > 0);
+                        }
+                    }
                 }
-            };
+            }
         }
         #[inductive(exc_finish)]
         fn exc_finish_inductive(pre: Self, post: Self) {

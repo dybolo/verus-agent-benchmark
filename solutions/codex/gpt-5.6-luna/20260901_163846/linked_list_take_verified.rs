@@ -11141,8 +11141,7 @@ impl ThreadLLSimple {
         let res = atomic_with_ghost!(
             &self.atomic => swap(core::ptr::null_mut());
             ghost g => {
-                let tracked old_ll = g.get();
-                ll = old_ll;
+                ll = g.get();
                 let mut data = ll.data@;
                 data.len = 0;
                 let tracked new_ll = LL {

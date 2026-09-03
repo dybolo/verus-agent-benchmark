@@ -312,15 +312,14 @@ impl<DT: Dispatch> Context<DT> {
             returning res;
             ghost g => {
                 if res == 0 {
-                    let ghost tid = fc_clients.key();
-                    let ghost rid = fc_clients.value().get_Waiting_0();
                     self.flat_combiner_instance.borrow().pre_recv_response(
-                        tid,
+                        self.thread_id_g@,
                         &fc_clients,
                         &g.slots,
                     );
+                    let ghost rid = g.slots.value().get_ReqId();
                     recv_response_result = self.flat_combiner_instance.borrow().recv_response(
-                        tid,
+                        self.thread_id_g@,
                         rid,
                         fc_clients,
                         g.slots,
@@ -331,6 +330,8 @@ impl<DT: Dispatch> Context<DT> {
                     local_updates = g.update;
                     g.batch_perms = None;
                     g.update = None;
+                    assert(g.inv(0, self.thread_id_g@, self.batch.0,
+                        self.flat_combiner_instance.view(), self.unbounded_log_instance.view()));
                 }
             }
         );

@@ -2564,7 +2564,7 @@ impl<DT: Dispatch> Replica<DT> {
         }
 
         let tid = 1u64;
-        let tracked mut lock_g: Option<CombinerLockStateGhost<DT>> = None;
+        let tracked lock_g: Option<CombinerLockStateGhost<DT>>;
         let res =
             atomic_with_ghost!(
             &self.combiner.0 => compare_exchange(0, tid + 1);
@@ -2572,7 +2572,9 @@ impl<DT: Dispatch> Replica<DT> {
             ghost g => {
                 if prev == 0 {
                     lock_g = g;
-                    g = None;
+                    g = Option::None;
+                } else {
+                    lock_g = Option::None;
                 }
             }
         );

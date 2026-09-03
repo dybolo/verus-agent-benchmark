@@ -200,6 +200,23 @@ tokenized_state_machine! { CyclicBuffer<DT: Dispatch> {
     }
 
     #[invariant]
+    pub spec fn head_le_min_local_version(&self) -> bool {
+        self.head <= map_min_value(self.local_versions, (self.num_replicas - 1) as nat)
+    }
+
+    #[invariant]
+    pub spec fn advancing_min_is_map_min(&self) -> bool {
+        forall |node_id| #[trigger] self.combiner.contains_key(node_id) &&
+            self.combiner[node_id].is_AdvancingHead() ==> {
+                match self.combiner[node_id] {
+                    CombinerState::AdvancingHead { min_local_version, .. } =>
+                        min_local_version == map_min_value(self.local_versions, (self.num_replicas - 1) as nat),
+                    _ => true,
+                }
+            }
+    }
+
+    #[invariant]
     pub spec fn pointer_differences(&self) -> bool {
         forall |i| self.local_versions.contains_key(i) ==>
             self.local_versions[i] <= self.tail <= self.local_versions[i] + self.buffer_size
@@ -534,6 +551,7 @@ tokenized_state_machine! { CyclicBuffer<DT: Dispatch> {
 
     #[inductive(initialize)]
     fn initialize_inductive(post: Self, buffer_size: nat, num_replicas: nat, contents: Map<int, StoredType<DT>>, cell_ids: Seq<CellId>,  unbounded_log_instance: UnboundedLog::Instance<DT>, ) {
+        assert(post.head <= map_min_value(post.local_versions, (post.num_replicas - 1) as nat));
         assert forall |i| post.tail <= i < post.buffer_size implies !log_entry_is_alive(post.alive_bits, i, post.buffer_size) by {
             int_mod_less_than_same(i, post.buffer_size as int);
         }
@@ -550,28 +568,23 @@ tokenized_state_machine! { CyclicBuffer<DT: Dispatch> {
 
     #[inductive(advance_head_finish)]
     fn advance_head_finish_inductive(pre: Self, post: Self, node_id: NodeId) {
+        assert(pre.head_le_min_local_version());
+        assert(pre.advancing_min_is_map_min());
+        assert(pre.combiner.contains_key(node_id));
         assert(pre.combiner[node_id].is_AdvancingHead());
-        let idx = pre.combiner[node_id].get_AdvancingHead_idx();
-        let min_local_version = pre.combiner[node_id].get_AdvancingHead_min_local_version();
-        assert(pre.num_replicas > 0);
-        assert(pre.pointer_ordering());
-        map_min_value_smallest(pre.local_versions, (pre.num_replicas - 1) as nat);
-        assert forall |n| 0 <= n < pre.num_replicas implies
-            min_local_version <= #[trigger] pre.local_versions[n] by {
-            assert(0 <= n <= (pre.num_replicas - 1) as nat);
-        }
-        assert(min_local_version <= pre.local_versions[0]);
-        assert(min_local_version <= pre.tail);
-        assert(post.head == min_local_version);
-        assert(post.tail == pre.tail);
-        assert forall |n| 0 <= n < pre.num_replicas implies
-            post.head <= #[trigger] post.local_versions[n] <= post.tail by {
-            assert(min_local_version <= pre.local_versions[n]);
-            assert(post.head == min_local_version);
-            assert(post.local_versions[n] == pre.local_versions[n]);
-            assert(pre.local_versions.contains_key(n));
-            assert(pre.local_versions[n] <= pre.tail);
-            assert(post.tail == pre.tail);
+        match pre.combiner[node_id] {
+            CombinerState::AdvancingHead { min_local_version, .. } => {
+                assert(min_local_version == map_min_value(pre.local_versions, (pre.num_replicas - 1) as nat));
+                assert(post.head == min_local_version);
+                assert(post.head <= map_min_value(post.local_versions, (post.num_replicas - 1) as nat));
+                map_min_value_smallest(post.local_versions, (post.num_replicas - 1) as nat);
+                assert forall |i| post.local_versions.contains_key(i) implies
+                    post.head <= post.local_versions[i] by {
+                    assert(0 <= i < post.num_replicas);
+                };
+                assert(post.head <= post.tail);
+            },
+            _ => {},
         }
     }
 
@@ -624,6 +637,28 @@ pub open spec fn map_min_value(m: Map<NodeId, nat>, idx: nat) -> nat
         m.index(0)
     } else {
         min(map_min_value(m, (idx - 1) as nat), m.index(idx))
+    }
+}
+
+proof fn map_min_value_at_least(m: Map<NodeId, nat>, idx: nat, lower: nat)
+    requires
+        forall|i| 0 <= i <= idx ==> m.contains_key(i),
+        forall|i| 0 <= i <= idx ==> lower <= m.index(i),
+    ensures
+        lower <= map_min_value(m, idx),
+    decreases idx,
+{
+    if idx == 0 {
+        assert(lower <= m.index(0));
+    } else {
+        map_min_value_at_least(m, (idx - 1) as nat, lower);
+        assert(lower <= map_min_value(m, (idx - 1) as nat));
+        assert(lower <= m.index(idx));
+        if map_min_value(m, (idx - 1) as nat) < m.index(idx) {
+            assert(map_min_value(m, idx) == map_min_value(m, (idx - 1) as nat));
+        } else {
+            assert(map_min_value(m, idx) == m.index(idx));
+        }
     }
 }
 

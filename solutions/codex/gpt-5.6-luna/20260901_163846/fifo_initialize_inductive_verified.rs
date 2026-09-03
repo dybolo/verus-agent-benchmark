@@ -264,22 +264,12 @@ tokenized_state_machine!{FifoQueue<T> {
 
     #[inductive(initialize)]
     fn initialize_inductive(post: Self, backing_cells: Seq<CellId>, storage: Map<nat, cell::PointsTo<T>>) {
-        assert forall|i: nat| 0 <= i && i < backing_cells.len() implies
-            (storage.dom().contains(i)
-                && storage.index(i).id() == backing_cells.index(i as int)
-                && storage.index(i).is_uninit()) by {
-        };
-        assert forall|i: nat| 0 <= i && i < backing_cells.len() implies
-            post.valid_storage_at_idx(i) by {
-            assert(post.head == 0);
-            assert(post.tail == 0);
-            assert(post.producer == ProducerState::Idle(0));
-            assert(post.consumer == ConsumerState::Idle(0));
-            assert(backing_cells.len() > 0);
-            assert(storage.dom().contains(i));
-            assert(storage.index(i).id() == backing_cells.index(i as int));
-            assert(storage.index(i).is_uninit());
-        };
+        assert forall|i: nat| 0 <= i && i < post.len() implies post.valid_storage_at_idx(i) by {
+            assert(post.storage.dom().contains(i));
+            assert(post.storage.index(i).id() == post.backing_cells.index(i as int));
+            assert(post.storage.index(i).is_uninit());
+            assert(!post.in_active_range(i));
+        }
     }
     #[inductive(produce_start)]
     fn produce_start_inductive(pre: Self, post: Self) {

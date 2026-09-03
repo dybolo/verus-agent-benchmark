@@ -491,17 +491,18 @@ impl<T> Producer<T> {
                 atomic_with_ghost!(&queue.head => load();
                 returning head;
                 ghost head_token => {
-                    if head != next_tail as u64 {
-                        cell_perm = Option::Some(
-                            queue.instance.borrow().produce_start(
-                                &head_token,
-                                &mut self.producer,
-                            )
-                        );
+                    if head != next_tail as int {
+                        assert(head as int == head_token.value());
+                        assert(self.producer@.value() == ProducerState::Idle(self.tail as nat));
+                        assert(self.producer@.instance_id() == queue.instance@.id());
+                        let tracked cell_perm_out =
+                            queue.instance.borrow().produce_start(&head_token, &mut self.producer);
+                        cell_perm = Option::Some(cell_perm_out);
                     }
                 }
             );
             if head != next_tail as u64 {
+                assert(next_tail as u64 != head);
                 let tracked mut cell_perm = match cell_perm {
                     Option::Some(cp) => cp,
                     Option::None => {

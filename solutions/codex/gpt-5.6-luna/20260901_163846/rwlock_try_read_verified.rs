@@ -2835,23 +2835,27 @@ impl<T               , G: SpinGuardian> RwLock<T, G> {
             atomic_with_ghost!(
             self.lock => fetch_add(READER);
             update prev -> next;
-            ghost g => {
+                ghost g => {
                 let prev_usize = prev as usize;
                 assume (no_max_reader_overflow(prev_usize));
                 lemma_consts_properties_value(prev_usize);
                 lemma_consts_properties_prev_next(prev_usize, next as usize);
                 if prev_usize & (WRITER | MAX_READER | BEING_UPGRADED) == 0 {
-                    let tracked mut token = g.read_guard_token.tracked_take_left();
-                    let tracked one = token.split_one();
-                    read_token = Some(one);
-                    g.read_guard_token = Sum::tracked_new_left(token);
+                    match g.read_guard_token {
+                        Sum::Left(mut token) => {
+                            read_token = Some(token.split_one());
+                            g.read_guard_token = Sum::Left(token);
+                        },
+                        Sum::Right(_) => {
+                            proof_from_false::<()>();
+                        },
+                    }
                 } else {
-                    g.read_retract_token.validate();
-                    let tracked one = g.read_retract_token.split_one();
-                    g.read_retract_token.validate();
-                    retract_read_token = Some(one);
+                    let tracked mut token = g.read_retract_token;
+                    retract_read_token = Some(token.split_one());
+                    g.read_retract_token = token;
                 }
-            }
+                }
         );
         if lock & (WRITER | MAX_READER | BEING_UPGRADED) == 0 {
             Some(
@@ -2866,12 +2870,9 @@ impl<T               , G: SpinGuardian> RwLock<T, G> {
                 self.lock => fetch_sub(READER);
                 update prev -> next;
                 ghost g => {
-                    if retract_read_token is Some {
-                        let tracked one = retract_read_token.tracked_unwrap();
-                        g.read_retract_token.combine(one);
-                    }
-                    lemma_consts_properties_value(prev as usize);
                     lemma_consts_properties_prev_next(prev as usize, next as usize);
+                    let tracked token = retract_read_token.tracked_unwrap();
+                    g.read_retract_token.combine(token);
                 }
             );
             None

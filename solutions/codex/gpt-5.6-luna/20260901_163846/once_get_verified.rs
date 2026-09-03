@@ -230,19 +230,22 @@ impl<V, F: Predicate<V>> OnceImpl<V, F> {
         let tracked mut points_to = None;
         let res =
             atomic_with_ghost! {
-            &self.state => load(); ghost g => {
-                match g {
-                    OnceState::Init(pt) => {
-                        points_to = Some(pt);
+            &self.state => load();
+            returning res; ghost g => {
+                if res == INITED {
+                    match g {
+                        OnceState::Init(pt) => {
+                            points_to = Some(pt);
+                        }
+                        _ => { }
                     }
-                    _ => { }
                 }
             }
         };
 
         if res == INITED {
             let tracked points_to = points_to.tracked_unwrap();
-            let tracked static_points_to = tracked_static_ref(points_to);
+            let tracked static_points_to = points_to;
 
             self.cell.borrow(Tracked(static_points_to)).as_ref()
         } else {

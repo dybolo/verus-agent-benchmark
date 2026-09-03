@@ -218,24 +218,6 @@ impl Flag {
             res = self.pending.compare_exchange(Tracked(&mut pend_perm), 1, 2);
 
             proof {
-                if res.is_ok() {
-                    let tracked au = maybe_au.tracked_take();
-                    try_open_atomic_update!(au, mut token => {
-                        let ghost old_auth = auth@;
-                        auth.update(&mut token.value, !old_auth);
-                        Tracked(Commit(token))
-                    });
-
-                    assert(proto is Offering);
-                    let tracked offered = proto.take_offer();
-                    let tracked offered_au = offered.get();
-                    try_open_atomic_update!(offered_au, mut token => {
-                        let ghost old_auth = auth@;
-                        auth.update(&mut token.value, !old_auth);
-                        Tracked(Commit(token))
-                    });
-                    proto = Accepted;
-                }
                 v = (value_perm, pend_perm, auth, gv, proto);
             }
         });

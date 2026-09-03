@@ -261,11 +261,14 @@ impl<DT: Dispatch> Context<DT> {
             &self.atomic.0 => store(1);
             update prev->next;
             ghost g => {
-                let tid = fc_clients.key();
+                self.flat_combiner_instance.borrow().pre_send_request(
+                    fc_clients.key(),
+                    &fc_clients,
+                    &g.slots,
+                );
                 let rid = local_updates.key();
-                self.flat_combiner_instance.borrow().pre_send_request(tid, &fc_clients, &g.slots);
                 send_request_result = self.flat_combiner_instance.borrow().send_request(
-                    tid,
+                    fc_clients.key(),
                     rid,
                     fc_clients,
                     g.slots,

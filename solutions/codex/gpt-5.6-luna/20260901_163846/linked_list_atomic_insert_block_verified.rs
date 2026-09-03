@@ -11065,7 +11065,7 @@ impl ThreadLLSimple {
             block_token.value().heap_id == Some(self.heap_id@),
             is_block_ptr(ptr as *mut u8, block_token.key()),
     {
-        let tracked mut points_to_raw_opt = Some(points_to_raw);
+        let tracked mut points_to_raw = points_to_raw;
         let tracked mut block_token_opt = Some(block_token);
 
         let Tracked(exposed) = expose_provenance(ptr);
@@ -11075,9 +11075,8 @@ impl ThreadLLSimple {
                 block_token_opt == Some(block_token),
 
                 self.wf(),
-                points_to_raw_opt.is_some(),
-                points_to_raw_opt.unwrap().is_range(ptr as int, block_token.key().block_size as int),
-                points_to_raw_opt.unwrap().provenance() == ptr@.provenance,
+                points_to_raw.is_range(ptr as int, block_token.key().block_size as int),
+                points_to_raw.provenance() == ptr@.provenance,
                 exposed.provenance() == ptr@.provenance,
 
                 block_token.instance_id() == self.instance@.id(),
@@ -11092,30 +11091,32 @@ impl ThreadLLSimple {
                 block_ptr_aligned_to_word();
             }
 
-            let tracked points_to_raw = points_to_raw_opt.tracked_unwrap();
-            proof { points_to_raw_opt = None; }
             let (Tracked(ptr_mem0), Tracked(raw_mem0)) = LL::block_write_ptr(ptr, Tracked(points_to_raw), next_ptr);
+
+            proof {
+                points_to_raw = PointsToRaw::empty(ptr@.provenance);
+            }
 
             let cas_result = atomic_with_ghost!(
                 &self.atomic => compare_exchange_weak(next_ptr, ptr);
+                update v_old -> v_new;
                 returning cas_result;
                 ghost ghost_ll =>
             {
                 if cas_result.is_ok() {
-                    let tracked block_token = block_token_opt.tracked_unwrap();
                     LL::ghost_insert_block(
                         mut_ref_tracked(&mut ghost_ll),
                         ptr,
                         ptr_mem0,
                         raw_mem0,
-                        block_token,
+                        block_token_opt.tracked_unwrap(),
                         exposed,
                     );
                     block_token_opt = None;
                 } else {
                     let tracked mut ptr_mem0 = ptr_mem0;
                     ptr_mem0.leak_contents();
-                    points_to_raw_opt = Some(ptr_mem0.into_raw().join(raw_mem0));
+                    points_to_raw = ptr_mem0.into_raw().join(raw_mem0);
                 }
             });
 

@@ -269,20 +269,19 @@ tokenized_state_machine!{FifoQueue<T> {
     #[inductive(produce_start)]
     fn produce_start_inductive(pre: Self, post: Self) {
         let tail = pre.producer.get_Idle_0();
-        assert(post.producer == ProducerState::Producing(tail));
-        assert(post.storage.dom() =~= pre.storage.dom().remove(tail));
-        assert forall |i: nat| 0 <= i && i < post.len() implies
-            post.valid_storage_at_idx(i) by {
+        assert forall |i: nat| 0 <= i && i < post.len()
+            implies post.valid_storage_at_idx(i) by {
             if i == tail {
+                assert(post.is_checked_out(i));
                 assert(!post.storage.dom().contains(i));
             } else {
-                assert(post.storage.dom().contains(i) == pre.storage.dom().contains(i));
-                assert(post.storage.index(i) == pre.storage.index(i));
-                assert(post.is_checked_out(i) == pre.is_checked_out(i));
-                assert(post.in_active_range(i) == pre.in_active_range(i));
                 assert(pre.valid_storage_at_idx(i));
+                assert(post.storage.dom().contains(i) == pre.storage.dom().contains(i));
+                assert(post.is_checked_out(i) == pre.is_checked_out(i));
+                assert(post.storage.index(i) == pre.storage.index(i));
+                assert(post.valid_storage_at_idx(i));
             }
-        }
+        };
     }
     #[inductive(produce_end)]
     fn produce_end_inductive(pre: Self, post: Self, perm: cell::PointsTo<T>) {

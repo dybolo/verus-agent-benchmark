@@ -11471,8 +11471,10 @@ impl ThreadLLWithDelayBits {
                         let tracked pair = pair_opt.tracked_unwrap();
                         let tracked (mut delay_token, ghost_ll) = pair;
                         if cas_result.is_ok() {
-                            delay_token = self.instance.borrow().set_use_delayed_free(
-                                self.page_id(), delay_token);
+                            let tracked delay_token0 =
+                                self.instance.borrow().set_use_delayed_free(
+                                    self.page_id(), delay_token);
+                            delay_token = delay_token0;
                         }
                         g = (emp_token, Some((delay_token, ghost_ll)));
                     }

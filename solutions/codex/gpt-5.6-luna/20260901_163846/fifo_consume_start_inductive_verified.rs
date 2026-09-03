@@ -9,7 +9,6 @@ use vstd::map::*;
 use vstd::modes::*;
 use vstd::multiset::*;
 use vstd::prelude::*;
-use vstd::set::*;
 use vstd::seq::*;
 use vstd::{pervasive::*, prelude::*, *};
 
@@ -277,42 +276,21 @@ tokenized_state_machine!{FifoQueue<T> {
     }
     #[inductive(consume_start)]
     fn consume_start_inductive(pre: Self, post: Self) {
-        let head = pre.consumer.get_Idle_0();
-        assert(pre.storage.dom().contains(head));
-        assert(post.storage == pre.storage.remove(head));
-        lemma_map_remove_domain(pre.storage, head);
-        assert(post.storage.dom() == pre.storage.dom().remove(head));
-        assert forall|i: nat| 0 <= i && i < post.len() implies
-            post.valid_storage_at_idx(i) by {
-            if i == head {
-                assert(i =~= head);
-                lemma_set_remove_same(pre.storage.dom(), head);
-                assert(post.storage.dom().contains(i) == pre.storage.dom().remove(head).contains(i));
+        assert(pre.valid_storage_all());
+        assert forall|i: nat| 0 <= i && i < post.len() implies post.valid_storage_at_idx(i) by {
+            if i == pre.consumer.get_Idle_0() {
+                assert(post.is_checked_out(i));
                 assert(!post.storage.dom().contains(i));
             } else {
-                assert(i != head);
-                lemma_set_remove_different(pre.storage.dom(), i, head);
                 assert(post.storage.dom().contains(i) == pre.storage.dom().contains(i));
-                if pre.storage.dom().contains(i) {
-                    axiom_map_remove_different(pre.storage, i, head);
-                    assert(post.storage.index(i) == pre.storage.index(i));
-                }
                 assert(post.is_checked_out(i) == pre.is_checked_out(i));
                 assert(post.in_active_range(i) == pre.in_active_range(i));
                 assert(pre.valid_storage_at_idx(i));
-                if post.is_checked_out(i) {
-                    assert(!post.storage.dom().contains(i));
-                } else {
-                    assert(post.storage.dom().contains(i));
-                    assert(post.storage.index(i).id() == post.backing_cells.index(i as int));
-                    if post.in_active_range(i) {
-                        assert(post.storage.index(i).is_init());
-                    } else {
-                        assert(post.storage.index(i).is_uninit());
-                    }
+                if pre.storage.dom().contains(i) {
+                    assert(post.storage.index(i) == pre.storage.index(i));
                 }
             }
-        };
+        }
     }
     #[inductive(consume_end)]
     fn consume_end_inductive(pre: Self, post: Self, perm: cell::PointsTo<T>) {

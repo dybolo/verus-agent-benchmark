@@ -13044,12 +13044,12 @@ pub fn free(ptr: *mut u8, Tracked(user_perm): Tracked<PointsToRaw>, Tracked(user
         returning thread_id_u64;
         ghost g => {
             if thread_id_u64 == local.thread_id.thread_id {
-                local.instance.block_on_the_local_thread(
-                    local.thread_id,
-                    dealloc.block_id(),
-                    &local.thread_token,
-                    &dealloc.mim_block,
-                    &g);
+                assert(g.key() == dealloc.block_id().page_id.segment_id);
+                assert(g.value() == local.thread_id);
+                assert(dealloc.mim_instance == local.instance);
+                dealloc.mim_instance.block_on_the_local_thread(
+                    local.thread_id, dealloc.block_id(),
+                    &local.thread_token, &dealloc.mim_block, &g);
             }
         }
     );
@@ -13089,13 +13089,8 @@ pub fn free(ptr: *mut u8, Tracked(user_perm): Tracked<PointsToRaw>, Tracked(user
     };
     assert(page_ptr.addr() != 0) by { is_page_ptr_nonzero(page_ptr, page_id); }
 
-    if likely(is_local) {
 
-        proof {
-            assert(local.thread_token.value().pages.dom().contains(page_id));
-            assert(local.pages.dom().contains(page_id));
-            assert(page.is_in(*local));
-        }
+    if likely(is_local) {
 
         if likely(page.get_inner_ref(Tracked(&*local)).not_full_nor_aligned()) {
             let used;

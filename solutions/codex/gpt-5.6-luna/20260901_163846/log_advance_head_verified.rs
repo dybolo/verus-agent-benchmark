@@ -1525,11 +1525,13 @@ impl<DT: Dispatch> NrLog<DT> {
                 &self.head.0 => store(min_local_version);
                 update old_val -> new_val;
                 ghost g => {
-                    cb_combiner = self.cyclic_buffer_instance.borrow().advance_head_finish(
-                        replica_token.id_spec(),
-                        &mut g,
-                        cb_combiner,
-                    );
+                    let tracked cb_combiner0 =
+                        self.cyclic_buffer_instance.borrow().advance_head_finish(
+                            replica_token.id_spec(),
+                            &mut g,
+                            cb_combiner,
+                        );
+                    cb_combiner = cb_combiner0;
             });
             if global_tail < min_local_version + self.slog.len() as u64 - GC_FROM_HEAD as u64 {
                 let cb_combiner = Tracked(cb_combiner);

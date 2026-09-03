@@ -1284,8 +1284,6 @@ impl MyHashMap {
             invariant 0 <= i <= WIDTH, self.wf(),
                 self.locks[l2x as int].inv(lock2x),
                 row_store_wf(self.consts@, lock2x.rows[h2x as nat], h2x as nat),
-                forall |j| 0 <= j < WIDTH ==>
-                    (#[trigger] lock1x.rows[h1x as nat].token.value()[j] matches Some((k, _)) ==> k != key),
                 forall |j| 0 <= j < i ==>
                     (#[trigger] lock2x.rows[h2x as nat].token.value()[j] matches Some((k, _)) ==> k != key),
             decreases WIDTH - i,
@@ -1323,24 +1321,6 @@ impl MyHashMap {
 
         try_open_atomic_update!(au, mpt => {
             proof {
-                assert(lock1x.rows[h1x as nat].token.value().len() == WIDTH);
-                assert(lock2x.rows[h2x as nat].token.value().len() == WIDTH);
-                assert(not_in_row(lock1x.rows[h1x as nat].token.value(), key)) by {
-                    assert forall |j: int| imply(0 <= j < lock1x.rows[h1x as nat].token.value().len(),
-                        (#[trigger] lock1x.rows[h1x as nat].token.value()[j] matches Some((k, _)) ==> k != key)) by {
-                        if 0 <= j && j < WIDTH {
-                            assert(lock1x.rows[h1x as nat].token.value()[j] matches Some((k, _)) ==> k != key);
-                        }
-                    }
-                };
-                assert(not_in_row(lock2x.rows[h2x as nat].token.value(), key)) by {
-                    assert forall |j: int| imply(0 <= j < lock2x.rows[h2x as nat].token.value().len(),
-                        (#[trigger] lock2x.rows[h2x as nat].token.value()[j] matches Some((k, _)) ==> k != key)) by {
-                        if 0 <= j && j < WIDTH {
-                            assert(lock2x.rows[h2x as nat].token.value()[j] matches Some((k, _)) ==> k != key);
-                        }
-                    }
-                };
                 if l1 < l2 {
                     self.instance.query_none(key, &mpt,
                         &lock1x.rows.tracked_borrow(h1x as nat).token,

@@ -183,23 +183,27 @@ tokenized_state_machine!{
         #[inductive(initialize)]
         fn initialize_inductive(post: Self, rc_width: int, init_t: T) {
             assert forall |r: int| 0 <= r < rc_width implies
-                post.ref_counts.index(r) == 0
-            by {
-                assert(post.ref_counts.index(r) == 0);
+                post.ref_counts.index(r) == 0 by {
+                assert(post.ref_counts.dom().contains(r));
             }
             assert forall |r: int| 0 <= r < rc_width implies
-                post.shared_pending.count(r) == 0
-            by {
-                assert(post.shared_pending.count(r) == 0);
+                post.shared_pending.count(r) == 0 by {
+                assert(post.shared_pending == Multiset::empty());
             }
             assert forall |r: int| 0 <= r < rc_width implies
-                Self::filter_r(post.shared_guard, r).len() == 0
-            by {
-                if Self::filter_r(post.shared_guard, r).len() != 0 {
-                    let x = Self::filter_r(post.shared_guard, r).choose();
-                    assert(Self::filter_r(post.shared_guard, r).count(x) > 0);
-                    assert(Self::filter_r(post.shared_guard, r).count(x) == 0);
+                Self::filter_r(post.shared_guard, r).len() == 0 by {
+                assert(post.shared_guard == Multiset::empty());
+                assert(Self::filter_r(post.shared_guard, r) =~= Multiset::empty()) by {
+                    assert forall |x: (int, T)|
+                        Self::filter_r(post.shared_guard, r).count(x) ==
+                            Multiset::empty().count(x) by {
+                        broadcast use vstd::multiset::axiom_filter_count;
+                        broadcast use vstd::multiset::axiom_multiset_empty;
+                    }
                 }
+                assert(Self::filter_r(post.shared_guard, r).len() ==
+                    Multiset::<(int, T)>::empty().len());
+                broadcast use vstd::multiset::lemma_multiset_empty_len;
             }
         }
         #[inductive(exc_start)]

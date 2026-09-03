@@ -206,30 +206,75 @@ tokenized_state_machine!{
         }
         #[inductive(shared_finish)]
         fn shared_finish_inductive(pre: Self, post: Self, r: int) {
-            assert forall |x: int| 0 <= x < pre.rc_width implies
-                #[trigger] post.ref_counts.index(x) ==
-                    post.shared_pending.count(x) as int +
-                        Self::filter_r(post.shared_guard, x).len() as int
+            assert(pre.shared_counts_agree());
+            reveal(DistRwLock::State::filter_r);
+            assert forall |r0: int| 0 <= r0 < post.rc_width implies
+                post.ref_counts.index(r0) ==
+                    post.shared_pending.count(r0) as int +
+                        Self::filter_r(post.shared_guard, r0).len() as int
             by {
-                assert(pre.shared_counts_agree());
-                assert(post.ref_counts.index(x) == pre.ref_counts.index(x));
-                assert(post.shared_pending.count(x) ==
-                    pre.shared_pending.remove(r).count(x));
-                assert(post.shared_guard ==
-                    pre.shared_guard.add(Multiset::singleton((r, pre.storage->0))));
-                assert(Self::filter_r(post.shared_guard, x) =~=
-                    Self::filter_r(pre.shared_guard, x).add(
-                        Self::filter_r(Multiset::singleton((r, pre.storage->0)), x)));
-                if x == r {
-                    assert(Self::filter_r(Multiset::singleton((r, pre.storage->0)), x)
-                        =~= Multiset::singleton((r, pre.storage->0)));
-                    assert(Self::filter_r(Multiset::singleton((r, pre.storage->0)), x).len()
-                        == 1);
+                assert(0 <= r0 < pre.rc_width);
+                assert(pre.ref_counts.index(r0) ==
+                    pre.shared_pending.count(r0) as int +
+                        Self::filter_r(pre.shared_guard, r0).len() as int);
+                let t = pre.storage->0;
+                assert(post.shared_guard =~= pre.shared_guard.add(
+                    Multiset::singleton((r, t))));
+                axiom_multiset_ext_equal(post.shared_guard,
+                    pre.shared_guard.add(Multiset::singleton((r, t))));
+                if r0 == r {
+                    assert(Self::filter_r(post.shared_guard, r0) =~=
+                        Self::filter_r(pre.shared_guard, r0).add(
+                            Multiset::singleton((r, t)))) by {
+                        assert forall |x: (int, T)|
+                            Self::filter_r(post.shared_guard, r0).count(x) ==
+                                Self::filter_r(pre.shared_guard, r0).add(
+                                    Multiset::singleton((r, t))).count(x)
+                        by {
+                            axiom_filter_count(post.shared_guard,
+                                |v: (int, T)| v.0 == r0, x);
+                            axiom_filter_count(pre.shared_guard,
+                                |v: (int, T)| v.0 == r0, x);
+                            axiom_multiset_add(Self::filter_r(pre.shared_guard, r0),
+                                Multiset::singleton((r, t)), x);
+                            assert(post.shared_guard.count(x) ==
+                                pre.shared_guard.add(Multiset::singleton((r, t))).count(x));
+                            if x == (r, t) {
+                                axiom_multiset_singleton((r, t));
+                            } else {
+                                axiom_multiset_singleton_different((r, t), x);
+                            }
+                        }
+                    };
+                    axiom_len_add(Self::filter_r(pre.shared_guard, r0),
+                        Multiset::singleton((r, t)));
+                    axiom_len_singleton((r, t));
+                    assert(post.ref_counts.index(r0) == pre.ref_counts.index(r0));
+                    assert(post.shared_pending.count(r0) + 1 == pre.shared_pending.count(r0));
+                    assert(Self::filter_r(post.shared_guard, r0).len() ==
+                        Self::filter_r(pre.shared_guard, r0).len() + 1);
                 } else {
-                    assert(Self::filter_r(Multiset::singleton((r, pre.storage->0)), x)
-                        =~= Multiset::empty());
-                    assert(Self::filter_r(Multiset::singleton((r, pre.storage->0)), x).len()
-                        == 0);
+                    assert(Self::filter_r(post.shared_guard, r0) =~=
+                        Self::filter_r(pre.shared_guard, r0)) by {
+                        assert forall |x: (int, T)|
+                            Self::filter_r(post.shared_guard, r0).count(x) ==
+                                Self::filter_r(pre.shared_guard, r0).count(x)
+                        by {
+                            axiom_filter_count(post.shared_guard,
+                                |v: (int, T)| v.0 == r0, x);
+                            axiom_filter_count(pre.shared_guard,
+                                |v: (int, T)| v.0 == r0, x);
+                            assert(post.shared_guard.count(x) ==
+                                pre.shared_guard.add(Multiset::singleton((r, t))).count(x));
+                            axiom_multiset_add(pre.shared_guard,
+                                Multiset::singleton((r, t)), x);
+                            axiom_multiset_singleton_different((r, t), x);
+                        }
+                    };
+                    assert(post.ref_counts.index(r0) == pre.ref_counts.index(r0));
+                    assert(post.shared_pending.count(r0) == pre.shared_pending.count(r0));
+                    assert(Self::filter_r(post.shared_guard, r0).len() ==
+                        Self::filter_r(pre.shared_guard, r0).len());
                 }
             }
         }

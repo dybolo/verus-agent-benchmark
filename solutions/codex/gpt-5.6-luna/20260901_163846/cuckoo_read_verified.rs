@@ -1189,24 +1189,6 @@ impl MyHashMap {
 
         try_open_atomic_update!(au, mpt => {
             proof {
-                assert forall |j| 0 <= j < WIDTH ==>
-                    (#[trigger] handle1x@.rows[h1x as nat].token.value()[j]
-                        matches Some((k, _)) ==> k != key) by {
-                    if 0 <= j < WIDTH {
-                        assert(j < i);
-                        assert((handle1x@.rows[h1x as nat].token.value()[j]
-                            matches Some((k, _)) ==> k != key));
-                    }
-                }
-                assert forall |j| 0 <= j < WIDTH ==>
-                    (#[trigger] handle2x@.rows[h2x as nat].token.value()[j]
-                        matches Some((k, _)) ==> k != key) by {
-                    if 0 <= j < WIDTH {
-                        assert(j < i);
-                        assert((handle2x@.rows[h2x as nat].token.value()[j]
-                            matches Some((k, _)) ==> k != key));
-                    }
-                }
                 if l1 < l2 {
                     self.instance.query_none(key, &mpt,
                         &handle1x.borrow().rows.tracked_borrow(h1x as nat).token,

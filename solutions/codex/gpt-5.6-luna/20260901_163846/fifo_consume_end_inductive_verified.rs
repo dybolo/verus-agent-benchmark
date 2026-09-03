@@ -280,27 +280,13 @@ tokenized_state_machine!{FifoQueue<T> {
     }
     #[inductive(consume_end)]
     fn consume_end_inductive(pre: Self, post: Self, perm: cell::PointsTo<T>) {
-        assert(pre.valid_storage_all());
-        assert(pre.consumer.is_Consuming());
-        let head = pre.consumer.get_Consuming_0();
-        let next_head = Self::inc_wrap(head, pre.len());
-        assert(post.consumer == ConsumerState::Idle(next_head));
-        assert(post.head == next_head);
-        assert(post.tail == pre.tail);
-        assert(post.producer == pre.producer);
-        assert(post.backing_cells == pre.backing_cells);
-        assert(post.storage.dom().contains(head));
-        assert(post.valid_storage_at_idx(head));
-        assert forall|i: nat| 0 <= i && i < post.len() implies post.valid_storage_at_idx(i) by {
-            assert(0 <= i && i < post.len());
-            if i == head {
-                assert(post.valid_storage_at_idx(i));
-            } else {
-                assert(0 <= i && i < pre.len());
-                assert(pre.valid_storage_at_idx(i)) by {
-                    assert(pre.valid_storage_all());
+        assert forall|i: nat| 0 <= i && i < post.len() ==> post.valid_storage_at_idx(i) by {
+            if 0 <= i && i < post.len() {
+                if i == pre.consumer.get_Consuming_0() {
+                    assert(post.storage.dom().contains(i));
+                } else {
+                    assert(pre.valid_storage_at_idx(i));
                 }
-                assert(post.valid_storage_at_idx(i));
             }
         }
     }

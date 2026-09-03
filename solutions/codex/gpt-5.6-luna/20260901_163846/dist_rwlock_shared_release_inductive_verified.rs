@@ -210,47 +210,36 @@ tokenized_state_machine!{
         }
         #[inductive(shared_release)]
         fn shared_release_inductive(pre: Self, post: Self, val: (int, T)) {
-            assert(pre.shared_counts_agree());
-            assert(pre.shared_guard.count(val) > 0);
-            assert(pre.ref_counts.index(val.0) > 0);
-            assert(post.shared_counts_agree()) by {
-                assert forall |r: int| 0 <= r < pre.rc_width implies
-                    post.ref_counts.index(r) ==
-                        post.shared_pending.count(r) as int +
-                            Self::filter_r(post.shared_guard, r).len() as int
-                by {
-                    if r == val.0 {
-                        assert(post.ref_counts.index(r) == pre.ref_counts.index(r) - 1);
-                        assert(post.shared_pending.count(r) == pre.shared_pending.count(r));
-                        assert_multisets_equal!(
-                            Self::filter_r(post.shared_guard, r),
-                            Self::filter_r(pre.shared_guard, r).remove(val),
-                            x: (int, T) => {
-                                assert(Self::filter_r(post.shared_guard, r).count(x) ==
-                                    if x.0 == r { post.shared_guard.count(x) } else { 0 });
-                                assert(Self::filter_r(pre.shared_guard, r).count(x) ==
-                                    if x.0 == r { pre.shared_guard.count(x) } else { 0 });
-                            }
-                        );
-                        assert(Self::filter_r(post.shared_guard, r).len() ==
-                            Self::filter_r(pre.shared_guard, r).len() - 1);
-                    } else {
-                        assert(post.ref_counts.index(r) == pre.ref_counts.index(r));
-                        assert(post.shared_pending.count(r) == pre.shared_pending.count(r));
-                        assert_multisets_equal!(
-                            Self::filter_r(post.shared_guard, r),
-                            Self::filter_r(pre.shared_guard, r),
-                            x: (int, T) => {
-                                assert(Self::filter_r(post.shared_guard, r).count(x) ==
-                                    if x.0 == r { post.shared_guard.count(x) } else { 0 });
-                                assert(Self::filter_r(pre.shared_guard, r).count(x) ==
-                                    if x.0 == r { pre.shared_guard.count(x) } else { 0 });
-                            }
-                        );
-                        assert(Self::filter_r(post.shared_guard, r).len() ==
-                            Self::filter_r(pre.shared_guard, r).len());
-                    }
-                    assert(pre.shared_counts_agree());
+            assert forall |r: int| 0 <= r < pre.rc_width implies
+                post.ref_counts.index(r) ==
+                    post.shared_pending.count(r) as int +
+                        Self::filter_r(post.shared_guard, r).len() as int
+            by {
+                assert(post.shared_pending == pre.shared_pending);
+                assert(post.shared_guard =~= pre.shared_guard.sub(Multiset::singleton(val)));
+                assert(post.ref_counts.index(r) == if r == val.0 {
+                    pre.ref_counts.index(r) - 1
+                } else {
+                    pre.ref_counts.index(r)
+                });
+                assert(Self::filter_r(post.shared_guard, r) =~= 
+                    Self::filter_r(pre.shared_guard, r).sub(
+                        Self::filter_r(Multiset::singleton(val), r)));
+                if r == val.0 {
+                    assert(Self::filter_r(Multiset::singleton(val), r) =~= Multiset::singleton(val));
+                    assert(Self::filter_r(pre.shared_guard, r).count(val) > 0);
+                    assert(Self::filter_r(pre.shared_guard, r).subset_of(pre.shared_guard));
+                    assert(Self::filter_r(Multiset::singleton(val), r).subset_of(
+                        Self::filter_r(pre.shared_guard, r)));
+                    axiom_len_sub(
+                        Self::filter_r(pre.shared_guard, r),
+                        Self::filter_r(Multiset::singleton(val), r));
+                } else {
+                    assert(Self::filter_r(Multiset::singleton(val), r) =~= Multiset::empty());
+                    assert(Self::filter_r(pre.shared_guard, r).subset_of(pre.shared_guard));
+                    axiom_len_sub(
+                        Self::filter_r(pre.shared_guard, r),
+                        Self::filter_r(Multiset::singleton(val), r));
                 }
             };
         }

@@ -486,24 +486,22 @@ impl<T> Consumer<T> {
             } else {
                 self.head + 1
             };
-            let tracked cell_perm: Option<cell::PointsTo<T>> = Option::None;
-            let tracked mut storage_opt: Option<Ghost<Map<nat, cell::PointsTo<T>>>> = Option::None;
+            let tracked mut cell_perm: Option<cell::PointsTo<T>>;
+            proof {
+                cell_perm = Option::None;
+            }
             let tail =
                 atomic_with_ghost!(&queue.tail => load();
                 returning tail;
                 ghost tail_token => {
-                    if self.head as nat != tail_token.value() {
-                        assert(self.wf());
-                        assert(self.consumer@.value() is Idle);
-                        assert(self.consumer@.value().get_Idle_0() == self.head as nat);
-                        assert(self.head as nat != tail_token.value());
-                        let tracked (storage, Tracked(tracked_perm)) =
-                            queue.instance.borrow().consume_start(
-                                &mut tail_token,
-                                &mut self.consumer,
-                            );
-                        cell_perm = Option::Some(tracked_perm);
-                        storage_opt = Option::Some(storage);
+                    if tail != self.head as int {
+                        assert(tail_token.value() == tail);
+                        assert(self.consumer@.value() == ConsumerState::Idle(self.head as nat));
+                        let tracked (_storage, Tracked(perm)) = queue.instance.borrow().consume_start(
+                            &tail_token,
+                            &mut self.consumer,
+                        );
+                        cell_perm = Some(perm);
                     }
                 }
             );

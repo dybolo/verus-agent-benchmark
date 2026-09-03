@@ -1219,6 +1219,7 @@ impl<DT: Dispatch> NrLog<DT> {
                         combiner: ghost_data0.combiner,
                         cb_combiner: ghost_data0.cb_combiner,
                         request_ids,
+                    } by {
                     };
                 }
                 continue ;
@@ -1639,28 +1640,22 @@ impl<DT: Dispatch> NrLog<DT> {
         let tracked mut cb_combiner = ghost_data.cb_combiner.get();  
         let ghost request_ids = ghost_data.request_ids@;  
         let ghost mut request_ids_new = request_ids;
+        proof {
+            if combiner.value().is_Ready() {
+                combiner =
+                self.unbounded_log_instance.borrow().exec_trivial_start(nid as nat, combiner);
+                request_ids_new = Seq::empty();
+            }
+        }
         let mut local_version =
             atomic_with_ghost!(
             &self.local_versions[nid].0 => load();
             returning ret;
             ghost g => {
-                if combiner.value().is_Ready() {
-                    combiner = self.unbounded_log_instance.borrow().exec_trivial_start(
-                        nid as nat,
-                        combiner,
-                    );
-                    request_ids_new = Seq::empty();
-                }
-                cb_combiner = self.cyclic_buffer_instance.borrow().reader_start(
-                    nid as nat,
-                    &g.1,
-                    cb_combiner,
-                );
-                combiner = self.unbounded_log_instance.borrow().exec_load_local_version(
-                    nid as nat,
-                    &g.0,
-                    combiner,
-                );
+                combiner = self.unbounded_log_instance.borrow()
+                    .exec_load_local_version(nid as nat, &g.0, combiner);
+                cb_combiner = self.cyclic_buffer_instance.borrow()
+                    .reader_start(nid as nat, &g.1, cb_combiner);
             }
         );
         let global_tail =
@@ -1669,30 +1664,21 @@ impl<DT: Dispatch> NrLog<DT> {
             returning global_tail;
             ghost g => {
                 if local_version == global_tail {
-                    cb_combiner = self.cyclic_buffer_instance.borrow().reader_abort(
-                        nid as nat,
-                        cb_combiner,
-                    );
-                    combiner = self.unbounded_log_instance.borrow().exec_finish_no_change(
-                        nid as nat,
-                        &g.0,
-                        combiner,
-                    );
+                    combiner = self.unbounded_log_instance.borrow()
+                        .exec_finish_no_change(nid as nat, &g.0, combiner);
                 } else {
-                    cb_combiner = self.cyclic_buffer_instance.borrow().reader_enter(
-                        nid as nat,
-                        &g.1,
-                        cb_combiner,
-                    );
-                    combiner = self.unbounded_log_instance.borrow().exec_load_global_head(
-                        nid as nat,
-                        &g.0,
-                        combiner,
-                    );
+                    combiner = self.unbounded_log_instance.borrow()
+                        .exec_load_global_head(nid as nat, &g.0, combiner);
+                    cb_combiner = self.cyclic_buffer_instance.borrow()
+                        .reader_enter(nid as nat, &g.1, cb_combiner);
                 }
             }
         );
         if local_version == global_tail {
+            proof {
+                cb_combiner = self.cyclic_buffer_instance.borrow()
+                    .reader_abort(nid as nat, cb_combiner);
+            }
             let tracked ghost_data_ret = NrLogAppendExecDataGhost {
                 local_updates: Tracked(local_updates),  
                 ghost_replica: Tracked(ghost_replica),  
@@ -1703,15 +1689,6 @@ impl<DT: Dispatch> NrLog<DT> {
             assert(ghost_data_ret.common_pred(
                 replica_token@,
                 actual_replica.view(),
-                self.unbounded_log_instance@,
-                self.cyclic_buffer_instance@,
-            ));
-            assert(ghost_data_ret.execute_post(
-                ghost_data,
-                replica_token@,
-                actual_replica.view(),
-                responses@,
-                responses@,
                 self.unbounded_log_instance@,
                 self.cyclic_buffer_instance@,
             ));
@@ -1812,16 +1789,13 @@ impl<DT: Dispatch> NrLog<DT> {
                     returning alive_bit;
                     ghost g => {
                         if alive_bit == is_alive_value {
-                            let tracked (_, Tracked(cb_combiner0)) = self.cyclic_buffer_instance.borrow().reader_guard(
-                                nid as nat,
-                                &g,
-                                cb_combiner,
-                            );
+                            let tracked (_g0, Tracked(cb_combiner0)) = self.cyclic_buffer_instance.borrow()
+                                .reader_guard(nid as nat, &g, cb_combiner);
                             cb_combiner = cb_combiner0;
                         }
                     });
                 is_alive = alive_bit == is_alive_value;
-                    iteration = iteration + 1;
+                iteration = iteration + 1;
             }
 
             let tracked stored_entry: &StoredType<DT>;
@@ -1901,38 +1875,34 @@ impl<DT: Dispatch> NrLog<DT> {
         atomic_with_ghost!(
             &self.version_upper_bound.0 => fetch_max(global_tail);
             ghost g => {
-                combiner = self.unbounded_log_instance.borrow().exec_update_version_upper_bound(
-                    nid as nat,
-                    &mut g,
-                    combiner,
+                combiner = self.unbounded_log_instance.borrow()
+                    .exec_update_version_upper_bound(nid as nat, &mut g, combiner);
+                assert forall|i|
+                    #![trigger local_updates[i]]
+                    0 <= i < request_ids.len() ==> {
+                        &&& #[trigger] local_updates.contains_key(i)
+                        &&& local_updates[i].key() == request_ids[i as int]
+                        &&& local_updates[i].instance_id() == self.unbounded_log_instance@.id()
+                        &&& local_updates[i].value().is_Applied()
+                        &&& local_updates[i].value().get_Applied_idx() < g.value()
+                    };
+                local_updates = self.execute_update_done_multiple(
+                    request_ids,
+                    local_updates,
+                    &g,
                 );
-                if ghost_data.combiner@.value().is_Placed() {
-                    local_updates = self.execute_update_done_multiple(
-                        ghost_data.request_ids@,
-                        local_updates,
-                        &g,
-                    );
-                }
             });
         atomic_with_ghost!(
             &self.local_versions[nid].0 => store(global_tail);
             ghost g => {
-                let tracked (Tracked(cb_local_version), Tracked(cb_combiner0)) =
-                    self.cyclic_buffer_instance.borrow().reader_finish(
-                    nid as nat,
-                    g.1,
-                    cb_combiner,
-                );
-                g.1 = cb_local_version;
-                cb_combiner = cb_combiner0;
-                let tracked (Tracked(ul_local_version), Tracked(combiner0)) =
-                    self.unbounded_log_instance.borrow().exec_finish(
-                    nid as nat,
-                    g.0,
-                    combiner,
-                );
-                g.0 = ul_local_version;
+                let tracked (Tracked(g0), Tracked(combiner0)) = self.unbounded_log_instance.borrow()
+                    .exec_finish(nid as nat, g.0, combiner);
+                g.0 = g0;
                 combiner = combiner0;
+                let tracked (Tracked(g1), Tracked(cb_combiner0)) = self.cyclic_buffer_instance.borrow()
+                    .reader_finish(nid as nat, g.1, cb_combiner);
+                g.1 = g1;
+                cb_combiner = cb_combiner0;
         });
         let tracked ghost_data_ret = NrLogAppendExecDataGhost {
             local_updates: Tracked(local_updates),  
@@ -1941,6 +1911,13 @@ impl<DT: Dispatch> NrLog<DT> {
             cb_combiner: Tracked(cb_combiner),  
             request_ids: Ghost(request_ids),  
         };
+        assert(ghost_data_ret.common_pred(
+            replica_token@,
+            actual_replica.view(),
+            self.unbounded_log_instance@,
+            self.cyclic_buffer_instance@,
+        ));
+        assert(ghost_data_ret.cb_combiner@.value() == ghost_data.cb_combiner@.value());
         assert(ghost_data_ret.execute_post(
             ghost_data,
             replica_token@,

@@ -273,14 +273,12 @@ impl Flag {
             proof {
                 if res.is_ok() {
                     let tracked au = maybe_au.tracked_take();
-
                     try_open_atomic_update!(au, mut token => {
                         let ghost old_auth = auth@;
                         auth.update(&mut token.value, !old_auth);
                         Tracked(Commit(token))
                     });
                 }
-
                 v = (value_perm, pend_perm, auth, gv, proto);
             }
         });
@@ -297,14 +295,12 @@ impl Flag {
             proof {
                 if res.is_ok() {
                     let tracked au = maybe_au.tracked_take();
-
                     try_open_atomic_update!(au, mut token => {
                         let ghost old_auth = auth@;
                         auth.update(&mut token.value, !old_auth);
                         Tracked(Commit(token))
                     });
                 }
-
                 v = (value_perm, pend_perm, auth, gv, proto);
             }
         });

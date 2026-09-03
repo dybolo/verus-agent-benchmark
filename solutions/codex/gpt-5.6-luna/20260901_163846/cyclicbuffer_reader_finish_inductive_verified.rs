@@ -580,94 +580,80 @@ tokenized_state_machine! { CyclicBuffer<DT: Dispatch> {
 
     #[inductive(reader_finish)]
     fn reader_finish_inductive(pre: Self, post: Self, node_id: NodeId) {
+        assert(pre.upcoming_bits_are_not_alive());
+        assert(pre.inv_buffer_contents());
+        assert(post.contents === pre.contents);
+        assert(post.alive_bits === pre.alive_bits);
+        assert(post.tail === pre.tail);
+        assert(post.buffer_size === pre.buffer_size);
+        assert(post.num_replicas === pre.num_replicas);
+        assert(post.local_versions[node_id] == pre.combiner[node_id].get_Reading_0().get_Range_end());
+
         let old_min = map_min_value(pre.local_versions, (pre.num_replicas - 1) as nat);
         let new_min = map_min_value(post.local_versions, (post.num_replicas - 1) as nat);
         map_min_value_smallest(pre.local_versions, (pre.num_replicas - 1) as nat);
         map_min_value_smallest(post.local_versions, (post.num_replicas - 1) as nat);
-
-        assert(pre.num_replicas == post.num_replicas);
-        assert(pre.tail == post.tail);
-        assert(pre.buffer_size == post.buffer_size);
-        assert(pre.alive_bits === post.alive_bits);
-        assert(pre.contents === post.contents);
+        assert forall |n| 0 <= n < pre.num_replicas implies old_min <= pre.local_versions[n] by {
+            assert(pre.local_versions.contains_key(n));
+            assert(old_min <= pre.local_versions[n]);
+        };
         assert(pre.reader_state_valid(node_id, pre.combiner[node_id].get_Reading_0()));
-
-        assert forall |i| 0 <= i <= (pre.num_replicas - 1) as nat
-            implies old_min <= pre.local_versions[i] by {
-            map_min_value_smallest(pre.local_versions, (pre.num_replicas - 1) as nat);
-        };
-        assert forall |i| 0 <= i <= (pre.num_replicas - 1) as nat
-            implies old_min <= post.local_versions[i] by {
-            if i == node_id {
-                assert(post.local_versions[i] == pre.combiner[node_id].get_Reading_0().get_Range_end());
-                assert(pre.combiner[node_id].get_Reading_0().get_Range_end()
-                    == pre.local_versions[node_id]
-                    || pre.combiner[node_id].get_Reading_0().get_Range_end()
-                        >= pre.local_versions[node_id]);
+        assert(old_min <= pre.local_versions[node_id]);
+        assert(pre.local_versions[node_id] <= post.local_versions[node_id]);
+        assert(pre.local_versions[node_id] == pre.combiner[node_id].get_Reading_0().get_Range_start());
+        assert(pre.combiner[node_id].get_Reading_0().get_Range_start()
+            <= pre.combiner[node_id].get_Reading_0().get_Range_end());
+        assert forall |n| 0 <= n < post.num_replicas implies old_min <= post.local_versions[n] by {
+            assert(post.local_versions.contains_key(n));
+            if n == node_id {
+                assert(old_min <= post.local_versions[n]);
             } else {
-                assert(post.local_versions[i] == pre.local_versions[i]);
-                map_min_value_smallest(pre.local_versions, (pre.num_replicas - 1) as nat);
+                assert(pre.local_versions.contains_key(n));
+                assert(post.local_versions[n] == pre.local_versions[n]);
+                assert(old_min <= pre.local_versions[n]);
             }
         };
-        assert(old_min <= new_min) by {
-            map_min_value_lower_bound(post.local_versions, (post.num_replicas - 1) as nat, old_min);
+        map_min_value_lower_bound(post.local_versions, (post.num_replicas - 1) as nat, old_min);
+        assert(old_min <= new_min);
+        assert(new_min <= post.local_versions[node_id]);
+        assert(pre.local_versions[node_id] <= post.local_versions[node_id]);
+        assert forall |n| pre.local_versions.contains_key(n) implies
+            pre.tail <= pre.local_versions[n] + pre.buffer_size by {
+            assert(pre.pointer_differences());
         };
-        assert(new_min <= post.local_versions[node_id]) by {
-            map_min_value_smallest(post.local_versions, (post.num_replicas - 1) as nat);
-        };
-        assert forall |i| 0 <= i <= (pre.num_replicas - 1) as nat
-            implies old_min <= post.local_versions[i] by {
-            map_min_value_lower_bound(post.local_versions, (post.num_replicas - 1) as nat, old_min);
-        };
-        assert(new_min > old_min ==> pre.local_versions[node_id] == old_min) by {
-            if pre.local_versions[node_id] != old_min {
-                map_contains_value(pre.local_versions, old_min);
-                let w = choose |n: NodeId| pre.local_versions.contains_key(n)
-                    && pre.local_versions[n] == old_min;
-                assert(0 <= w <= (pre.num_replicas - 1) as nat);
-                assert(w != node_id);
-                assert(post.local_versions[w] == old_min);
-                assert(new_min <= post.local_versions[w]);
-            }
-        };
+        assert(exists |n| pre.local_versions.contains_key(n) && pre.local_versions[n] == old_min);
+        assert(pre.tail <= old_min + pre.buffer_size);
+        if old_min < pre.local_versions[node_id] {
+            let n = choose |n| pre.local_versions.contains_key(n) && pre.local_versions[n] == old_min;
+            assert(n != node_id);
+            assert(post.local_versions[n] == pre.local_versions[n]);
+            assert(new_min <= post.local_versions[n]);
+            assert(new_min <= old_min);
+        }
 
-        assert forall |i| post.tail <= i < new_min + post.buffer_size
+        assert forall |i: int|
+            post.tail <= i < new_min + post.buffer_size
             implies !log_entry_is_alive(post.alive_bits, i, post.buffer_size) by {
             if i < old_min + pre.buffer_size {
                 assert(!log_entry_is_alive(pre.alive_bits, i, pre.buffer_size));
             } else {
                 let j = i - pre.buffer_size;
-                assert(old_min <= j < new_min);
+                assert(old_min <= j < post.local_versions[node_id]);
+                assert(pre.tail - pre.buffer_size <= j < pre.tail);
+                if j < pre.local_versions[node_id] {
+                    assert(new_min <= old_min);
+                    assert(j < old_min);
+                }
+                assert(pre.combiner[node_id].get_Reading_0().get_Range_start() <= j);
                 assert(j < pre.combiner[node_id].get_Reading_0().get_Range_end());
-                assert(pre.combiner[node_id].get_Reading_0().get_Range_start() == old_min);
+                assert(pre.contents.contains_key(j));
                 assert(log_entry_is_alive(pre.alive_bits, j, pre.buffer_size));
-                log_entry_alive_wrap_around(pre.alive_bits, pre.buffer_size,
-                    old_min, new_min);
-                assert(!log_entry_is_alive(pre.alive_bits, i, pre.buffer_size));
-            }
-            assert(log_entry_is_alive(post.alive_bits, i, post.buffer_size)
-                == log_entry_is_alive(pre.alive_bits, i, pre.buffer_size));
-        };
-
-        assert forall |i: int| post.tail - post.buffer_size <= i < post.tail implies (
-            (log_entry_is_alive(post.alive_bits, i, post.buffer_size) || i < new_min)
-            <==> post.contents.contains_key(i)
-        ) by {
-            assert(post.contents.contains_key(i) == pre.contents.contains_key(i));
-            assert(log_entry_is_alive(post.alive_bits, i, post.buffer_size)
-                == log_entry_is_alive(pre.alive_bits, i, pre.buffer_size));
-            if i < old_min {
-                assert((log_entry_is_alive(pre.alive_bits, i, pre.buffer_size) || i < old_min)
-                    == true);
-            } else if i < new_min {
-                assert(old_min < new_min);
-                map_contains_value(pre.local_versions, old_min);
-                assert(pre.local_versions[node_id] == old_min);
-                assert(pre.combiner[node_id].get_Reading_0().get_Range_start() == old_min);
-                assert(i < post.local_versions[node_id]);
-                assert(post.local_versions[node_id] == pre.combiner[node_id].get_Reading_0().get_Range_end());
-                assert(pre.combiner[node_id].get_Reading_0().get_Range_start() <= i);
-                assert(post.contents.contains_key(i));
+                assert forall |k: nat| k < pre.buffer_size <==> pre.alive_bits.contains_key(k) by {
+                    assert(pre.complete());
+                };
+                log_entry_alive_wrap_around(pre.alive_bits, pre.buffer_size, j as nat, (j + 1) as nat);
+                assert(!log_entry_is_alive(pre.alive_bits, j + pre.buffer_size, pre.buffer_size));
+                assert(!log_entry_is_alive(post.alive_bits, i, post.buffer_size));
             }
         };
     }
@@ -712,20 +698,20 @@ proof fn map_min_value_smallest(m: Map<NodeId, nat>, idx: nat)
     }
 }
 
-proof fn map_min_value_lower_bound(m: Map<NodeId, nat>, idx: nat, bound: nat)
+proof fn map_min_value_lower_bound(m: Map<NodeId, nat>, idx: nat, lower: nat)
     requires
         forall|i| 0 <= i <= idx ==> m.contains_key(i),
-        forall|i| 0 <= i <= idx ==> bound <= m.index(i),
+        forall|i| 0 <= i <= idx ==> lower <= m.index(i),
     ensures
-        bound <= map_min_value(m, idx),
+        lower <= map_min_value(m, idx),
     decreases idx,
 {
     if idx == 0 {
-        assert(bound <= m.index(0));
+        assert(lower <= m.index(0));
     } else {
-        map_min_value_lower_bound(m, (idx - 1) as nat, bound);
-        assert(bound <= m.index(idx));
-        assert(bound <= min(map_min_value(m, (idx - 1) as nat), m.index(idx)));
+        map_min_value_lower_bound(m, (idx - 1) as nat, lower);
+        assert(lower <= m.index(idx));
+        assert(lower <= map_min_value(m, (idx - 1) as nat));
     }
 }
 

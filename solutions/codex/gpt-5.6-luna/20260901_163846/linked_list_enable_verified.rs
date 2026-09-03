@@ -11324,12 +11324,16 @@ impl ThreadLLWithDelayBits {
             &self.atomic => no_op();
             update old_v -> v;
             ghost g => {
-                let tracked (mut emp_token, pair_opt) = g;
+                let tracked (mut emp_token, old_opt) = g;
+                self.emp_inst.borrow().agree(self.emp.borrow(), &emp_token);
+                assert(emp_token.value().is_none());
+                assert(old_opt == None);
                 self.emp_inst.borrow().set(
                     Some(BlockSizePageId { block_size, page_id }),
                     self.emp.borrow_mut(),
                     &mut emp_token,
                 );
+                assert(v.addr() == p.addr());
                 g = (emp_token, Some((delay_token, new_ll)));
             }
         );

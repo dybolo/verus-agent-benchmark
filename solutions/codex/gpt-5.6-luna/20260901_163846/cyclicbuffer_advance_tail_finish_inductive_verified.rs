@@ -561,76 +561,72 @@ tokenized_state_machine! { CyclicBuffer<DT: Dispatch> {
     fn advance_tail_finish_inductive(pre: Self, post: Self, node_id: NodeId, new_tail: nat) {
         let min_local_head = map_min_value(pre.local_versions, (pre.num_replicas - 1) as nat);
         map_min_value_smallest(pre.local_versions, (pre.num_replicas - 1) as nat);
-
-        assert(pre.combiner.contains_key(node_id));
+        assert(pre.num_replicas > 0);
+        assert(exists|n| 0 <= n <= (pre.num_replicas - 1) as nat
+            && pre.local_versions[n] == min_local_head);
         assert(pre.combiner[node_id].is_AdvancingTail());
-        let observed_head = pre.combiner[node_id].get_AdvancingTail_observed_head();
-        assert(pre.combiner[node_id] === CombinerState::AdvancingTail { observed_head });
-        assert(forall |n| 0 <= n < pre.num_replicas as nat ==> observed_head <= pre.local_versions[n]);
+        assert(forall|n| 0 <= n < pre.num_replicas ==> pre.combiner[node_id].get_AdvancingTail_observed_head() <= pre.local_versions[n]);
+        assert(pre.combiner[node_id].get_AdvancingTail_observed_head() <= min_local_head) by {
+            let n = choose|n| 0 <= n <= (pre.num_replicas - 1) as nat
+                && pre.local_versions[n] == min_local_head;
+            assert(0 <= n < pre.num_replicas);
+            assert(pre.combiner[node_id].get_AdvancingTail_observed_head() <= pre.local_versions[n]);
+        };
 
-        assert(pre.head <= pre.tail);
-        assert(pre.tail <= new_tail);
-        assert(new_tail <= observed_head + pre.buffer_size);
-        assert(pre.head <= min_local_head);
-        assert(new_tail <= min_local_head + pre.buffer_size);
-
-        assert forall |i: int| pre.tail <= i < new_tail
-            implies !log_entry_is_alive(pre.alive_bits, i, pre.buffer_size) by {
-            assert(pre.tail <= i < min_local_head + pre.buffer_size);
-            assert(!log_entry_is_alive(pre.alive_bits, i, pre.buffer_size));
-        }
-
-        assert forall |i: int| post.tail - post.buffer_size <= i < post.tail
-            implies ((log_entry_is_alive(post.alive_bits, i, post.buffer_size)
+        assert forall|i: int|
+            post.tail - post.buffer_size <= i < post.tail
+            implies (log_entry_is_alive(post.alive_bits, i, post.buffer_size)
                 || i < map_min_value(post.local_versions, (post.num_replicas - 1) as nat))
-                <==> post.contents.contains_key(i)) by {
+                <==> post.contents.contains_key(i) by {
             if i < pre.tail {
-                assert(post.contents.contains_key(i) <==> pre.contents.contains_key(i));
-                assert(post.alive_bits === pre.alive_bits);
-                assert(post.local_versions === pre.local_versions);
-                assert(post.buffer_size === pre.buffer_size);
-                assert(post.num_replicas === pre.num_replicas);
-                assert(pre.tail - pre.buffer_size <= i);
-                assert((log_entry_is_alive(pre.alive_bits, i, pre.buffer_size)
-                    || i < min_local_head) <==> pre.contents.contains_key(i));
+                assert(pre.tail - pre.buffer_size <= i < pre.tail);
+                assert(! (pre.tail - pre.buffer_size <= i < new_tail - pre.buffer_size));
+                assert(post.contents.contains_key(i) == pre.contents.contains_key(i));
+                assert(log_entry_is_alive(post.alive_bits, i, post.buffer_size)
+                    == log_entry_is_alive(pre.alive_bits, i, pre.buffer_size));
             } else {
-                assert(pre.tail <= i < new_tail);
-                assert(!log_entry_is_alive(pre.alive_bits, i, pre.buffer_size));
-                assert(!post.contents.contains_key(i));
-                assert(i >= min_local_head);
-            }
-        }
-
-        assert forall |i: int| post.tail <= i
-            implies !post.contents.contains_key(i) by {
-            if i < pre.tail {
                 assert(!pre.contents.contains_key(i));
                 assert(!post.contents.contains_key(i));
-            } else {
-                assert(!post.contents.contains_key(i));
+                assert(pre.tail <= i < min_local_head + pre.buffer_size);
+                assert(!log_entry_is_alive(pre.alive_bits, i, pre.buffer_size));
+                assert(!log_entry_is_alive(post.alive_bits, i, post.buffer_size));
             }
-        }
+        };
 
-        assert(post.inv_buffer_contents());
-        assert forall |n| #[trigger] post.combiner.contains_key(n)
-            implies post.combiner_valid(n, post.combiner[n]) by {
+        assert forall|i: int| post.tail <= i implies !post.contents.contains_key(i) by {
+            assert(!pre.contents.contains_key(i));
+        };
+
+        assert(post.combiner[node_id].is_Appending());
+        assert(post.combiner[node_id].get_Appending_cur_idx() == pre.tail);
+        assert(post.combiner[node_id].get_Appending_tail() == new_tail);
+        assert(pre.tail <= new_tail);
+        assert(new_tail <= pre.combiner[node_id].get_AdvancingTail_observed_head() + pre.buffer_size);
+        assert(pre.combiner[node_id].get_AdvancingTail_observed_head() <= min_local_head);
+        assert forall|i: nat| pre.tail <= i < new_tail
+            implies !log_entry_is_alive(pre.alive_bits, i as int, pre.buffer_size) by {
+            assert(pre.tail <= i < min_local_head + pre.buffer_size);
+            assert(!log_entry_is_alive(pre.alive_bits, i as int, pre.buffer_size));
+        };
+
+        assert(pre.combiner.contains_key(node_id));
+        assert(0 <= node_id < pre.num_replicas);
+        assert(pre.local_versions.contains_key(node_id));
+        assert(pre.local_versions[node_id] <= pre.tail);
+        assert(new_tail <= pre.combiner[node_id].get_AdvancingTail_observed_head() + pre.buffer_size);
+        assert(pre.combiner[node_id].get_AdvancingTail_observed_head() <= pre.tail);
+        assert(new_tail - pre.buffer_size <= pre.tail);
+        assert forall|n| #[trigger] post.combiner.contains_key(n) implies
+            post.combiner_valid(n, post.combiner[n]) by {
             if n == node_id {
-                assert(post.combiner[n] === CombinerState::Appending {
-                    cur_idx: pre.tail, tail: new_tail });
-                assert(pre.local_versions.contains_key(n));
-                assert(pre.head <= pre.local_versions[n] <= pre.tail);
-                assert(pre.local_versions[n] <= pre.tail);
-                assert(pre.tail >= new_tail - pre.buffer_size);
-                assert forall |i: nat| pre.tail <= i < new_tail
-                    implies !log_entry_is_alive(post.alive_bits, i as int, post.buffer_size) by {
-                    assert(!log_entry_is_alive(pre.alive_bits, i as int, pre.buffer_size));
-                }
+                assert(post.combiner[n].is_Appending());
+                assert(post.combiner_valid(n, post.combiner[n]));
             } else {
+                assert(pre.combiner.contains_key(n));
                 assert(post.combiner[n] === pre.combiner[n]);
                 assert(pre.combiner_valid(n, pre.combiner[n]));
             }
-        }
-        assert(post.all_combiner_valid());
+        };
     }
 
     #[inductive(append_flip_bit)]

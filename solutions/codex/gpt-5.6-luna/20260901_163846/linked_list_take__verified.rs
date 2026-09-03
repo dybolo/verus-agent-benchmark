@@ -11496,21 +11496,18 @@ impl ThreadLLWithDelayBits {
             ll.fixed_page(),
     {
         let tracked ll: LL;
-        let ghost mut taken_delay;
         let p = core::ptr::null_mut::<Node>();
         let res = atomic_with_ghost!(
             &self.atomic => fetch_and(3);
             update old_v -> new_v;
             ghost g => {
-                let tracked (y, g_opt) = g;
-                self.emp_inst.borrow().agree(self.emp.borrow(), &y);
-                assert(g_opt.is_Some());
-                let tracked pair = g_opt.tracked_unwrap();
-                let tracked (delay_token, ghost_ll) = pair;
-                ll = ghost_ll;
-                taken_delay = delay_token.value();
-                assert(old_v as int == ll.ptr() as int + delay_token.value().to_int());
-                assert(ll.ptr() as int % 4 == 0);
+                let tracked (emp, pair_opt) = g;
+                self.emp_inst.borrow().agree(self.emp.borrow(), &emp);
+                assert(emp.value().is_Some());
+                assert(pair_opt.is_Some());
+                let tracked (delay, old_ll) = pair_opt.tracked_unwrap();
+                ll = old_ll;
+
                 let mut data = ll.data@;
                 data.len = 0;
                 let tracked new_ll = LL {
@@ -11518,21 +11515,18 @@ impl ThreadLLWithDelayBits {
                     data: Ghost(data),
                     perms: Tracked(Map::tracked_empty()),
                 };
-                g = (y, Some((delay_token, new_ll)));
-                let old_addr = old_v.addr();
-                let new_addr = new_v.addr();
-                let old_u = old_v as usize;
-                let new_u = new_v as usize;
-                assert(old_v as int == old_addr as int);
-                assert(new_v as int == new_addr as int);
-                assert(old_u == old_addr);
-                assert(new_u == new_addr);
-                assert(new_u == old_u & 3);
-                assert(old_addr % 4 == delay_token.value().to_int() as usize);
-                assert(old_addr & 3 == old_addr % 4) by (bit_vector);
+                assert(new_ll.wf());
+                let ghost old_addr: usize = old_v@.addr as usize;
+                let ghost new_addr: usize = new_v@.addr as usize;
+                let ghost d: usize = delay.value().to_int() as usize;
+                assert(old_addr == old_ll.ptr().addr() as usize + d);
+                assert((old_ll.ptr().addr() as usize) % 4 == 0);
                 assert(new_addr == old_addr & 3);
-                assert(new_addr == delay_token.value().to_int() as usize);
-                assert(new_v as int == p as int + delay_token.value().to_int());
+                let old_delay = masked_ptr_delay_get_delay(old_v,
+                    Ghost(delay.value()), Ghost(old_ll.ptr()));
+                assert(old_delay == old_addr % 4);
+                assert(new_addr == old_delay) by (bit_vector);
+                g = (emp, Some((delay, new_ll)));
             }
         );
         let ret_ll = LL {
@@ -11541,31 +11535,10 @@ impl ThreadLLWithDelayBits {
             perms: Tracked(ll.perms.get()),
         };
         proof {
-            assert(res as int == ll.ptr() as int + taken_delay.to_int());
-            let res_addr = res.addr();
-            assert(ret_ll.ptr().addr() == res_addr & !3);
-            match taken_delay {
-                DelayState::UseDelayedFree => {
-                    assert(res_addr % 4 == 0usize);
-                },
-                DelayState::Freeing => {
-                    assert(res_addr % 4 == 1usize);
-                },
-                DelayState::NoDelayedFree => {
-                    assert(res_addr % 4 == 2usize);
-                },
-                DelayState::NeverDelayedFree => {
-                    assert(res_addr % 4 == 3usize);
-                },
-            }
-            assert((res_addr & !3) == sub(res_addr, res_addr % 4)) by (bit_vector);
-            assert(res_addr & !3 == ll.ptr().addr());
-            assert(ret_ll.ptr().addr() == ll.ptr().addr());
             assert forall |i: nat| ret_ll.valid_node(i, #[trigger] ret_ll.next_ptr(i))
             by {
                 assert(ll.valid_node(i, ll.next_ptr(i)));
             }
-            assert(ret_ll.wf());
         }
         ret_ll
     }

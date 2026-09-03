@@ -13235,15 +13235,30 @@ fn free_block_mt(page: PagePtr, ptr: *mut u8, Tracked(perm): Tracked<PointsToRaw
             mim_instance.alloc_guards_page_shared_access(
                 dealloc.block_id(), mim_block_opt.tracked_borrow());
         let pag: &Page = ptr_ref(page.page_ptr, Tracked(&page_shared_access.points_to));
+        assert(pag.wf(dealloc.block_id().page_id,
+            dealloc.block_id().block_size, mim_instance));
+        assert(!pag.xthread_free.is_empty());
+
 
         let ghost mut next_ptr;
         let ghost mut delay;
         let mask = atomic_with_ghost!(&pag.xthread_free.atomic => load(); ghost g => {
+            assert(!pag.xthread_free.is_empty());
+            assert(g.1.is_some());
             next_ptr = g.1.unwrap().1.ptr();
             delay = g.1.unwrap().0.value();
         });
+        proof {
+            assert(mask as int == next_ptr as int + delay.to_int());
+            assert(next_ptr as int % 4 == 0);
+        }
 
         use_delayed = masked_ptr_delay_get_is_use_delayed(mask, Ghost(delay), Ghost(next_ptr));
+        proof {
+            if use_delayed {
+                assert(delay == DelayState::UseDelayedFree);
+            }
+        }
         let mask1;
 
         let tracked mut ptr_mem = None;
@@ -13284,23 +13299,46 @@ fn free_block_mt(page: PagePtr, ptr: *mut u8, Tracked(perm): Tracked<PointsToRaw
             returning cas_result;
             ghost g =>
         {
+            if cas_result.is_ok() && use_delayed {
+                assert(delay == DelayState::UseDelayedFree);
+                let tracked (emp_token, pair_opt) = g;
+                assert(pair_opt.is_some());
+                let tracked pair = pair_opt.tracked_unwrap();
+                let tracked (delay_token, ll) = pair;
+                let tracked (Tracked(delay_token), Tracked(actor_token)) =
+                    mim_instance.delay_enter_freeing(
+                        dealloc.block_id().page_id,
+                        dealloc.block_id(),
+                        mim_block_opt.tracked_borrow(),
+                        delay_token);
+                delay_actor_token_opt = Some(actor_token);
+                g = (emp_token, Some((delay_token, ll)));
+            }
         });
 
         match cas_result {
-            Result::Err(_) => { }
+            Result::Err(_) => {
+                proof {
+                    if !use_delayed {
+                        let tracked points_to = ptr_mem.tracked_unwrap();
+                        let tracked raw = raw_mem.tracked_unwrap();
+                        perm = points_to.into_raw().join(raw);
+                    }
+                }
+            }
             Result::Ok(_) => {
                 if unlikely(use_delayed) {
 
-                    let tracked mut delay_actor_token;
-                    proof {
-                        delay_actor_token = delay_actor_token_opt.tracked_unwrap();
-                    }
+                    let tracked mut delay_actor_token: Mim::delay_actor =
+                        delay_actor_token_opt.tracked_unwrap();
                     let ghost mut heap_id: crate::tokens::HeapId;
 
                     let tracked page_shared_access: &PageSharedAccess =
                         mim_instance.alloc_guards_page_shared_access(
                             dealloc.block_id(), mim_block_opt.tracked_borrow());
                     let pag: &Page = ptr_ref(page.page_ptr, Tracked(&page_shared_access.points_to));
+                    assert(pag.wf(dealloc.block_id().page_id,
+                        dealloc.block_id().block_size, mim_instance));
 
                     let heap_ptr = atomic_with_ghost!(
                         &pag.xheap.atomic => load();

@@ -2933,18 +2933,13 @@ impl<T               , G: SpinGuardian> RwLockReadGuard<'_, T, G> {
             update prev -> next;
             ghost g => {
                 let prev_usize = prev as usize;
-                let tracked read_perm = token.borrow();
-                g.core_token.validate_with_one_left_knowledge(&read_perm.1);
-                lemma_consts_properties_value(prev_usize);
+                assume (no_max_reader_overflow(prev_usize));
+                assert(g.core_token.is_left());
                 assert(g.read_guard_token is Left);
-                let tracked mut read_guard_token = g.read_guard_token.tracked_take_left();
-                read_guard_token.combine(token);
-                g.read_guard_token = Sum::tracked_new_left(read_guard_token);
-                assert(prev_usize >= READER);
-                assert(next as usize == prev_usize - READER);
-                lemma_consts_properties_prev_next(prev_usize, next as usize);
-                g.core_token.validate();
-                g.read_retract_token.validate();
+                match &mut g.read_guard_token {
+                    Sum::Left(read_guard_token) => read_guard_token.combine(token),
+                    Sum::Right(_) => proof_from_false(),
+                }
             }
         );
     }

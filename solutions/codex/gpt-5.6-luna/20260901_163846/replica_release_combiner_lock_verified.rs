@@ -2601,7 +2601,7 @@ impl<DT: Dispatch> Replica<DT> {
             update old_val -> new_val;
             ghost g
             => {
-                g = Option::Some(lock_state.get());
+                g = Some(lock_state.get());
             });
     }
 
