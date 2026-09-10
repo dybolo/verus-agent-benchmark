@@ -33,7 +33,6 @@ def compute_statistics(session_dir: str) -> Stats:
     output_tokens = 0
     cache_read_tokens = 0
     cache_write_tokens = 0
-    reasoning_tokens = 0
     total_cost = 0.0
     total_requests = 0
     turn_count = 0
@@ -61,9 +60,14 @@ def compute_statistics(session_dir: str) -> Stats:
             if etype == "step_finish":
                 part = event.get("part", {})
                 tokens = part.get("tokens", {})
+                # OpenCode reports visible output and reasoning as separate,
+                # additive generated-token buckets. Both are billed at the
+                # model's output rate and must be included in output totals.
+                step_output_tokens = tokens.get("output", 0) + tokens.get(
+                    "reasoning", 0
+                )
                 input_tokens += tokens.get("input", 0)
-                output_tokens += tokens.get("output", 0)
-                reasoning_tokens += tokens.get("reasoning", 0)
+                output_tokens += step_output_tokens
                 cache = tokens.get("cache", {})
                 cache_read_tokens += cache.get("read", 0)
                 cache_write_tokens += cache.get("write", 0)
@@ -73,7 +77,7 @@ def compute_statistics(session_dir: str) -> Stats:
                     tokens.get("input", 0),
                     cache.get("read", 0),
                     cache.get("write", 0),
-                    tokens.get("output", 0),
+                    step_output_tokens,
                 )
                 total_requests += 1
                 turn_count += 1

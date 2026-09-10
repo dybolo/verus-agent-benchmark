@@ -2324,13 +2324,13 @@
           "status": "completed",
           "solution_file": "solutions/opencode/gpt-5.6-luna/20260901_163846/context_dequeue_response_verified.rs",
           "return_error": "",
-          "total_costs": 0.04737744,
+          "total_costs": 0.04952424,
           "total_turns": 24,
           "total_tool_calls": 37,
           "duration_seconds": 214.296,
           "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/context_dequeue_response/session.jsonl",
           "total_input_tokens": 1324998,
-          "total_output_tokens": 2661
+          "total_output_tokens": 4450
         },
         "context_enqueue_op.rs": {
           "verus_passed": true,
@@ -2339,13 +2339,13 @@
           "status": "completed",
           "solution_file": "solutions/opencode/gpt-5.6-luna/20260901_163846/context_enqueue_op_verified.rs",
           "return_error": "",
-          "total_costs": 0.04693784,
+          "total_costs": 0.04812464,
           "total_turns": 22,
           "total_tool_calls": 34,
           "duration_seconds": 177.715,
           "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/context_enqueue_op/session.jsonl",
           "total_input_tokens": 1273078,
-          "total_output_tokens": 2500
+          "total_output_tokens": 3489
         },
         "count_to_two_read_x.rs": {
           "verus_passed": true,
@@ -2354,13 +2354,13 @@
           "status": "completed",
           "solution_file": "solutions/opencode/gpt-5.6-luna/20260901_163846/count_to_two_read_x_verified.rs",
           "return_error": "",
-          "total_costs": 0.01134012,
+          "total_costs": 0.01208652,
           "total_turns": 16,
           "total_tool_calls": 26,
           "duration_seconds": 92.237,
           "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/count_to_two_read_x/session.jsonl",
           "total_input_tokens": 243513,
-          "total_output_tokens": 1735
+          "total_output_tokens": 2357
         },
         "count_to_two_thread_routine.rs": {
           "verus_passed": true,
@@ -2369,13 +2369,13 @@
           "status": "completed",
           "solution_file": "solutions/opencode/gpt-5.6-luna/20260901_163846/count_to_two_thread_routine_verified.rs",
           "return_error": "",
-          "total_costs": 0.01103852,
+          "total_costs": 0.01213772,
           "total_turns": 15,
           "total_tool_calls": 29,
           "duration_seconds": 97.79,
           "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/count_to_two_thread_routine/session.jsonl",
           "total_input_tokens": 224869,
-          "total_output_tokens": 1903
+          "total_output_tokens": 2819
         },
         "cuckoo_delete.rs": {
           "verus_passed": true,
@@ -2384,13 +2384,13 @@
           "status": "completed",
           "solution_file": "solutions/opencode/gpt-5.6-luna/20260901_163846/cuckoo_delete_verified.rs",
           "return_error": "",
-          "total_costs": 0.02565588,
+          "total_costs": 0.02753508,
           "total_turns": 20,
           "total_tool_calls": 29,
           "duration_seconds": 175.552,
           "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/cuckoo_delete/session.jsonl",
           "total_input_tokens": 662229,
-          "total_output_tokens": 2554
+          "total_output_tokens": 4120
         },
         "cuckoo_inductive.rs": {
           "verus_passed": true,
@@ -2399,13 +2399,13 @@
           "status": "completed",
           "solution_file": "solutions/opencode/gpt-5.6-luna/20260901_163846/cuckoo_inductive_verified.rs",
           "return_error": "",
-          "total_costs": 0.07270224,
+          "total_costs": 0.07641504,
           "total_turns": 45,
           "total_tool_calls": 55,
           "duration_seconds": 375.698,
           "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/cuckoo_inductive/session.jsonl",
           "total_input_tokens": 2375784,
-          "total_output_tokens": 5690
+          "total_output_tokens": 8784
         },
         "cuckoo_insert.rs": {
           "verus_passed": true,
@@ -2414,13 +2414,13 @@
           "status": "completed",
           "solution_file": "solutions/opencode/gpt-5.6-luna/20260901_163846/cuckoo_insert_verified.rs",
           "return_error": "",
-          "total_costs": 0.02021072,
+          "total_costs": 0.02098472,
           "total_turns": 16,
           "total_tool_calls": 24,
           "duration_seconds": 129.357,
           "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/cuckoo_insert/session.jsonl",
           "total_input_tokens": 460438,
-          "total_output_tokens": 2925
+          "total_output_tokens": 3570
         },
         "cuckoo_read.rs": {
           "verus_passed": true,
@@ -2429,13 +2429,13 @@
           "status": "completed",
           "solution_file": "solutions/opencode/gpt-5.6-luna/20260901_163846/cuckoo_read_verified.rs",
           "return_error": "",
-          "total_costs": 0.03419836,
+          "total_costs": 0.03636316,
           "total_turns": 26,
           "total_tool_calls": 35,
           "duration_seconds": 263.776,
           "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/cuckoo_read/session.jsonl",
           "total_input_tokens": 985145,
-          "total_output_tokens": 2855
+          "total_output_tokens": 4659
         },
         "cyclicbuffer_advance_head_finish_inductive.rs": {
           "verus_passed": true,
@@ -2444,13 +2444,13 @@
           "status": "completed",
           "solution_file": "solutions/opencode/gpt-5.6-luna/20260901_163846/cyclicbuffer_advance_head_finish_inductive_verified.rs",
           "return_error": "",
-          "total_costs": 0.01011568,
+          "total_costs": 0.01095688,
           "total_turns": 14,
           "total_tool_calls": 24,
           "duration_seconds": 98.889,
           "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/cyclicbuffer_advance_head_finish_inductive/session.jsonl",
           "total_input_tokens": 201734,
-          "total_output_tokens": 1841
+          "total_output_tokens": 2542
         },
         "cyclicbuffer_advance_tail_finish_inductive.rs": {
           "verus_passed": true,
@@ -2459,13 +2459,13 @@
           "status": "completed",
           "solution_file": "solutions/opencode/gpt-5.6-luna/20260901_163846/cyclicbuffer_advance_tail_finish_inductive_verified.rs",
           "return_error": "",
-          "total_costs": 0.0175602,
+          "total_costs": 0.0206886,
           "total_turns": 22,
           "total_tool_calls": 33,
           "duration_seconds": 198.774,
           "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/cyclicbuffer_advance_tail_finish_inductive/session.jsonl",
           "total_input_tokens": 389787,
-          "total_output_tokens": 3429
+          "total_output_tokens": 6036
         },
         "cyclicbuffer_advance_tail_start_inductive.rs": {
           "verus_passed": true,
@@ -2474,13 +2474,13 @@
           "status": "completed",
           "solution_file": "solutions/opencode/gpt-5.6-luna/20260901_163846/cyclicbuffer_advance_tail_start_inductive_verified.rs",
           "return_error": "",
-          "total_costs": 0.01190068,
+          "total_costs": 0.01287988,
           "total_turns": 15,
           "total_tool_calls": 24,
           "duration_seconds": 112.537,
           "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/cyclicbuffer_advance_tail_start_inductive/session.jsonl",
           "total_input_tokens": 249029,
-          "total_output_tokens": 1974
+          "total_output_tokens": 2790
         },
         "cyclicbuffer_append_flip_bit_inductive.rs": {
           "verus_passed": true,
@@ -2489,13 +2489,13 @@
           "status": "completed",
           "solution_file": "solutions/opencode/gpt-5.6-luna/20260901_163846/cyclicbuffer_append_flip_bit_inductive_verified.rs",
           "return_error": "",
-          "total_costs": 0.08378988,
+          "total_costs": 0.09478548,
           "total_turns": 72,
           "total_tool_calls": 75,
           "duration_seconds": 621.197,
           "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/cyclicbuffer_append_flip_bit_inductive/session.jsonl",
           "total_input_tokens": 2671515,
-          "total_output_tokens": 11030
+          "total_output_tokens": 20193
         },
         "cyclicbuffer_reader_finish_inductive.rs": {
           "verus_passed": true,
@@ -2504,13 +2504,13 @@
           "status": "completed",
           "solution_file": "solutions/opencode/gpt-5.6-luna/20260901_163846/cyclicbuffer_reader_finish_inductive_verified.rs",
           "return_error": "",
-          "total_costs": 0.04344856,
+          "total_costs": 0.05070016,
           "total_turns": 40,
           "total_tool_calls": 49,
           "duration_seconds": 369.257,
           "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/cyclicbuffer_reader_finish_inductive/session.jsonl",
           "total_input_tokens": 1197866,
-          "total_output_tokens": 6598
+          "total_output_tokens": 12641
         },
         "cyclicbuffer_reader_guard_inductive.rs": {
           "verus_passed": true,
@@ -2519,13 +2519,13 @@
           "status": "completed",
           "solution_file": "solutions/opencode/gpt-5.6-luna/20260901_163846/cyclicbuffer_reader_guard_inductive_verified.rs",
           "return_error": "",
-          "total_costs": 0.02848368,
+          "total_costs": 0.03158208,
           "total_turns": 29,
           "total_tool_calls": 39,
           "duration_seconds": 236.186,
           "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/cyclicbuffer_reader_guard_inductive/session.jsonl",
           "total_input_tokens": 709626,
-          "total_output_tokens": 5075
+          "total_output_tokens": 7657
         },
         "dist_rwlock_exc_check_count_inductive.rs": {
           "verus_passed": true,
@@ -2534,13 +2534,13 @@
           "status": "completed",
           "solution_file": "solutions/opencode/gpt-5.6-luna/20260901_163846/dist_rwlock_exc_check_count_inductive_verified.rs",
           "return_error": "",
-          "total_costs": 0.0111596,
+          "total_costs": 0.0120308,
           "total_turns": 16,
           "total_tool_calls": 23,
           "duration_seconds": 97.604,
           "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/dist_rwlock_exc_check_count_inductive/session.jsonl",
           "total_input_tokens": 201562,
-          "total_output_tokens": 1818
+          "total_output_tokens": 2544
         },
         "dist_rwlock_initialize_inductive.rs": {
           "verus_passed": true,
@@ -2549,13 +2549,13 @@
           "status": "completed",
           "solution_file": "solutions/opencode/gpt-5.6-luna/20260901_163846/dist_rwlock_initialize_inductive_verified.rs",
           "return_error": "",
-          "total_costs": 0.0286212,
+          "total_costs": 0.0297444,
           "total_turns": 27,
           "total_tool_calls": 39,
           "duration_seconds": 230.903,
           "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/dist_rwlock_initialize_inductive/session.jsonl",
           "total_input_tokens": 509886,
-          "total_output_tokens": 6070
+          "total_output_tokens": 7006
         },
         "dist_rwlock_shared_finish_inductive.rs": {
           "verus_passed": true,
@@ -2564,13 +2564,13 @@
           "status": "completed",
           "solution_file": "solutions/opencode/gpt-5.6-luna/20260901_163846/dist_rwlock_shared_finish_inductive_verified.rs",
           "return_error": "",
-          "total_costs": 0.01939716,
+          "total_costs": 0.02112756,
           "total_turns": 27,
           "total_tool_calls": 34,
           "duration_seconds": 165.304,
           "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/dist_rwlock_shared_finish_inductive/session.jsonl",
           "total_input_tokens": 439947,
-          "total_output_tokens": 3435
+          "total_output_tokens": 4877
         },
         "dist_rwlock_shared_release_inductive.rs": {
           "verus_passed": true,
@@ -2579,13 +2579,13 @@
           "status": "completed",
           "solution_file": "solutions/opencode/gpt-5.6-luna/20260901_163846/dist_rwlock_shared_release_inductive_verified.rs",
           "return_error": "",
-          "total_costs": 0.02201552,
+          "total_costs": 0.02325152,
           "total_turns": 20,
           "total_tool_calls": 34,
           "duration_seconds": 136.676,
           "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/dist_rwlock_shared_release_inductive/session.jsonl",
           "total_input_tokens": 410098,
-          "total_output_tokens": 2835
+          "total_output_tokens": 3865
         },
         "fifo_consume_end_inductive.rs": {
           "verus_passed": true,
@@ -2594,13 +2594,13 @@
           "status": "completed",
           "solution_file": "solutions/opencode/gpt-5.6-luna/20260901_163846/fifo_consume_end_inductive_verified.rs",
           "return_error": "",
-          "total_costs": 0.03128368,
+          "total_costs": 0.03434848,
           "total_turns": 33,
           "total_tool_calls": 41,
           "duration_seconds": 208.304,
           "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/fifo_consume_end_inductive/session.jsonl",
           "total_input_tokens": 846050,
-          "total_output_tokens": 3871
+          "total_output_tokens": 6425
         },
         "fifo_consume_start_inductive.rs": {
           "verus_passed": true,
@@ -2609,13 +2609,13 @@
           "status": "completed",
           "solution_file": "solutions/opencode/gpt-5.6-luna/20260901_163846/fifo_consume_start_inductive_verified.rs",
           "return_error": "",
-          "total_costs": 0.03880992,
+          "total_costs": 0.04155672,
           "total_turns": 38,
           "total_tool_calls": 52,
           "duration_seconds": 276.727,
           "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/fifo_consume_start_inductive/session.jsonl",
           "total_input_tokens": 1086780,
-          "total_output_tokens": 4658
+          "total_output_tokens": 6947
         },
         "fifo_dequeue.rs": {
           "verus_passed": true,
@@ -2624,13 +2624,13 @@
           "status": "completed",
           "solution_file": "solutions/opencode/gpt-5.6-luna/20260901_163846/fifo_dequeue_verified.rs",
           "return_error": "",
-          "total_costs": 0.07624084,
+          "total_costs": 0.08268964,
           "total_turns": 49,
           "total_tool_calls": 66,
           "duration_seconds": 310.995,
           "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/fifo_dequeue/session.jsonl",
           "total_input_tokens": 2576339,
-          "total_output_tokens": 4397
+          "total_output_tokens": 9771
         },
         "fifo_enqueue.rs": {
           "verus_passed": true,
@@ -2639,13 +2639,13 @@
           "status": "completed",
           "solution_file": "solutions/opencode/gpt-5.6-luna/20260901_163846/fifo_enqueue_verified.rs",
           "return_error": "",
-          "total_costs": 0.06936428,
+          "total_costs": 0.07695068,
           "total_turns": 56,
           "total_tool_calls": 72,
           "duration_seconds": 340.342,
           "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/fifo_enqueue/session.jsonl",
           "total_input_tokens": 2346535,
-          "total_output_tokens": 4020
+          "total_output_tokens": 10342
         },
         "fifo_initialize_inductive.rs": {
           "verus_passed": true,
@@ -2654,13 +2654,13 @@
           "status": "completed",
           "solution_file": "solutions/opencode/gpt-5.6-luna/20260901_163846/fifo_initialize_inductive_verified.rs",
           "return_error": "",
-          "total_costs": 0.0126246,
+          "total_costs": 0.0135426,
           "total_turns": 17,
           "total_tool_calls": 28,
           "duration_seconds": 102.538,
           "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/fifo_initialize_inductive/session.jsonl",
           "total_input_tokens": 289827,
-          "total_output_tokens": 1768
+          "total_output_tokens": 2533
         },
         "fifo_produce_end_inductive.rs": {
           "verus_passed": true,
@@ -2669,13 +2669,13 @@
           "status": "completed",
           "solution_file": "solutions/opencode/gpt-5.6-luna/20260901_163846/fifo_produce_end_inductive_verified.rs",
           "return_error": "",
-          "total_costs": 0.01120732,
+          "total_costs": 0.01207612,
           "total_turns": 14,
           "total_tool_calls": 24,
           "duration_seconds": 99.643,
           "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/fifo_produce_end_inductive/session.jsonl",
           "total_input_tokens": 229469,
-          "total_output_tokens": 1661
+          "total_output_tokens": 2385
         },
         "fifo_produce_start_inductive.rs": {
           "verus_passed": true,
@@ -2684,13 +2684,13 @@
           "status": "completed",
           "solution_file": "solutions/opencode/gpt-5.6-luna/20260901_163846/fifo_produce_start_inductive_verified.rs",
           "return_error": "",
-          "total_costs": 0.02811244,
+          "total_costs": 0.02983084,
           "total_turns": 32,
           "total_tool_calls": 40,
           "duration_seconds": 177.655,
           "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/fifo_produce_start_inductive/session.jsonl",
           "total_input_tokens": 770273,
-          "total_output_tokens": 3029
+          "total_output_tokens": 4461
         },
         "flat_combine_client_recv_inductive.rs": {
           "verus_passed": true,
@@ -2699,13 +2699,13 @@
           "status": "completed",
           "solution_file": "solutions/opencode/gpt-5.6-luna/20260901_163846/flat_combine_client_recv_inductive_verified.rs",
           "return_error": "",
-          "total_costs": 0.03110572,
+          "total_costs": 0.03466132,
           "total_turns": 29,
           "total_tool_calls": 34,
           "duration_seconds": 278.431,
           "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/flat_combine_client_recv_inductive/session.jsonl",
           "total_input_tokens": 650099,
-          "total_output_tokens": 7658
+          "total_output_tokens": 10621
         },
         "flat_combine_client_send_inductive.rs": {
           "verus_passed": true,
@@ -2714,13 +2714,13 @@
           "status": "completed",
           "solution_file": "solutions/opencode/gpt-5.6-luna/20260901_163846/flat_combine_client_send_inductive_verified.rs",
           "return_error": "",
-          "total_costs": 0.02430232,
+          "total_costs": 0.02587072,
           "total_turns": 25,
           "total_tool_calls": 36,
           "duration_seconds": 162.953,
           "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/flat_combine_client_send_inductive/session.jsonl",
           "total_input_tokens": 580142,
-          "total_output_tokens": 3664
+          "total_output_tokens": 4971
         },
         "flat_combine_combiner_go_to_collecting_inductive.rs": {
           "verus_passed": true,
@@ -2729,13 +2729,13 @@
           "status": "completed",
           "solution_file": "solutions/opencode/gpt-5.6-luna/20260901_163846/flat_combine_combiner_go_to_collecting_inductive_verified.rs",
           "return_error": "",
-          "total_costs": 0.0208212,
+          "total_costs": 0.0231456,
           "total_turns": 20,
           "total_tool_calls": 28,
           "duration_seconds": 212.67,
           "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/flat_combine_combiner_go_to_collecting_inductive/session.jsonl",
           "total_input_tokens": 352596,
-          "total_output_tokens": 6201
+          "total_output_tokens": 8138
         },
         "flat_combine_combiner_go_to_responding_inductive.rs": {
           "verus_passed": true,
@@ -2744,13 +2744,13 @@
           "status": "completed",
           "solution_file": "solutions/opencode/gpt-5.6-luna/20260901_163846/flat_combine_combiner_go_to_responding_inductive_verified.rs",
           "return_error": "",
-          "total_costs": 0.06434816,
+          "total_costs": 0.06932576,
           "total_turns": 47,
           "total_tool_calls": 58,
           "duration_seconds": 342.226,
           "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/flat_combine_combiner_go_to_responding_inductive/session.jsonl",
           "total_input_tokens": 1916554,
-          "total_output_tokens": 7529
+          "total_output_tokens": 11677
         },
         "flat_combine_combiner_recv_inductive.rs": {
           "verus_passed": true,
@@ -2759,13 +2759,13 @@
           "status": "completed",
           "solution_file": "solutions/opencode/gpt-5.6-luna/20260901_163846/flat_combine_combiner_recv_inductive_verified.rs",
           "return_error": "",
-          "total_costs": 0.01747588,
+          "total_costs": 0.01898428,
           "total_turns": 19,
           "total_tool_calls": 27,
           "duration_seconds": 170.061,
           "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/flat_combine_combiner_recv_inductive/session.jsonl",
           "total_input_tokens": 317069,
-          "total_output_tokens": 4496
+          "total_output_tokens": 5753
         },
         "flat_combine_combiner_send_inductive.rs": {
           "verus_passed": true,
@@ -2774,13 +2774,13 @@
           "status": "completed",
           "solution_file": "solutions/opencode/gpt-5.6-luna/20260901_163846/flat_combine_combiner_send_inductive_verified.rs",
           "return_error": "",
-          "total_costs": 0.03077084,
+          "total_costs": 0.03388604,
           "total_turns": 25,
           "total_tool_calls": 35,
           "duration_seconds": 264.44,
           "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/flat_combine_combiner_send_inductive/session.jsonl",
           "total_input_tokens": 627817,
-          "total_output_tokens": 7867
+          "total_output_tokens": 10463
         },
         "flat_combine_combiner_send_skip_inductive.rs": {
           "verus_passed": true,
@@ -2789,13 +2789,13 @@
           "status": "completed",
           "solution_file": "solutions/opencode/gpt-5.6-luna/20260901_163846/flat_combine_combiner_send_skip_inductive_verified.rs",
           "return_error": "",
-          "total_costs": 0.02863244,
+          "total_costs": 0.03163484,
           "total_turns": 26,
           "total_tool_calls": 39,
           "duration_seconds": 261.108,
           "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/flat_combine_combiner_send_skip_inductive/session.jsonl",
           "total_input_tokens": 572899,
-          "total_output_tokens": 7174
+          "total_output_tokens": 9676
         },
         "flat_combine_combiner_skip_inductive.rs": {
           "verus_passed": true,
@@ -2804,13 +2804,13 @@
           "status": "completed",
           "solution_file": "solutions/opencode/gpt-5.6-luna/20260901_163846/flat_combine_combiner_skip_inductive_verified.rs",
           "return_error": "",
-          "total_costs": 0.04314568,
+          "total_costs": 0.04857808,
           "total_turns": 40,
           "total_tool_calls": 55,
           "duration_seconds": 325.744,
           "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/flat_combine_combiner_skip_inductive/session.jsonl",
           "total_input_tokens": 1134374,
-          "total_output_tokens": 6790
+          "total_output_tokens": 11317
         },
         "free_free.rs": {
           "verus_passed": true,
@@ -2819,13 +2819,13 @@
           "status": "completed",
           "solution_file": "solutions/opencode/gpt-5.6-luna/20260901_163846/free_free_verified.rs",
           "return_error": "",
-          "total_costs": 0.07302776,
+          "total_costs": 0.07826936,
           "total_turns": 35,
           "total_tool_calls": 45,
           "duration_seconds": 400.231,
           "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/free_free/session.jsonl",
           "total_input_tokens": 2470042,
-          "total_output_tokens": 3154
+          "total_output_tokens": 7522
         },
         "free_free_block_mt.rs": {
           "verus_passed": false,
@@ -2834,13 +2834,13 @@
           "status": "completed",
           "solution_file": "solutions/opencode/gpt-5.6-luna/20260901_163846/free_free_block_mt_verified.rs",
           "return_error": "",
-          "total_costs": 0.19910996,
+          "total_costs": 0.20913956,
           "total_turns": 94,
           "total_tool_calls": 97,
           "duration_seconds": 1046.869,
           "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/free_free_block_mt/session.jsonl",
           "total_input_tokens": 8011417,
-          "total_output_tokens": 6804
+          "total_output_tokens": 15162
         },
         "helping_try_cancel_two_flips.rs": {
           "verus_passed": true,
@@ -2849,13 +2849,13 @@
           "status": "completed",
           "solution_file": "solutions/opencode/gpt-5.6-luna/20260901_163846/helping_try_cancel_two_flips_verified.rs",
           "return_error": "",
-          "total_costs": 0.02372512,
+          "total_costs": 0.02627872,
           "total_turns": 25,
           "total_tool_calls": 33,
           "duration_seconds": 159.302,
           "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/helping_try_cancel_two_flips/session.jsonl",
           "total_input_tokens": 654914,
-          "total_output_tokens": 2241
+          "total_output_tokens": 4369
         },
         "helping_try_handshake.rs": {
           "verus_passed": false,
@@ -2864,13 +2864,13 @@
           "status": "completed",
           "solution_file": "solutions/opencode/gpt-5.6-luna/20260901_163846/helping_try_handshake_verified.rs",
           "return_error": "",
-          "total_costs": 0.12160136,
+          "total_costs": 0.13891496,
           "total_turns": 99,
           "total_tool_calls": 112,
           "duration_seconds": 743.75,
           "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/helping_try_handshake/session.jsonl",
           "total_input_tokens": 4409158,
-          "total_output_tokens": 9214
+          "total_output_tokens": 23642
         },
         "helping_try_simple_flip.rs": {
           "verus_passed": true,
@@ -2879,13 +2879,13 @@
           "status": "completed",
           "solution_file": "solutions/opencode/gpt-5.6-luna/20260901_163846/helping_try_simple_flip_verified.rs",
           "return_error": "",
-          "total_costs": 0.01849112,
+          "total_costs": 0.01962272,
           "total_turns": 21,
           "total_tool_calls": 37,
           "duration_seconds": 127.733,
           "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/helping_try_simple_flip/session.jsonl",
           "total_input_tokens": 426004,
-          "total_output_tokens": 2239
+          "total_output_tokens": 3182
         },
         "linked_list_atomic_insert_block.rs": {
           "verus_passed": true,
@@ -2894,13 +2894,13 @@
           "status": "completed",
           "solution_file": "solutions/opencode/gpt-5.6-luna/20260901_163846/linked_list_atomic_insert_block_verified.rs",
           "return_error": "",
-          "total_costs": 0.13073276,
+          "total_costs": 0.13610156,
           "total_turns": 43,
           "total_tool_calls": 53,
           "duration_seconds": 503.689,
           "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/linked_list_atomic_insert_block/session.jsonl",
           "total_input_tokens": 4684393,
-          "total_output_tokens": 3975
+          "total_output_tokens": 8449
         },
         "linked_list_check_is_good.rs": {
           "verus_passed": true,
@@ -2909,13 +2909,13 @@
           "status": "completed",
           "solution_file": "solutions/opencode/gpt-5.6-luna/20260901_163846/linked_list_check_is_good_verified.rs",
           "return_error": "",
-          "total_costs": 0.095152,
+          "total_costs": 0.10027,
           "total_turns": 49,
           "total_tool_calls": 60,
           "duration_seconds": 412.863,
           "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/linked_list_check_is_good/session.jsonl",
           "total_input_tokens": 3344726,
-          "total_output_tokens": 3759
+          "total_output_tokens": 8024
         },
         "linked_list_enable.rs": {
           "verus_passed": true,
@@ -2924,13 +2924,13 @@
           "status": "completed",
           "solution_file": "solutions/opencode/gpt-5.6-luna/20260901_163846/linked_list_enable_verified.rs",
           "return_error": "",
-          "total_costs": 0.04837028,
+          "total_costs": 0.04955708,
           "total_turns": 18,
           "total_tool_calls": 38,
           "duration_seconds": 338.053,
           "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/linked_list_enable/session.jsonl",
           "total_input_tokens": 1302781,
-          "total_output_tokens": 2276
+          "total_output_tokens": 3265
         },
         "linked_list_take.rs": {
           "verus_passed": true,
@@ -2939,13 +2939,13 @@
           "status": "completed",
           "solution_file": "solutions/opencode/gpt-5.6-luna/20260901_163846/linked_list_take_verified.rs",
           "return_error": "",
-          "total_costs": 0.04222636,
+          "total_costs": 0.04376236,
           "total_turns": 22,
           "total_tool_calls": 34,
           "duration_seconds": 302.758,
           "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/linked_list_take/session.jsonl",
           "total_input_tokens": 1195367,
-          "total_output_tokens": 2156
+          "total_output_tokens": 3436
         },
         "linked_list_take_.rs": {
           "verus_passed": false,
@@ -2954,13 +2954,13 @@
           "status": "completed",
           "solution_file": "solutions/opencode/gpt-5.6-luna/20260901_163846/linked_list_take__verified.rs",
           "return_error": "",
-          "total_costs": 0.232839,
+          "total_costs": 0.2427918,
           "total_turns": 99,
           "total_tool_calls": 106,
           "duration_seconds": 1181.659,
           "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/linked_list_take_/session.jsonl",
           "total_input_tokens": 9376245,
-          "total_output_tokens": 10269
+          "total_output_tokens": 18563
         },
         "linked_list_try_use_delayed_free.rs": {
           "verus_passed": true,
@@ -2969,13 +2969,13 @@
           "status": "completed",
           "solution_file": "solutions/opencode/gpt-5.6-luna/20260901_163846/linked_list_try_use_delayed_free_verified.rs",
           "return_error": "",
-          "total_costs": 0.04360512,
+          "total_costs": 0.04500192,
           "total_turns": 23,
           "total_tool_calls": 31,
           "duration_seconds": 243.461,
           "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/linked_list_try_use_delayed_free/session.jsonl",
           "total_input_tokens": 1297806,
-          "total_output_tokens": 2283
+          "total_output_tokens": 3447
         },
         "log_advance_head.rs": {
           "verus_passed": true,
@@ -2984,13 +2984,13 @@
           "status": "completed",
           "solution_file": "solutions/opencode/gpt-5.6-luna/20260901_163846/log_advance_head_verified.rs",
           "return_error": "",
-          "total_costs": 0.043709,
+          "total_costs": 0.0450662,
           "total_turns": 19,
           "total_tool_calls": 27,
           "duration_seconds": 152.512,
           "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/log_advance_head/session.jsonl",
           "total_input_tokens": 1191199,
-          "total_output_tokens": 1859
+          "total_output_tokens": 2990
         },
         "log_append.rs": {
           "verus_passed": false,
@@ -2999,13 +2999,13 @@
           "status": "completed",
           "solution_file": "solutions/opencode/gpt-5.6-luna/20260901_163846/log_append_verified.rs",
           "return_error": "",
-          "total_costs": 0.20901192,
+          "total_costs": 0.22515312,
           "total_turns": 70,
           "total_tool_calls": 76,
           "duration_seconds": 817.926,
           "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/log_append/session.jsonl",
           "total_input_tokens": 8104776,
-          "total_output_tokens": 6331
+          "total_output_tokens": 19782
         },
         "log_execute.rs": {
           "verus_passed": true,
@@ -3014,13 +3014,13 @@
           "status": "completed",
           "solution_file": "solutions/opencode/gpt-5.6-luna/20260901_163846/log_execute_verified.rs",
           "return_error": "",
-          "total_costs": 0.31767772,
+          "total_costs": 0.33230212,
           "total_turns": 88,
           "total_tool_calls": 104,
           "duration_seconds": 894.182,
           "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/log_execute/session.jsonl",
           "total_input_tokens": 11618885,
-          "total_output_tokens": 9633
+          "total_output_tokens": 21820
         },
         "log_find_min_local_version.rs": {
           "verus_passed": true,
@@ -3029,13 +3029,13 @@
           "status": "completed",
           "solution_file": "solutions/opencode/gpt-5.6-luna/20260901_163846/log_find_min_local_version_verified.rs",
           "return_error": "",
-          "total_costs": 0.03329104,
+          "total_costs": 0.03435544,
           "total_turns": 18,
           "total_tool_calls": 24,
           "duration_seconds": 149.845,
           "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/log_find_min_local_version/session.jsonl",
           "total_input_tokens": 818756,
-          "total_output_tokens": 1568
+          "total_output_tokens": 2455
         },
         "log_is_replica_synced_for_reads.rs": {
           "verus_passed": true,
@@ -3044,13 +3044,13 @@
           "status": "completed",
           "solution_file": "solutions/opencode/gpt-5.6-luna/20260901_163846/log_is_replica_synced_for_reads_verified.rs",
           "return_error": "",
-          "total_costs": 0.06156116,
+          "total_costs": 0.06342476,
           "total_turns": 27,
           "total_tool_calls": 38,
           "duration_seconds": 242.618,
           "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/log_is_replica_synced_for_reads/session.jsonl",
           "total_input_tokens": 1749319,
-          "total_output_tokens": 2743
+          "total_output_tokens": 4296
         },
         "once_get.rs": {
           "verus_passed": true,
@@ -3059,13 +3059,13 @@
           "status": "completed",
           "solution_file": "solutions/opencode/gpt-5.6-luna/20260901_163846/once_get_verified.rs",
           "return_error": "",
-          "total_costs": 0.02696508,
+          "total_costs": 0.02977308,
           "total_turns": 20,
           "total_tool_calls": 34,
           "duration_seconds": 194.625,
           "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/once_get/session.jsonl",
           "total_input_tokens": 459309,
-          "total_output_tokens": 4057
+          "total_output_tokens": 6397
         },
         "once_init.rs": {
           "verus_passed": true,
@@ -3074,13 +3074,13 @@
           "status": "completed",
           "solution_file": "solutions/opencode/gpt-5.6-luna/20260901_163846/once_init_verified.rs",
           "return_error": "",
-          "total_costs": 0.03867476,
+          "total_costs": 0.04165436,
           "total_turns": 38,
           "total_tool_calls": 51,
           "duration_seconds": 273.079,
           "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/once_init/session.jsonl",
           "total_input_tokens": 1075573,
-          "total_output_tokens": 5338
+          "total_output_tokens": 7821
         },
         "replica_acquire_combiner_lock.rs": {
           "verus_passed": true,
@@ -3089,13 +3089,13 @@
           "status": "completed",
           "solution_file": "solutions/opencode/gpt-5.6-luna/20260901_163846/replica_acquire_combiner_lock_verified.rs",
           "return_error": "",
-          "total_costs": 0.03845912,
+          "total_costs": 0.04000592,
           "total_turns": 19,
           "total_tool_calls": 31,
           "duration_seconds": 159.461,
           "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/replica_acquire_combiner_lock/session.jsonl",
           "total_input_tokens": 997036,
-          "total_output_tokens": 2043
+          "total_output_tokens": 3332
         },
         "replica_collect_thread_ops.rs": {
           "verus_passed": true,
@@ -3104,13 +3104,13 @@
           "status": "completed",
           "solution_file": "solutions/opencode/gpt-5.6-luna/20260901_163846/replica_collect_thread_ops_verified.rs",
           "return_error": "",
-          "total_costs": 0.11491128,
+          "total_costs": 0.12118488,
           "total_turns": 44,
           "total_tool_calls": 53,
           "duration_seconds": 422.707,
           "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/replica_collect_thread_ops/session.jsonl",
           "total_input_tokens": 3905298,
-          "total_output_tokens": 4134
+          "total_output_tokens": 9362
         },
         "replica_distribute_thread_resps.rs": {
           "verus_passed": true,
@@ -3119,13 +3119,13 @@
           "status": "completed",
           "solution_file": "solutions/opencode/gpt-5.6-luna/20260901_163846/replica_distribute_thread_resps_verified.rs",
           "return_error": "",
-          "total_costs": 0.06567092,
+          "total_costs": 0.06888812,
           "total_turns": 31,
           "total_tool_calls": 37,
           "duration_seconds": 233.935,
           "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/replica_distribute_thread_resps/session.jsonl",
           "total_input_tokens": 2021227,
-          "total_output_tokens": 3013
+          "total_output_tokens": 5694
         },
         "replica_release_combiner_lock.rs": {
           "verus_passed": true,
@@ -3134,13 +3134,13 @@
           "status": "completed",
           "solution_file": "solutions/opencode/gpt-5.6-luna/20260901_163846/replica_release_combiner_lock_verified.rs",
           "return_error": "",
-          "total_costs": 0.022029,
+          "total_costs": 0.0226962,
           "total_turns": 13,
           "total_tool_calls": 22,
           "duration_seconds": 121.158,
           "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/replica_release_combiner_lock/session.jsonl",
           "total_input_tokens": 476577,
-          "total_output_tokens": 1520
+          "total_output_tokens": 2076
         },
         "rwlock_readguard_drop.rs": {
           "verus_passed": false,
@@ -3149,13 +3149,13 @@
           "status": "completed",
           "solution_file": "solutions/opencode/gpt-5.6-luna/20260901_163846/rwlock_readguard_drop_verified.rs",
           "return_error": "",
-          "total_costs": 0.09040164,
+          "total_costs": 0.10227804,
           "total_turns": 45,
           "total_tool_calls": 53,
           "duration_seconds": 403.338,
           "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/rwlock_readguard_drop/session.jsonl",
           "total_input_tokens": 2795919,
-          "total_output_tokens": 3409
+          "total_output_tokens": 13306
         },
         "rwlock_try_read.rs": {
           "verus_passed": false,
@@ -3164,13 +3164,13 @@
           "status": "completed",
           "solution_file": "solutions/opencode/gpt-5.6-luna/20260901_163846/rwlock_try_read_verified.rs",
           "return_error": "",
-          "total_costs": 0.14723312,
+          "total_costs": 0.16111592,
           "total_turns": 74,
           "total_tool_calls": 85,
           "duration_seconds": 601.185,
           "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/rwlock_try_read/session.jsonl",
           "total_input_tokens": 5601850,
-          "total_output_tokens": 6819
+          "total_output_tokens": 18388
         },
         "rwlock_try_upgrade.rs": {
           "verus_passed": false,
@@ -3179,13 +3179,13 @@
           "status": "completed",
           "solution_file": "solutions/opencode/gpt-5.6-luna/20260901_163846/rwlock_try_upgrade_verified.rs",
           "return_error": "",
-          "total_costs": 0.14883912,
+          "total_costs": 0.16548792,
           "total_turns": 72,
           "total_tool_calls": 84,
           "duration_seconds": 656.23,
           "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/rwlock_try_upgrade/session.jsonl",
           "total_input_tokens": 5721996,
-          "total_output_tokens": 6565
+          "total_output_tokens": 20439
         },
         "rwlock_try_upread.rs": {
           "verus_passed": false,
@@ -3194,13 +3194,13 @@
           "status": "completed",
           "solution_file": "solutions/opencode/gpt-5.6-luna/20260901_163846/rwlock_try_upread_verified.rs",
           "return_error": "",
-          "total_costs": 0.32927024,
+          "total_costs": 0.34985744,
           "total_turns": 131,
           "total_tool_calls": 145,
           "duration_seconds": 1067.827,
           "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/rwlock_try_upread/session.jsonl",
           "total_input_tokens": 13673200,
-          "total_output_tokens": 11602
+          "total_output_tokens": 28758
         },
         "rwlock_try_write.rs": {
           "verus_passed": true,
@@ -3209,13 +3209,13 @@
           "status": "completed",
           "solution_file": "solutions/opencode/gpt-5.6-luna/20260901_163846/rwlock_try_write_verified.rs",
           "return_error": "",
-          "total_costs": 0.02619312,
+          "total_costs": 0.03046752,
           "total_turns": 15,
           "total_tool_calls": 27,
           "duration_seconds": 154.13,
           "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/rwlock_try_write/session.jsonl",
           "total_input_tokens": 656340,
-          "total_output_tokens": 1756
+          "total_output_tokens": 5318
         },
         "rwlock_upgradableguard_drop.rs": {
           "verus_passed": false,
@@ -3224,13 +3224,13 @@
           "status": "completed",
           "solution_file": "solutions/opencode/gpt-5.6-luna/20260901_163846/rwlock_upgradableguard_drop_verified.rs",
           "return_error": "",
-          "total_costs": 0.14366544,
+          "total_costs": 0.15404664,
           "total_turns": 76,
           "total_tool_calls": 87,
           "duration_seconds": 687.762,
           "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/rwlock_upgradableguard_drop/session.jsonl",
           "total_input_tokens": 5488140,
-          "total_output_tokens": 6516
+          "total_output_tokens": 15167
         },
         "rwlock_writeguard_drop.rs": {
           "verus_passed": false,
@@ -3239,13 +3239,13 @@
           "status": "completed",
           "solution_file": "solutions/opencode/gpt-5.6-luna/20260901_163846/rwlock_writeguard_drop_verified.rs",
           "return_error": "",
-          "total_costs": 0.146025,
+          "total_costs": 0.1600314,
           "total_turns": 73,
           "total_tool_calls": 83,
           "duration_seconds": 594.747,
           "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/rwlock_writeguard_drop/session.jsonl",
           "total_input_tokens": 5660997,
-          "total_output_tokens": 5708
+          "total_output_tokens": 17380
         },
         "statics_get.rs": {
           "verus_passed": true,
@@ -3254,13 +3254,13 @@
           "status": "completed",
           "solution_file": "solutions/opencode/gpt-5.6-luna/20260901_163846/statics_get_verified.rs",
           "return_error": "",
-          "total_costs": 0.0163028,
+          "total_costs": 0.0171932,
           "total_turns": 17,
           "total_tool_calls": 30,
           "duration_seconds": 138.498,
           "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/statics_get/session.jsonl",
           "total_input_tokens": 336958,
-          "total_output_tokens": 3122
+          "total_output_tokens": 3864
         },
         "tokens_page_destroy_block_tokens_inductive.rs": {
           "verus_passed": true,
@@ -3269,13 +3269,13 @@
           "status": "completed",
           "solution_file": "solutions/opencode/gpt-5.6-luna/20260901_163846/tokens_page_destroy_block_tokens_inductive_verified.rs",
           "return_error": "",
-          "total_costs": 0.0325952,
+          "total_costs": 0.0346844,
           "total_turns": 23,
           "total_tool_calls": 31,
           "duration_seconds": 230.479,
           "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/tokens_page_destroy_block_tokens_inductive/session.jsonl",
           "total_input_tokens": 854842,
-          "total_output_tokens": 3345
+          "total_output_tokens": 5086
         },
         "tokens_page_mk_block_tokens_inductive.rs": {
           "verus_passed": true,
@@ -3284,13 +3284,13 @@
           "status": "completed",
           "solution_file": "solutions/opencode/gpt-5.6-luna/20260901_163846/tokens_page_mk_block_tokens_inductive_verified.rs",
           "return_error": "",
-          "total_costs": 0.048562,
+          "total_costs": 0.0507316,
           "total_turns": 28,
           "total_tool_calls": 39,
           "duration_seconds": 238.746,
           "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/tokens_page_mk_block_tokens_inductive/session.jsonl",
           "total_input_tokens": 1333466,
-          "total_output_tokens": 3312
+          "total_output_tokens": 5120
         },
         "tokens_reserve_uniq_identifier_inductive.rs": {
           "verus_passed": true,
@@ -3299,13 +3299,13 @@
           "status": "completed",
           "solution_file": "solutions/opencode/gpt-5.6-luna/20260901_163846/tokens_reserve_uniq_identifier_inductive_verified.rs",
           "return_error": "",
-          "total_costs": 0.02634184,
+          "total_costs": 0.02765704,
           "total_turns": 20,
           "total_tool_calls": 28,
           "duration_seconds": 167.255,
           "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/tokens_reserve_uniq_identifier_inductive/session.jsonl",
           "total_input_tokens": 645662,
-          "total_output_tokens": 2354
+          "total_output_tokens": 3450
         },
         "types_disable.rs": {
           "verus_passed": true,
@@ -3314,13 +3314,13 @@
           "status": "completed",
           "solution_file": "solutions/opencode/gpt-5.6-luna/20260901_163846/types_disable_verified.rs",
           "return_error": "",
-          "total_costs": 0.04662652,
+          "total_costs": 0.04809292,
           "total_turns": 28,
           "total_tool_calls": 38,
           "duration_seconds": 241.571,
           "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/types_disable/session.jsonl",
           "total_input_tokens": 1440851,
-          "total_output_tokens": 2080
+          "total_output_tokens": 3302
         },
         "types_get_heap.rs": {
           "verus_passed": true,
@@ -3329,13 +3329,13 @@
           "status": "completed",
           "solution_file": "solutions/opencode/gpt-5.6-luna/20260901_163846/types_get_heap_verified.rs",
           "return_error": "",
-          "total_costs": 0.07498296,
+          "total_costs": 0.07846416,
           "total_turns": 35,
           "total_tool_calls": 48,
           "duration_seconds": 423.515,
           "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/types_get_heap/session.jsonl",
           "total_input_tokens": 2512164,
-          "total_output_tokens": 3139
+          "total_output_tokens": 6040
         },
         "unbounded_log_exec_dispatch_local_inductive.rs": {
           "verus_passed": true,
@@ -3344,13 +3344,13 @@
           "status": "completed",
           "solution_file": "solutions/opencode/gpt-5.6-luna/20260901_163846/unbounded_log_exec_dispatch_local_inductive_verified.rs",
           "return_error": "",
-          "total_costs": 0.03307568,
+          "total_costs": 0.03616328,
           "total_turns": 25,
           "total_tool_calls": 34,
           "duration_seconds": 217.467,
           "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/unbounded_log_exec_dispatch_local_inductive/session.jsonl",
           "total_input_tokens": 871366,
-          "total_output_tokens": 3449
+          "total_output_tokens": 6022
         },
         "unbounded_log_exec_trivial_start_inductive.rs": {
           "verus_passed": true,
@@ -3359,13 +3359,13 @@
           "status": "completed",
           "solution_file": "solutions/opencode/gpt-5.6-luna/20260901_163846/unbounded_log_exec_trivial_start_inductive_verified.rs",
           "return_error": "",
-          "total_costs": 0.01542064,
+          "total_costs": 0.01608424,
           "total_turns": 13,
           "total_tool_calls": 16,
           "duration_seconds": 107.293,
           "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/unbounded_log_exec_trivial_start_inductive/session.jsonl",
           "total_input_tokens": 333278,
-          "total_output_tokens": 1925
+          "total_output_tokens": 2478
         },
         "unbounded_log_exec_update_version_upper_bound_inductive.rs": {
           "verus_passed": true,
@@ -3374,13 +3374,13 @@
           "status": "completed",
           "solution_file": "solutions/opencode/gpt-5.6-luna/20260901_163846/unbounded_log_exec_update_version_upper_bound_inductive_verified.rs",
           "return_error": "",
-          "total_costs": 0.01942788,
+          "total_costs": 0.02031348,
           "total_turns": 17,
           "total_tool_calls": 23,
           "duration_seconds": 123.311,
           "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/unbounded_log_exec_update_version_upper_bound_inductive/session.jsonl",
           "total_input_tokens": 487791,
-          "total_output_tokens": 2245
+          "total_output_tokens": 2983
         },
         "unbounded_log_readonly_apply_inductive.rs": {
           "verus_passed": true,
@@ -3389,13 +3389,13 @@
           "status": "completed",
           "solution_file": "solutions/opencode/gpt-5.6-luna/20260901_163846/unbounded_log_readonly_apply_inductive_verified.rs",
           "return_error": "",
-          "total_costs": 0.0183872,
+          "total_costs": 0.01931,
           "total_turns": 16,
           "total_tool_calls": 20,
           "duration_seconds": 131.551,
           "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/unbounded_log_readonly_apply_inductive/session.jsonl",
           "total_input_tokens": 439174,
-          "total_output_tokens": 2031
+          "total_output_tokens": 2800
         },
         "unbounded_log_update_done_inductive.rs": {
           "verus_passed": true,
@@ -3404,13 +3404,13 @@
           "status": "completed",
           "solution_file": "solutions/opencode/gpt-5.6-luna/20260901_163846/unbounded_log_update_done_inductive_verified.rs",
           "return_error": "",
-          "total_costs": 0.01860364,
+          "total_costs": 0.01954924,
           "total_turns": 12,
           "total_tool_calls": 19,
           "duration_seconds": 113.862,
           "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/unbounded_log_update_done_inductive/session.jsonl",
           "total_input_tokens": 304865,
-          "total_output_tokens": 2017
+          "total_output_tokens": 2805
         },
         "unbounded_log_update_place_ops_in_log_one_inductive.rs": {
           "verus_passed": false,
@@ -3419,13 +3419,13 @@
           "status": "completed",
           "solution_file": "solutions/opencode/gpt-5.6-luna/20260901_163846/unbounded_log_update_place_ops_in_log_one_inductive_verified.rs",
           "return_error": "",
-          "total_costs": 0.0198048,
+          "total_costs": 0.0209664,
           "total_turns": 15,
           "total_tool_calls": 24,
           "duration_seconds": 122.015,
           "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/unbounded_log_update_place_ops_in_log_one_inductive/session.jsonl",
           "total_input_tokens": 455340,
-          "total_output_tokens": 1670
+          "total_output_tokens": 2638
         },
         "wait.rs": {
           "verus_passed": true,
@@ -3434,13 +3434,13 @@
           "status": "completed",
           "solution_file": "solutions/opencode/gpt-5.6-luna/20260901_163846/wait_verified.rs",
           "return_error": "",
-          "total_costs": 0.0259794,
+          "total_costs": 0.0286146,
           "total_turns": 20,
           "total_tool_calls": 37,
           "duration_seconds": 172.198,
           "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/wait/session.jsonl",
           "total_input_tokens": 529119,
-          "total_output_tokens": 3351
+          "total_output_tokens": 5547
         }
       }
     },

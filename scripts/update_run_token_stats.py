@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Backfill input/output token totals in selected benchmark run files."""
+"""Backfill token totals and costs in selected benchmark run files."""
 
 from __future__ import annotations
 
@@ -19,14 +19,14 @@ from typing import Any, Callable
 ROOT = Path(__file__).resolve().parents[1]
 RUNS_DIR = ROOT / "runs"
 SESSIONS_DIR = ROOT / "sessions"
-TOKEN_FIELDS = ("total_input_tokens", "total_output_tokens")
+STATS_FIELDS = ("total_input_tokens", "total_output_tokens", "total_costs")
 
 sys.path.insert(0, str(ROOT))
 
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Recompute token totals for one or more files in runs/."
+        description="Recompute token totals and costs for files in runs/."
     )
     parser.add_argument(
         "runs",
@@ -136,7 +136,7 @@ def update_run(path: Path, dry_run: bool, modules: dict[str, ModuleType]) -> Non
                 raise RuntimeError(
                     f"could not update {agent_name}/{task_name}: {error}"
                 ) from error
-            updates = {field: stats[field] for field in TOKEN_FIELDS}
+            updates = {field: stats[field] for field in STATS_FIELDS}
             if all(task_data.get(field) == value for field, value in updates.items()):
                 continue
             task_data.update(updates)
@@ -144,7 +144,8 @@ def update_run(path: Path, dry_run: bool, modules: dict[str, ModuleType]) -> Non
             print(
                 f"  {agent_name}/{task_name}: "
                 f"input={updates['total_input_tokens']}, "
-                f"output={updates['total_output_tokens']}"
+                f"output={updates['total_output_tokens']}, "
+                f"cost={updates['total_costs']}"
             )
 
     action = "would update" if dry_run else "updated"
