@@ -202,6 +202,12 @@ def flatten_runs(runs: Iterable[dict[str, Any]], metadata: pd.DataFrame) -> pd.D
                         "cheat_checker_passed": result.get("cheat_checker_passed") is True,
                         "cost_usd": _numeric(result.get("total_costs")),
                         "duration_seconds": _numeric(result.get("duration_seconds")),
+                        "total_input_tokens": _numeric(
+                            result.get("total_input_tokens")
+                        ),
+                        "total_output_tokens": _numeric(
+                            result.get("total_output_tokens")
+                        ),
                         "total_turns": _numeric(result.get("total_turns")),
                         "total_tool_calls": _numeric(result.get("total_tool_calls")),
                         "proof_style": task_metadata.get("proof_style"),

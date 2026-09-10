@@ -693,10 +693,11 @@ def exclusive_solves_matrix(
 def harness_resource_usage(
     attempts: pd.DataFrame, width: float, height: float
 ) -> PlotResult:
-    """Compare per-task duration, turns, and tool calls across conditions."""
+    """Compare per-task duration, token usage, and tool calls across conditions."""
     metrics = [
         ("duration_seconds", "Duration", "minutes", 1 / 60),
-        ("total_turns", "Turns", "turns", 1),
+        ("total_input_tokens", "Input tokens", "tokens", 1),
+        ("total_output_tokens", "Output tokens", "tokens", 1),
         ("total_tool_calls", "Tool calls", "calls", 1),
     ]
     conditions = _ordered_conditions(attempts)
@@ -731,7 +732,7 @@ def harness_resource_usage(
     with _style():
         figure, axes = plt.subplots(
             1,
-            3,
+            len(metrics),
             figsize=(width, max(height, 1.8 + 0.55 * len(conditions))),
             constrained_layout=True,
             sharey=True,
@@ -755,8 +756,13 @@ def harness_resource_usage(
                 zorder=3,
             )
             for median, position in zip(medians[valid], y[valid]):
+                value_label = (
+                    f"{median:.1f}"
+                    if column == "duration_seconds"
+                    else f"{median:,.0f}"
+                )
                 axis.annotate(
-                    f"{median:.1f}" if column == "duration_seconds" else f"{median:.0f}",
+                    value_label,
                     (median, position),
                     xytext=(6, 6),
                     textcoords="offset points",
@@ -768,6 +774,8 @@ def harness_resource_usage(
                 axis.set_xticks(np.arange(0, 21, 5))
             else:
                 axis.set_xlim(left=0)
+            if column in {"total_input_tokens", "total_output_tokens"}:
+                axis.ticklabel_format(axis="x", style="sci", scilimits=(0, 0))
             axis.set_xlabel(f"Median per attempted task ({unit})")
             panel_title = "Duration (timeouts = 20 min)" if column == "duration_seconds" else label
             axis.set_title(panel_title, loc="left", fontweight="bold")
