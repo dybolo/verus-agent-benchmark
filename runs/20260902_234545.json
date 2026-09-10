@@ -380,16 +380,16 @@
         "flat_combine_full.rs": {
           "verus_passed": false,
           "cheat_checker_passed": true,
-          "timed_out": false,
+          "timed_out": true,
           "status": "completed",
           "solution_file": "solutions/copilot/gpt-5.6-luna/20260902_234545/flat_combine_full_verified.rs",
-          "total_costs": 0.3715136,
-          "total_turns": 67,
-          "total_tool_calls": 80,
-          "duration_seconds": 528.993,
+          "total_costs": 0.79517612,
+          "total_turns": 166,
+          "total_tool_calls": 174,
+          "duration_seconds": 1172.16,
           "session_file": "sessions/copilot/gpt-5.6-luna/20260902_234545/flat_combine_full/session.jsonl",
-          "total_input_tokens": 2858794,
-          "total_output_tokens": 16681
+          "total_input_tokens": 7715017,
+          "total_output_tokens": 33297
         },
         "free_full.rs": {
           "verus_passed": false,
