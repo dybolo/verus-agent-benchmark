@@ -61,7 +61,9 @@
           "total_turns": 3,
           "total_tool_calls": 29,
           "duration_seconds": 340.755,
-          "session_file": "sessions/codex/gpt-5.6-luna/20260902_234545/context_full/session.jsonl"
+          "session_file": "sessions/codex/gpt-5.6-luna/20260902_234545/context_full/session.jsonl",
+          "total_input_tokens": 1972276,
+          "total_output_tokens": 6140
         },
         "count_to_two_full.rs": {
           "verus_passed": true,
@@ -73,7 +75,9 @@
           "total_turns": 4,
           "total_tool_calls": 14,
           "duration_seconds": 141.268,
-          "session_file": "sessions/codex/gpt-5.6-luna/20260902_234545/count_to_two_full/session.jsonl"
+          "session_file": "sessions/codex/gpt-5.6-luna/20260902_234545/count_to_two_full/session.jsonl",
+          "total_input_tokens": 399843,
+          "total_output_tokens": 3483
         },
         "cuckoo_full.rs": {
           "verus_passed": false,
@@ -85,7 +89,9 @@
           "total_turns": 7,
           "total_tool_calls": 38,
           "duration_seconds": 757.477,
-          "session_file": "sessions/codex/gpt-5.6-luna/20260902_234545/cuckoo_full/session.jsonl"
+          "session_file": "sessions/codex/gpt-5.6-luna/20260902_234545/cuckoo_full/session.jsonl",
+          "total_input_tokens": 3259696,
+          "total_output_tokens": 17756
         },
         "cyclicbuffer_full.rs": {
           "verus_passed": false,
@@ -97,7 +103,9 @@
           "total_turns": 4,
           "total_tool_calls": 36,
           "duration_seconds": 582.101,
-          "session_file": "sessions/codex/gpt-5.6-luna/20260902_234545/cyclicbuffer_full/session.jsonl"
+          "session_file": "sessions/codex/gpt-5.6-luna/20260902_234545/cyclicbuffer_full/session.jsonl",
+          "total_input_tokens": 3425288,
+          "total_output_tokens": 15251
         },
         "dist_rwlock_full.rs": {
           "verus_passed": true,
@@ -109,7 +117,9 @@
           "total_turns": 6,
           "total_tool_calls": 41,
           "duration_seconds": 529.333,
-          "session_file": "sessions/codex/gpt-5.6-luna/20260902_234545/dist_rwlock_full/session.jsonl"
+          "session_file": "sessions/codex/gpt-5.6-luna/20260902_234545/dist_rwlock_full/session.jsonl",
+          "total_input_tokens": 2586736,
+          "total_output_tokens": 19401
         },
         "fifo_full.rs": {
           "verus_passed": true,
@@ -121,7 +131,9 @@
           "total_turns": 4,
           "total_tool_calls": 32,
           "duration_seconds": 370.716,
-          "session_file": "sessions/codex/gpt-5.6-luna/20260902_234545/fifo_full/session.jsonl"
+          "session_file": "sessions/codex/gpt-5.6-luna/20260902_234545/fifo_full/session.jsonl",
+          "total_input_tokens": 2058662,
+          "total_output_tokens": 10148
         },
         "flat_combine_full.rs": {
           "verus_passed": true,
@@ -133,7 +145,9 @@
           "total_turns": 4,
           "total_tool_calls": 53,
           "duration_seconds": 746.19,
-          "session_file": "sessions/codex/gpt-5.6-luna/20260902_234545/flat_combine_full/session.jsonl"
+          "session_file": "sessions/codex/gpt-5.6-luna/20260902_234545/flat_combine_full/session.jsonl",
+          "total_input_tokens": 5984425,
+          "total_output_tokens": 22258
         },
         "free_full.rs": {
           "verus_passed": false,
@@ -145,7 +159,9 @@
           "total_turns": 6,
           "total_tool_calls": 61,
           "duration_seconds": 1193.514,
-          "session_file": "sessions/codex/gpt-5.6-luna/20260902_234545/free_full/session.jsonl"
+          "session_file": "sessions/codex/gpt-5.6-luna/20260902_234545/free_full/session.jsonl",
+          "total_input_tokens": 7799479,
+          "total_output_tokens": 24793
         },
         "helping_full.rs": {
           "verus_passed": false,
@@ -157,7 +173,9 @@
           "total_turns": 4,
           "total_tool_calls": 42,
           "duration_seconds": 609.455,
-          "session_file": "sessions/codex/gpt-5.6-luna/20260902_234545/helping_full/session.jsonl"
+          "session_file": "sessions/codex/gpt-5.6-luna/20260902_234545/helping_full/session.jsonl",
+          "total_input_tokens": 2927744,
+          "total_output_tokens": 17630
         },
         "linked_list_full.rs": {
           "verus_passed": false,
@@ -169,7 +187,9 @@
           "total_turns": 4,
           "total_tool_calls": 43,
           "duration_seconds": 958.707,
-          "session_file": "sessions/codex/gpt-5.6-luna/20260902_234545/linked_list_full/session.jsonl"
+          "session_file": "sessions/codex/gpt-5.6-luna/20260902_234545/linked_list_full/session.jsonl",
+          "total_input_tokens": 3727794,
+          "total_output_tokens": 22025
         },
         "log_full.rs": {
           "verus_passed": false,
@@ -181,7 +201,9 @@
           "total_turns": 6,
           "total_tool_calls": 36,
           "duration_seconds": 602.009,
-          "session_file": "sessions/codex/gpt-5.6-luna/20260902_234545/log_full/session.jsonl"
+          "session_file": "sessions/codex/gpt-5.6-luna/20260902_234545/log_full/session.jsonl",
+          "total_input_tokens": 3164679,
+          "total_output_tokens": 10390
         },
         "once_full.rs": {
           "verus_passed": true,
@@ -193,7 +215,9 @@
           "total_turns": 4,
           "total_tool_calls": 35,
           "duration_seconds": 448.453,
-          "session_file": "sessions/codex/gpt-5.6-luna/20260902_234545/once_full/session.jsonl"
+          "session_file": "sessions/codex/gpt-5.6-luna/20260902_234545/once_full/session.jsonl",
+          "total_input_tokens": 1901399,
+          "total_output_tokens": 14033
         },
         "replica_full.rs": {
           "verus_passed": true,
@@ -205,7 +229,9 @@
           "total_turns": 3,
           "total_tool_calls": 32,
           "duration_seconds": 462.598,
-          "session_file": "sessions/codex/gpt-5.6-luna/20260902_234545/replica_full/session.jsonl"
+          "session_file": "sessions/codex/gpt-5.6-luna/20260902_234545/replica_full/session.jsonl",
+          "total_input_tokens": 2799556,
+          "total_output_tokens": 9945
         },
         "rwlock_full.rs": {
           "verus_passed": false,
@@ -217,7 +243,9 @@
           "total_turns": 5,
           "total_tool_calls": 48,
           "duration_seconds": 667.207,
-          "session_file": "sessions/codex/gpt-5.6-luna/20260902_234545/rwlock_full/session.jsonl"
+          "session_file": "sessions/codex/gpt-5.6-luna/20260902_234545/rwlock_full/session.jsonl",
+          "total_input_tokens": 4935159,
+          "total_output_tokens": 18379
         },
         "tokens_full.rs": {
           "verus_passed": true,
@@ -229,7 +257,9 @@
           "total_turns": 3,
           "total_tool_calls": 27,
           "duration_seconds": 407.249,
-          "session_file": "sessions/codex/gpt-5.6-luna/20260902_234545/tokens_full/session.jsonl"
+          "session_file": "sessions/codex/gpt-5.6-luna/20260902_234545/tokens_full/session.jsonl",
+          "total_input_tokens": 1824694,
+          "total_output_tokens": 7087
         },
         "types_full.rs": {
           "verus_passed": true,
@@ -241,7 +271,9 @@
           "total_turns": 5,
           "total_tool_calls": 45,
           "duration_seconds": 773.494,
-          "session_file": "sessions/codex/gpt-5.6-luna/20260902_234545/types_full/session.jsonl"
+          "session_file": "sessions/codex/gpt-5.6-luna/20260902_234545/types_full/session.jsonl",
+          "total_input_tokens": 3854339,
+          "total_output_tokens": 13231
         },
         "unbounded_log_full.rs": {
           "verus_passed": false,
@@ -253,7 +285,9 @@
           "total_turns": 3,
           "total_tool_calls": 42,
           "duration_seconds": 617.706,
-          "session_file": "sessions/codex/gpt-5.6-luna/20260902_234545/unbounded_log_full/session.jsonl"
+          "session_file": "sessions/codex/gpt-5.6-luna/20260902_234545/unbounded_log_full/session.jsonl",
+          "total_input_tokens": 3226602,
+          "total_output_tokens": 15652
         }
       }
     },
@@ -269,7 +303,9 @@
           "total_turns": 61,
           "total_tool_calls": 104,
           "duration_seconds": 287.922,
-          "session_file": "sessions/copilot/gpt-5.6-luna/20260902_234545/context_full/session.jsonl"
+          "session_file": "sessions/copilot/gpt-5.6-luna/20260902_234545/context_full/session.jsonl",
+          "total_input_tokens": 3276313,
+          "total_output_tokens": 9790
         },
         "count_to_two_full.rs": {
           "verus_passed": true,
@@ -281,7 +317,9 @@
           "total_turns": 14,
           "total_tool_calls": 27,
           "duration_seconds": 83.633,
-          "session_file": "sessions/copilot/gpt-5.6-luna/20260902_234545/count_to_two_full/session.jsonl"
+          "session_file": "sessions/copilot/gpt-5.6-luna/20260902_234545/count_to_two_full/session.jsonl",
+          "total_input_tokens": 382524,
+          "total_output_tokens": 2962
         },
         "cuckoo_full.rs": {
           "verus_passed": false,
@@ -293,7 +331,9 @@
           "total_turns": 52,
           "total_tool_calls": 88,
           "duration_seconds": 1080.845,
-          "session_file": "sessions/copilot/gpt-5.6-luna/20260902_234545/cuckoo_full/session.jsonl"
+          "session_file": "sessions/copilot/gpt-5.6-luna/20260902_234545/cuckoo_full/session.jsonl",
+          "total_input_tokens": 2751789,
+          "total_output_tokens": 11854
         },
         "cyclicbuffer_full.rs": {
           "verus_passed": false,
@@ -305,7 +345,9 @@
           "total_turns": 86,
           "total_tool_calls": 97,
           "duration_seconds": 635.769,
-          "session_file": "sessions/copilot/gpt-5.6-luna/20260902_234545/cyclicbuffer_full/session.jsonl"
+          "session_file": "sessions/copilot/gpt-5.6-luna/20260902_234545/cyclicbuffer_full/session.jsonl",
+          "total_input_tokens": 5548483,
+          "total_output_tokens": 26946
         },
         "dist_rwlock_full.rs": {
           "verus_passed": true,
@@ -317,7 +359,9 @@
           "total_turns": 61,
           "total_tool_calls": 95,
           "duration_seconds": 424.482,
-          "session_file": "sessions/copilot/gpt-5.6-luna/20260902_234545/dist_rwlock_full/session.jsonl"
+          "session_file": "sessions/copilot/gpt-5.6-luna/20260902_234545/dist_rwlock_full/session.jsonl",
+          "total_input_tokens": 2969538,
+          "total_output_tokens": 17087
         },
         "fifo_full.rs": {
           "verus_passed": false,
@@ -329,7 +373,9 @@
           "total_turns": 94,
           "total_tool_calls": 108,
           "duration_seconds": 537.069,
-          "session_file": "sessions/copilot/gpt-5.6-luna/20260902_234545/fifo_full/session.jsonl"
+          "session_file": "sessions/copilot/gpt-5.6-luna/20260902_234545/fifo_full/session.jsonl",
+          "total_input_tokens": 5638124,
+          "total_output_tokens": 19521
         },
         "flat_combine_full.rs": {
           "verus_passed": false,
@@ -341,7 +387,9 @@
           "total_turns": 18,
           "total_tool_calls": 29,
           "duration_seconds": 1090.432,
-          "session_file": "sessions/copilot/gpt-5.6-luna/20260902_234545/flat_combine_full/session.jsonl"
+          "session_file": "sessions/copilot/gpt-5.6-luna/20260902_234545/flat_combine_full/session.jsonl",
+          "total_input_tokens": 571015,
+          "total_output_tokens": 6007
         },
         "free_full.rs": {
           "verus_passed": false,
@@ -353,7 +401,9 @@
           "total_turns": 142,
           "total_tool_calls": 157,
           "duration_seconds": 1176.611,
-          "session_file": "sessions/copilot/gpt-5.6-luna/20260902_234545/free_full/session.jsonl"
+          "session_file": "sessions/copilot/gpt-5.6-luna/20260902_234545/free_full/session.jsonl",
+          "total_input_tokens": 8089326,
+          "total_output_tokens": 23944
         },
         "helping_full.rs": {
           "verus_passed": false,
@@ -365,7 +415,9 @@
           "total_turns": 135,
           "total_tool_calls": 178,
           "duration_seconds": 969.693,
-          "session_file": "sessions/copilot/gpt-5.6-luna/20260902_234545/helping_full/session.jsonl"
+          "session_file": "sessions/copilot/gpt-5.6-luna/20260902_234545/helping_full/session.jsonl",
+          "total_input_tokens": 9523610,
+          "total_output_tokens": 38733
         },
         "linked_list_full.rs": {
           "verus_passed": false,
@@ -377,7 +429,9 @@
           "total_turns": 103,
           "total_tool_calls": 164,
           "duration_seconds": 1175.348,
-          "session_file": "sessions/copilot/gpt-5.6-luna/20260902_234545/linked_list_full/session.jsonl"
+          "session_file": "sessions/copilot/gpt-5.6-luna/20260902_234545/linked_list_full/session.jsonl",
+          "total_input_tokens": 6226558,
+          "total_output_tokens": 29951
         },
         "log_full.rs": {
           "verus_passed": false,
@@ -389,7 +443,9 @@
           "total_turns": 50,
           "total_tool_calls": 81,
           "duration_seconds": 324.127,
-          "session_file": "sessions/copilot/gpt-5.6-luna/20260902_234545/log_full/session.jsonl"
+          "session_file": "sessions/copilot/gpt-5.6-luna/20260902_234545/log_full/session.jsonl",
+          "total_input_tokens": 2048357,
+          "total_output_tokens": 13183
         },
         "once_full.rs": {
           "verus_passed": true,
@@ -401,7 +457,9 @@
           "total_turns": 24,
           "total_tool_calls": 43,
           "duration_seconds": 145.602,
-          "session_file": "sessions/copilot/gpt-5.6-luna/20260902_234545/once_full/session.jsonl"
+          "session_file": "sessions/copilot/gpt-5.6-luna/20260902_234545/once_full/session.jsonl",
+          "total_input_tokens": 775582,
+          "total_output_tokens": 5684
         },
         "replica_full.rs": {
           "verus_passed": false,
@@ -413,7 +471,9 @@
           "total_turns": 148,
           "total_tool_calls": 159,
           "duration_seconds": 1174.613,
-          "session_file": "sessions/copilot/gpt-5.6-luna/20260902_234545/replica_full/session.jsonl"
+          "session_file": "sessions/copilot/gpt-5.6-luna/20260902_234545/replica_full/session.jsonl",
+          "total_input_tokens": 8511170,
+          "total_output_tokens": 25610
         },
         "rwlock_full.rs": {
           "verus_passed": false,
@@ -425,7 +485,9 @@
           "total_turns": 159,
           "total_tool_calls": 203,
           "duration_seconds": 1113.361,
-          "session_file": "sessions/copilot/gpt-5.6-luna/20260902_234545/rwlock_full/session.jsonl"
+          "session_file": "sessions/copilot/gpt-5.6-luna/20260902_234545/rwlock_full/session.jsonl",
+          "total_input_tokens": 11325976,
+          "total_output_tokens": 26271
         },
         "tokens_full.rs": {
           "verus_passed": false,
@@ -437,7 +499,9 @@
           "total_turns": 93,
           "total_tool_calls": 104,
           "duration_seconds": 544.202,
-          "session_file": "sessions/copilot/gpt-5.6-luna/20260902_234545/tokens_full/session.jsonl"
+          "session_file": "sessions/copilot/gpt-5.6-luna/20260902_234545/tokens_full/session.jsonl",
+          "total_input_tokens": 4777975,
+          "total_output_tokens": 21310
         },
         "types_full.rs": {
           "verus_passed": true,
@@ -449,7 +513,9 @@
           "total_turns": 69,
           "total_tool_calls": 85,
           "duration_seconds": 309.533,
-          "session_file": "sessions/copilot/gpt-5.6-luna/20260902_234545/types_full/session.jsonl"
+          "session_file": "sessions/copilot/gpt-5.6-luna/20260902_234545/types_full/session.jsonl",
+          "total_input_tokens": 3203672,
+          "total_output_tokens": 10850
         },
         "unbounded_log_full.rs": {
           "verus_passed": false,
@@ -462,7 +528,9 @@
           "total_turns": 89,
           "total_tool_calls": 131,
           "duration_seconds": 698.149,
-          "session_file": "sessions/copilot/gpt-5.6-luna/20260902_234545/unbounded_log_full/session.jsonl"
+          "session_file": "sessions/copilot/gpt-5.6-luna/20260902_234545/unbounded_log_full/session.jsonl",
+          "total_input_tokens": 3871144,
+          "total_output_tokens": 27524
         }
       }
     },
@@ -478,7 +546,9 @@
           "total_turns": 32,
           "total_tool_calls": 43,
           "duration_seconds": 218.511,
-          "session_file": "sessions/opencode/gpt-5.6-luna/20260902_234545/context_full/session.jsonl"
+          "session_file": "sessions/opencode/gpt-5.6-luna/20260902_234545/context_full/session.jsonl",
+          "total_input_tokens": 1618475,
+          "total_output_tokens": 3018
         },
         "count_to_two_full.rs": {
           "verus_passed": true,
@@ -490,7 +560,9 @@
           "total_turns": 16,
           "total_tool_calls": 29,
           "duration_seconds": 164.452,
-          "session_file": "sessions/opencode/gpt-5.6-luna/20260902_234545/count_to_two_full/session.jsonl"
+          "session_file": "sessions/opencode/gpt-5.6-luna/20260902_234545/count_to_two_full/session.jsonl",
+          "total_input_tokens": 315983,
+          "total_output_tokens": 5097
         },
         "cuckoo_full.rs": {
           "verus_passed": false,
@@ -502,7 +574,9 @@
           "total_turns": 58,
           "total_tool_calls": 64,
           "duration_seconds": 866.857,
-          "session_file": "sessions/opencode/gpt-5.6-luna/20260902_234545/cuckoo_full/session.jsonl"
+          "session_file": "sessions/opencode/gpt-5.6-luna/20260902_234545/cuckoo_full/session.jsonl",
+          "total_input_tokens": 2842462,
+          "total_output_tokens": 5739
         },
         "cyclicbuffer_full.rs": {
           "verus_passed": false,
@@ -514,7 +588,9 @@
           "total_turns": 39,
           "total_tool_calls": 51,
           "duration_seconds": 902.212,
-          "session_file": "sessions/opencode/gpt-5.6-luna/20260902_234545/cyclicbuffer_full/session.jsonl"
+          "session_file": "sessions/opencode/gpt-5.6-luna/20260902_234545/cyclicbuffer_full/session.jsonl",
+          "total_input_tokens": 1664820,
+          "total_output_tokens": 5622
         },
         "dist_rwlock_full.rs": {
           "verus_passed": true,
@@ -526,7 +602,9 @@
           "total_turns": 28,
           "total_tool_calls": 40,
           "duration_seconds": 334.015,
-          "session_file": "sessions/opencode/gpt-5.6-luna/20260902_234545/dist_rwlock_full/session.jsonl"
+          "session_file": "sessions/opencode/gpt-5.6-luna/20260902_234545/dist_rwlock_full/session.jsonl",
+          "total_input_tokens": 605348,
+          "total_output_tokens": 5353
         },
         "fifo_full.rs": {
           "verus_passed": false,
@@ -538,7 +616,9 @@
           "total_turns": 32,
           "total_tool_calls": 41,
           "duration_seconds": 479.752,
-          "session_file": "sessions/opencode/gpt-5.6-luna/20260902_234545/fifo_full/session.jsonl"
+          "session_file": "sessions/opencode/gpt-5.6-luna/20260902_234545/fifo_full/session.jsonl",
+          "total_input_tokens": 838726,
+          "total_output_tokens": 4067
         },
         "flat_combine_full.rs": {
           "verus_passed": false,
@@ -550,7 +630,9 @@
           "total_turns": 49,
           "total_tool_calls": 62,
           "duration_seconds": 415.696,
-          "session_file": "sessions/opencode/gpt-5.6-luna/20260902_234545/flat_combine_full/session.jsonl"
+          "session_file": "sessions/opencode/gpt-5.6-luna/20260902_234545/flat_combine_full/session.jsonl",
+          "total_input_tokens": 2556327,
+          "total_output_tokens": 9450
         },
         "free_full.rs": {
           "verus_passed": false,
@@ -562,7 +644,9 @@
           "total_turns": 90,
           "total_tool_calls": 92,
           "duration_seconds": 876.552,
-          "session_file": "sessions/opencode/gpt-5.6-luna/20260902_234545/free_full/session.jsonl"
+          "session_file": "sessions/opencode/gpt-5.6-luna/20260902_234545/free_full/session.jsonl",
+          "total_input_tokens": 8013324,
+          "total_output_tokens": 6342
         },
         "helping_full.rs": {
           "verus_passed": false,
@@ -574,7 +658,9 @@
           "total_turns": 89,
           "total_tool_calls": 102,
           "duration_seconds": 781.541,
-          "session_file": "sessions/opencode/gpt-5.6-luna/20260902_234545/helping_full/session.jsonl"
+          "session_file": "sessions/opencode/gpt-5.6-luna/20260902_234545/helping_full/session.jsonl",
+          "total_input_tokens": 3706922,
+          "total_output_tokens": 7737
         },
         "linked_list_full.rs": {
           "verus_passed": false,
@@ -586,7 +672,9 @@
           "total_turns": 51,
           "total_tool_calls": 62,
           "duration_seconds": 551.439,
-          "session_file": "sessions/opencode/gpt-5.6-luna/20260902_234545/linked_list_full/session.jsonl"
+          "session_file": "sessions/opencode/gpt-5.6-luna/20260902_234545/linked_list_full/session.jsonl",
+          "total_input_tokens": 4040977,
+          "total_output_tokens": 5456
         },
         "log_full.rs": {
           "verus_passed": false,
@@ -598,7 +686,9 @@
           "total_turns": 126,
           "total_tool_calls": 133,
           "duration_seconds": 1187.795,
-          "session_file": "sessions/opencode/gpt-5.6-luna/20260902_234545/log_full/session.jsonl"
+          "session_file": "sessions/opencode/gpt-5.6-luna/20260902_234545/log_full/session.jsonl",
+          "total_input_tokens": 15764149,
+          "total_output_tokens": 12003
         },
         "once_full.rs": {
           "verus_passed": true,
@@ -610,7 +700,9 @@
           "total_turns": 32,
           "total_tool_calls": 49,
           "duration_seconds": 185.129,
-          "session_file": "sessions/opencode/gpt-5.6-luna/20260902_234545/once_full/session.jsonl"
+          "session_file": "sessions/opencode/gpt-5.6-luna/20260902_234545/once_full/session.jsonl",
+          "total_input_tokens": 722547,
+          "total_output_tokens": 3473
         },
         "replica_full.rs": {
           "verus_passed": true,
@@ -622,7 +714,9 @@
           "total_turns": 86,
           "total_tool_calls": 95,
           "duration_seconds": 730.485,
-          "session_file": "sessions/opencode/gpt-5.6-luna/20260902_234545/replica_full/session.jsonl"
+          "session_file": "sessions/opencode/gpt-5.6-luna/20260902_234545/replica_full/session.jsonl",
+          "total_input_tokens": 11946649,
+          "total_output_tokens": 8350
         },
         "rwlock_full.rs": {
           "verus_passed": false,
@@ -634,7 +728,9 @@
           "total_turns": 29,
           "total_tool_calls": 38,
           "duration_seconds": 292.064,
-          "session_file": "sessions/opencode/gpt-5.6-luna/20260902_234545/rwlock_full/session.jsonl"
+          "session_file": "sessions/opencode/gpt-5.6-luna/20260902_234545/rwlock_full/session.jsonl",
+          "total_input_tokens": 1729941,
+          "total_output_tokens": 2695
         },
         "tokens_full.rs": {
           "verus_passed": true,
@@ -646,7 +742,9 @@
           "total_turns": 34,
           "total_tool_calls": 47,
           "duration_seconds": 752.915,
-          "session_file": "sessions/opencode/gpt-5.6-luna/20260902_234545/tokens_full/session.jsonl"
+          "session_file": "sessions/opencode/gpt-5.6-luna/20260902_234545/tokens_full/session.jsonl",
+          "total_input_tokens": 1887235,
+          "total_output_tokens": 6456
         },
         "types_full.rs": {
           "verus_passed": true,
@@ -658,7 +756,9 @@
           "total_turns": 42,
           "total_tool_calls": 52,
           "duration_seconds": 547.543,
-          "session_file": "sessions/opencode/gpt-5.6-luna/20260902_234545/types_full/session.jsonl"
+          "session_file": "sessions/opencode/gpt-5.6-luna/20260902_234545/types_full/session.jsonl",
+          "total_input_tokens": 3179211,
+          "total_output_tokens": 3278
         },
         "unbounded_log_full.rs": {
           "verus_passed": true,
@@ -670,7 +770,9 @@
           "total_turns": 104,
           "total_tool_calls": 106,
           "duration_seconds": 1111.295,
-          "session_file": "sessions/opencode/gpt-5.6-luna/20260902_234545/unbounded_log_full/session.jsonl"
+          "session_file": "sessions/opencode/gpt-5.6-luna/20260902_234545/unbounded_log_full/session.jsonl",
+          "total_input_tokens": 10169648,
+          "total_output_tokens": 14453
         }
       }
     },
@@ -686,7 +788,9 @@
           "total_turns": 42,
           "total_tool_calls": 43,
           "duration_seconds": 305.064,
-          "session_file": "sessions/pi/gpt-5.6-luna/20260902_234545/context_full/session.jsonl"
+          "session_file": "sessions/pi/gpt-5.6-luna/20260902_234545/context_full/session.jsonl",
+          "total_input_tokens": 1987603,
+          "total_output_tokens": 4696
         },
         "count_to_two_full.rs": {
           "verus_passed": true,
@@ -698,7 +802,9 @@
           "total_turns": 14,
           "total_tool_calls": 13,
           "duration_seconds": 75.259,
-          "session_file": "sessions/pi/gpt-5.6-luna/20260902_234545/count_to_two_full/session.jsonl"
+          "session_file": "sessions/pi/gpt-5.6-luna/20260902_234545/count_to_two_full/session.jsonl",
+          "total_input_tokens": 116902,
+          "total_output_tokens": 1384
         },
         "cuckoo_full.rs": {
           "verus_passed": false,
@@ -710,7 +816,9 @@
           "total_turns": 28,
           "total_tool_calls": 28,
           "duration_seconds": 274.627,
-          "session_file": "sessions/pi/gpt-5.6-luna/20260902_234545/cuckoo_full/session.jsonl"
+          "session_file": "sessions/pi/gpt-5.6-luna/20260902_234545/cuckoo_full/session.jsonl",
+          "total_input_tokens": 848283,
+          "total_output_tokens": 7166
         },
         "cyclicbuffer_full.rs": {
           "verus_passed": false,
@@ -722,7 +830,9 @@
           "total_turns": 65,
           "total_tool_calls": 65,
           "duration_seconds": 510.205,
-          "session_file": "sessions/pi/gpt-5.6-luna/20260902_234545/cyclicbuffer_full/session.jsonl"
+          "session_file": "sessions/pi/gpt-5.6-luna/20260902_234545/cyclicbuffer_full/session.jsonl",
+          "total_input_tokens": 2716844,
+          "total_output_tokens": 13901
         },
         "dist_rwlock_full.rs": {
           "verus_passed": true,
@@ -734,7 +844,9 @@
           "total_turns": 24,
           "total_tool_calls": 26,
           "duration_seconds": 186.533,
-          "session_file": "sessions/pi/gpt-5.6-luna/20260902_234545/dist_rwlock_full/session.jsonl"
+          "session_file": "sessions/pi/gpt-5.6-luna/20260902_234545/dist_rwlock_full/session.jsonl",
+          "total_input_tokens": 383295,
+          "total_output_tokens": 6013
         },
         "fifo_full.rs": {
           "verus_passed": true,
@@ -746,7 +858,9 @@
           "total_turns": 65,
           "total_tool_calls": 68,
           "duration_seconds": 371.936,
-          "session_file": "sessions/pi/gpt-5.6-luna/20260902_234545/fifo_full/session.jsonl"
+          "session_file": "sessions/pi/gpt-5.6-luna/20260902_234545/fifo_full/session.jsonl",
+          "total_input_tokens": 2565985,
+          "total_output_tokens": 10297
         },
         "flat_combine_full.rs": {
           "verus_passed": false,
@@ -758,7 +872,9 @@
           "total_turns": 59,
           "total_tool_calls": 61,
           "duration_seconds": 382.462,
-          "session_file": "sessions/pi/gpt-5.6-luna/20260902_234545/flat_combine_full/session.jsonl"
+          "session_file": "sessions/pi/gpt-5.6-luna/20260902_234545/flat_combine_full/session.jsonl",
+          "total_input_tokens": 1855108,
+          "total_output_tokens": 10796
         },
         "free_full.rs": {
           "verus_passed": false,
@@ -770,7 +886,9 @@
           "total_turns": 77,
           "total_tool_calls": 78,
           "duration_seconds": 901.992,
-          "session_file": "sessions/pi/gpt-5.6-luna/20260902_234545/free_full/session.jsonl"
+          "session_file": "sessions/pi/gpt-5.6-luna/20260902_234545/free_full/session.jsonl",
+          "total_input_tokens": 3658510,
+          "total_output_tokens": 12621
         },
         "helping_full.rs": {
           "verus_passed": false,
@@ -782,7 +900,9 @@
           "total_turns": 58,
           "total_tool_calls": 60,
           "duration_seconds": 431.559,
-          "session_file": "sessions/pi/gpt-5.6-luna/20260902_234545/helping_full/session.jsonl"
+          "session_file": "sessions/pi/gpt-5.6-luna/20260902_234545/helping_full/session.jsonl",
+          "total_input_tokens": 1492974,
+          "total_output_tokens": 14477
         },
         "linked_list_full.rs": {
           "verus_passed": false,
@@ -794,7 +914,9 @@
           "total_turns": 90,
           "total_tool_calls": 94,
           "duration_seconds": 1208.047,
-          "session_file": "sessions/pi/gpt-5.6-luna/20260902_234545/linked_list_full/session.jsonl"
+          "session_file": "sessions/pi/gpt-5.6-luna/20260902_234545/linked_list_full/session.jsonl",
+          "total_input_tokens": 4624459,
+          "total_output_tokens": 17632
         },
         "log_full.rs": {
           "verus_passed": false,
@@ -806,7 +928,9 @@
           "total_turns": 36,
           "total_tool_calls": 36,
           "duration_seconds": 304.592,
-          "session_file": "sessions/pi/gpt-5.6-luna/20260902_234545/log_full/session.jsonl"
+          "session_file": "sessions/pi/gpt-5.6-luna/20260902_234545/log_full/session.jsonl",
+          "total_input_tokens": 1358494,
+          "total_output_tokens": 5082
         },
         "once_full.rs": {
           "verus_passed": true,
@@ -818,7 +942,9 @@
           "total_turns": 44,
           "total_tool_calls": 46,
           "duration_seconds": 228.815,
-          "session_file": "sessions/pi/gpt-5.6-luna/20260902_234545/once_full/session.jsonl"
+          "session_file": "sessions/pi/gpt-5.6-luna/20260902_234545/once_full/session.jsonl",
+          "total_input_tokens": 886292,
+          "total_output_tokens": 4350
         },
         "replica_full.rs": {
           "verus_passed": true,
@@ -830,7 +956,9 @@
           "total_turns": 54,
           "total_tool_calls": 60,
           "duration_seconds": 462.124,
-          "session_file": "sessions/pi/gpt-5.6-luna/20260902_234545/replica_full/session.jsonl"
+          "session_file": "sessions/pi/gpt-5.6-luna/20260902_234545/replica_full/session.jsonl",
+          "total_input_tokens": 3509554,
+          "total_output_tokens": 8374
         },
         "rwlock_full.rs": {
           "verus_passed": false,
@@ -842,7 +970,9 @@
           "total_turns": 39,
           "total_tool_calls": 40,
           "duration_seconds": 275.782,
-          "session_file": "sessions/pi/gpt-5.6-luna/20260902_234545/rwlock_full/session.jsonl"
+          "session_file": "sessions/pi/gpt-5.6-luna/20260902_234545/rwlock_full/session.jsonl",
+          "total_input_tokens": 2277229,
+          "total_output_tokens": 7180
         },
         "tokens_full.rs": {
           "verus_passed": true,
@@ -854,7 +984,9 @@
           "total_turns": 35,
           "total_tool_calls": 37,
           "duration_seconds": 321.891,
-          "session_file": "sessions/pi/gpt-5.6-luna/20260902_234545/tokens_full/session.jsonl"
+          "session_file": "sessions/pi/gpt-5.6-luna/20260902_234545/tokens_full/session.jsonl",
+          "total_input_tokens": 1207377,
+          "total_output_tokens": 6214
         },
         "types_full.rs": {
           "verus_passed": true,
@@ -866,7 +998,9 @@
           "total_turns": 58,
           "total_tool_calls": 59,
           "duration_seconds": 590.437,
-          "session_file": "sessions/pi/gpt-5.6-luna/20260902_234545/types_full/session.jsonl"
+          "session_file": "sessions/pi/gpt-5.6-luna/20260902_234545/types_full/session.jsonl",
+          "total_input_tokens": 3157603,
+          "total_output_tokens": 7105
         },
         "unbounded_log_full.rs": {
           "verus_passed": false,
@@ -878,7 +1012,9 @@
           "total_turns": 54,
           "total_tool_calls": 57,
           "duration_seconds": 451.921,
-          "session_file": "sessions/pi/gpt-5.6-luna/20260902_234545/unbounded_log_full/session.jsonl"
+          "session_file": "sessions/pi/gpt-5.6-luna/20260902_234545/unbounded_log_full/session.jsonl",
+          "total_input_tokens": 1802663,
+          "total_output_tokens": 11439
         }
       }
     }

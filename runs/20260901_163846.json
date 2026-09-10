@@ -119,7 +119,9 @@
           "total_turns": 4,
           "total_tool_calls": 18,
           "duration_seconds": 202.701,
-          "session_file": "sessions/codex/gpt-5.6-luna/20260901_163846/context_dequeue_response/session.jsonl"
+          "session_file": "sessions/codex/gpt-5.6-luna/20260901_163846/context_dequeue_response/session.jsonl",
+          "total_input_tokens": 724272,
+          "total_output_tokens": 3761
         },
         "context_enqueue_op.rs": {
           "verus_passed": true,
@@ -131,7 +133,9 @@
           "total_turns": 4,
           "total_tool_calls": 12,
           "duration_seconds": 134.177,
-          "session_file": "sessions/codex/gpt-5.6-luna/20260901_163846/context_enqueue_op/session.jsonl"
+          "session_file": "sessions/codex/gpt-5.6-luna/20260901_163846/context_enqueue_op/session.jsonl",
+          "total_input_tokens": 447264,
+          "total_output_tokens": 2047
         },
         "count_to_two_read_x.rs": {
           "verus_passed": true,
@@ -143,7 +147,9 @@
           "total_turns": 5,
           "total_tool_calls": 15,
           "duration_seconds": 194.562,
-          "session_file": "sessions/codex/gpt-5.6-luna/20260901_163846/count_to_two_read_x/session.jsonl"
+          "session_file": "sessions/codex/gpt-5.6-luna/20260901_163846/count_to_two_read_x/session.jsonl",
+          "total_input_tokens": 318730,
+          "total_output_tokens": 6121
         },
         "count_to_two_thread_routine.rs": {
           "verus_passed": true,
@@ -155,7 +161,9 @@
           "total_turns": 4,
           "total_tool_calls": 12,
           "duration_seconds": 121.416,
-          "session_file": "sessions/codex/gpt-5.6-luna/20260901_163846/count_to_two_thread_routine/session.jsonl"
+          "session_file": "sessions/codex/gpt-5.6-luna/20260901_163846/count_to_two_thread_routine/session.jsonl",
+          "total_input_tokens": 266734,
+          "total_output_tokens": 2910
         },
         "cuckoo_delete.rs": {
           "verus_passed": true,
@@ -167,7 +175,9 @@
           "total_turns": 5,
           "total_tool_calls": 11,
           "duration_seconds": 105.976,
-          "session_file": "sessions/codex/gpt-5.6-luna/20260901_163846/cuckoo_delete/session.jsonl"
+          "session_file": "sessions/codex/gpt-5.6-luna/20260901_163846/cuckoo_delete/session.jsonl",
+          "total_input_tokens": 244587,
+          "total_output_tokens": 2029
         },
         "cuckoo_inductive.rs": {
           "verus_passed": true,
@@ -179,7 +189,9 @@
           "total_turns": 5,
           "total_tool_calls": 24,
           "duration_seconds": 323.728,
-          "session_file": "sessions/codex/gpt-5.6-luna/20260901_163846/cuckoo_inductive/session.jsonl"
+          "session_file": "sessions/codex/gpt-5.6-luna/20260901_163846/cuckoo_inductive/session.jsonl",
+          "total_input_tokens": 1669625,
+          "total_output_tokens": 7725
         },
         "cuckoo_insert.rs": {
           "verus_passed": true,
@@ -191,7 +203,9 @@
           "total_turns": 6,
           "total_tool_calls": 25,
           "duration_seconds": 908.535,
-          "session_file": "sessions/codex/gpt-5.6-luna/20260901_163846/cuckoo_insert/session.jsonl"
+          "session_file": "sessions/codex/gpt-5.6-luna/20260901_163846/cuckoo_insert/session.jsonl",
+          "total_input_tokens": 1731806,
+          "total_output_tokens": 7881
         },
         "cuckoo_read.rs": {
           "verus_passed": true,
@@ -203,7 +217,9 @@
           "total_turns": 4,
           "total_tool_calls": 13,
           "duration_seconds": 126.023,
-          "session_file": "sessions/codex/gpt-5.6-luna/20260901_163846/cuckoo_read/session.jsonl"
+          "session_file": "sessions/codex/gpt-5.6-luna/20260901_163846/cuckoo_read/session.jsonl",
+          "total_input_tokens": 380133,
+          "total_output_tokens": 2214
         },
         "cyclicbuffer_advance_head_finish_inductive.rs": {
           "verus_passed": true,
@@ -215,7 +231,9 @@
           "total_turns": 6,
           "total_tool_calls": 33,
           "duration_seconds": 530.757,
-          "session_file": "sessions/codex/gpt-5.6-luna/20260901_163846/cyclicbuffer_advance_head_finish_inductive/session.jsonl"
+          "session_file": "sessions/codex/gpt-5.6-luna/20260901_163846/cyclicbuffer_advance_head_finish_inductive/session.jsonl",
+          "total_input_tokens": 1946735,
+          "total_output_tokens": 16275
         },
         "cyclicbuffer_advance_tail_finish_inductive.rs": {
           "verus_passed": true,
@@ -227,7 +245,9 @@
           "total_turns": 4,
           "total_tool_calls": 13,
           "duration_seconds": 186.242,
-          "session_file": "sessions/codex/gpt-5.6-luna/20260901_163846/cyclicbuffer_advance_tail_finish_inductive/session.jsonl"
+          "session_file": "sessions/codex/gpt-5.6-luna/20260901_163846/cyclicbuffer_advance_tail_finish_inductive/session.jsonl",
+          "total_input_tokens": 377188,
+          "total_output_tokens": 4857
         },
         "cyclicbuffer_advance_tail_start_inductive.rs": {
           "verus_passed": true,
@@ -239,7 +259,9 @@
           "total_turns": 5,
           "total_tool_calls": 11,
           "duration_seconds": 115.915,
-          "session_file": "sessions/codex/gpt-5.6-luna/20260901_163846/cyclicbuffer_advance_tail_start_inductive/session.jsonl"
+          "session_file": "sessions/codex/gpt-5.6-luna/20260901_163846/cyclicbuffer_advance_tail_start_inductive/session.jsonl",
+          "total_input_tokens": 282311,
+          "total_output_tokens": 2745
         },
         "cyclicbuffer_append_flip_bit_inductive.rs": {
           "verus_passed": false,
@@ -251,7 +273,9 @@
           "total_turns": 4,
           "total_tool_calls": 47,
           "duration_seconds": 735.532,
-          "session_file": "sessions/codex/gpt-5.6-luna/20260901_163846/cyclicbuffer_append_flip_bit_inductive/session.jsonl"
+          "session_file": "sessions/codex/gpt-5.6-luna/20260901_163846/cyclicbuffer_append_flip_bit_inductive/session.jsonl",
+          "total_input_tokens": 3743228,
+          "total_output_tokens": 21081
         },
         "cyclicbuffer_reader_finish_inductive.rs": {
           "verus_passed": true,
@@ -263,7 +287,9 @@
           "total_turns": 4,
           "total_tool_calls": 14,
           "duration_seconds": 254.265,
-          "session_file": "sessions/codex/gpt-5.6-luna/20260901_163846/cyclicbuffer_reader_finish_inductive/session.jsonl"
+          "session_file": "sessions/codex/gpt-5.6-luna/20260901_163846/cyclicbuffer_reader_finish_inductive/session.jsonl",
+          "total_input_tokens": 509350,
+          "total_output_tokens": 7795
         },
         "cyclicbuffer_reader_guard_inductive.rs": {
           "verus_passed": true,
@@ -275,7 +301,9 @@
           "total_turns": 5,
           "total_tool_calls": 17,
           "duration_seconds": 210.638,
-          "session_file": "sessions/codex/gpt-5.6-luna/20260901_163846/cyclicbuffer_reader_guard_inductive/session.jsonl"
+          "session_file": "sessions/codex/gpt-5.6-luna/20260901_163846/cyclicbuffer_reader_guard_inductive/session.jsonl",
+          "total_input_tokens": 449519,
+          "total_output_tokens": 6187
         },
         "dist_rwlock_exc_check_count_inductive.rs": {
           "verus_passed": true,
@@ -287,7 +315,9 @@
           "total_turns": 3,
           "total_tool_calls": 16,
           "duration_seconds": 179.797,
-          "session_file": "sessions/codex/gpt-5.6-luna/20260901_163846/dist_rwlock_exc_check_count_inductive/session.jsonl"
+          "session_file": "sessions/codex/gpt-5.6-luna/20260901_163846/dist_rwlock_exc_check_count_inductive/session.jsonl",
+          "total_input_tokens": 479406,
+          "total_output_tokens": 4242
         },
         "dist_rwlock_initialize_inductive.rs": {
           "verus_passed": true,
@@ -299,7 +329,9 @@
           "total_turns": 4,
           "total_tool_calls": 15,
           "duration_seconds": 137.997,
-          "session_file": "sessions/codex/gpt-5.6-luna/20260901_163846/dist_rwlock_initialize_inductive/session.jsonl"
+          "session_file": "sessions/codex/gpt-5.6-luna/20260901_163846/dist_rwlock_initialize_inductive/session.jsonl",
+          "total_input_tokens": 417223,
+          "total_output_tokens": 2873
         },
         "dist_rwlock_shared_finish_inductive.rs": {
           "verus_passed": true,
@@ -311,7 +343,9 @@
           "total_turns": 5,
           "total_tool_calls": 22,
           "duration_seconds": 238.825,
-          "session_file": "sessions/codex/gpt-5.6-luna/20260901_163846/dist_rwlock_shared_finish_inductive/session.jsonl"
+          "session_file": "sessions/codex/gpt-5.6-luna/20260901_163846/dist_rwlock_shared_finish_inductive/session.jsonl",
+          "total_input_tokens": 852385,
+          "total_output_tokens": 7832
         },
         "dist_rwlock_shared_release_inductive.rs": {
           "verus_passed": true,
@@ -323,7 +357,9 @@
           "total_turns": 4,
           "total_tool_calls": 11,
           "duration_seconds": 116.768,
-          "session_file": "sessions/codex/gpt-5.6-luna/20260901_163846/dist_rwlock_shared_release_inductive/session.jsonl"
+          "session_file": "sessions/codex/gpt-5.6-luna/20260901_163846/dist_rwlock_shared_release_inductive/session.jsonl",
+          "total_input_tokens": 287082,
+          "total_output_tokens": 2688
         },
         "fifo_consume_end_inductive.rs": {
           "verus_passed": true,
@@ -335,7 +371,9 @@
           "total_turns": 3,
           "total_tool_calls": 13,
           "duration_seconds": 131.489,
-          "session_file": "sessions/codex/gpt-5.6-luna/20260901_163846/fifo_consume_end_inductive/session.jsonl"
+          "session_file": "sessions/codex/gpt-5.6-luna/20260901_163846/fifo_consume_end_inductive/session.jsonl",
+          "total_input_tokens": 315077,
+          "total_output_tokens": 2814
         },
         "fifo_consume_start_inductive.rs": {
           "verus_passed": true,
@@ -347,7 +385,9 @@
           "total_turns": 4,
           "total_tool_calls": 12,
           "duration_seconds": 120.887,
-          "session_file": "sessions/codex/gpt-5.6-luna/20260901_163846/fifo_consume_start_inductive/session.jsonl"
+          "session_file": "sessions/codex/gpt-5.6-luna/20260901_163846/fifo_consume_start_inductive/session.jsonl",
+          "total_input_tokens": 293410,
+          "total_output_tokens": 2496
         },
         "fifo_dequeue.rs": {
           "verus_passed": true,
@@ -359,7 +399,9 @@
           "total_turns": 4,
           "total_tool_calls": 44,
           "duration_seconds": 359.275,
-          "session_file": "sessions/codex/gpt-5.6-luna/20260901_163846/fifo_dequeue/session.jsonl"
+          "session_file": "sessions/codex/gpt-5.6-luna/20260901_163846/fifo_dequeue/session.jsonl",
+          "total_input_tokens": 1992078,
+          "total_output_tokens": 10836
         },
         "fifo_enqueue.rs": {
           "verus_passed": true,
@@ -371,7 +413,9 @@
           "total_turns": 4,
           "total_tool_calls": 37,
           "duration_seconds": 309.968,
-          "session_file": "sessions/codex/gpt-5.6-luna/20260901_163846/fifo_enqueue/session.jsonl"
+          "session_file": "sessions/codex/gpt-5.6-luna/20260901_163846/fifo_enqueue/session.jsonl",
+          "total_input_tokens": 2123633,
+          "total_output_tokens": 8536
         },
         "fifo_initialize_inductive.rs": {
           "verus_passed": true,
@@ -383,7 +427,9 @@
           "total_turns": 5,
           "total_tool_calls": 8,
           "duration_seconds": 74.304,
-          "session_file": "sessions/codex/gpt-5.6-luna/20260901_163846/fifo_initialize_inductive/session.jsonl"
+          "session_file": "sessions/codex/gpt-5.6-luna/20260901_163846/fifo_initialize_inductive/session.jsonl",
+          "total_input_tokens": 128742,
+          "total_output_tokens": 1418
         },
         "fifo_produce_end_inductive.rs": {
           "verus_passed": true,
@@ -395,7 +441,9 @@
           "total_turns": 4,
           "total_tool_calls": 13,
           "duration_seconds": 162.887,
-          "session_file": "sessions/codex/gpt-5.6-luna/20260901_163846/fifo_produce_end_inductive/session.jsonl"
+          "session_file": "sessions/codex/gpt-5.6-luna/20260901_163846/fifo_produce_end_inductive/session.jsonl",
+          "total_input_tokens": 450385,
+          "total_output_tokens": 4182
         },
         "fifo_produce_start_inductive.rs": {
           "verus_passed": true,
@@ -407,7 +455,9 @@
           "total_turns": 3,
           "total_tool_calls": 11,
           "duration_seconds": 99.006,
-          "session_file": "sessions/codex/gpt-5.6-luna/20260901_163846/fifo_produce_start_inductive/session.jsonl"
+          "session_file": "sessions/codex/gpt-5.6-luna/20260901_163846/fifo_produce_start_inductive/session.jsonl",
+          "total_input_tokens": 239766,
+          "total_output_tokens": 2028
         },
         "flat_combine_client_recv_inductive.rs": {
           "verus_passed": true,
@@ -419,7 +469,9 @@
           "total_turns": 4,
           "total_tool_calls": 15,
           "duration_seconds": 208.291,
-          "session_file": "sessions/codex/gpt-5.6-luna/20260901_163846/flat_combine_client_recv_inductive/session.jsonl"
+          "session_file": "sessions/codex/gpt-5.6-luna/20260901_163846/flat_combine_client_recv_inductive/session.jsonl",
+          "total_input_tokens": 400947,
+          "total_output_tokens": 6863
         },
         "flat_combine_client_send_inductive.rs": {
           "verus_passed": true,
@@ -431,7 +483,9 @@
           "total_turns": 4,
           "total_tool_calls": 17,
           "duration_seconds": 177.928,
-          "session_file": "sessions/codex/gpt-5.6-luna/20260901_163846/flat_combine_client_send_inductive/session.jsonl"
+          "session_file": "sessions/codex/gpt-5.6-luna/20260901_163846/flat_combine_client_send_inductive/session.jsonl",
+          "total_input_tokens": 404783,
+          "total_output_tokens": 5604
         },
         "flat_combine_combiner_go_to_collecting_inductive.rs": {
           "verus_passed": true,
@@ -443,7 +497,9 @@
           "total_turns": 6,
           "total_tool_calls": 13,
           "duration_seconds": 128.739,
-          "session_file": "sessions/codex/gpt-5.6-luna/20260901_163846/flat_combine_combiner_go_to_collecting_inductive/session.jsonl"
+          "session_file": "sessions/codex/gpt-5.6-luna/20260901_163846/flat_combine_combiner_go_to_collecting_inductive/session.jsonl",
+          "total_input_tokens": 193601,
+          "total_output_tokens": 3269
         },
         "flat_combine_combiner_go_to_responding_inductive.rs": {
           "verus_passed": true,
@@ -455,7 +511,9 @@
           "total_turns": 4,
           "total_tool_calls": 18,
           "duration_seconds": 210.157,
-          "session_file": "sessions/codex/gpt-5.6-luna/20260901_163846/flat_combine_combiner_go_to_responding_inductive/session.jsonl"
+          "session_file": "sessions/codex/gpt-5.6-luna/20260901_163846/flat_combine_combiner_go_to_responding_inductive/session.jsonl",
+          "total_input_tokens": 581982,
+          "total_output_tokens": 5262
         },
         "flat_combine_combiner_recv_inductive.rs": {
           "verus_passed": true,
@@ -467,7 +525,9 @@
           "total_turns": 4,
           "total_tool_calls": 22,
           "duration_seconds": 266.64,
-          "session_file": "sessions/codex/gpt-5.6-luna/20260901_163846/flat_combine_combiner_recv_inductive/session.jsonl"
+          "session_file": "sessions/codex/gpt-5.6-luna/20260901_163846/flat_combine_combiner_recv_inductive/session.jsonl",
+          "total_input_tokens": 755210,
+          "total_output_tokens": 7412
         },
         "flat_combine_combiner_send_inductive.rs": {
           "verus_passed": true,
@@ -479,7 +539,9 @@
           "total_turns": 4,
           "total_tool_calls": 13,
           "duration_seconds": 163.72,
-          "session_file": "sessions/codex/gpt-5.6-luna/20260901_163846/flat_combine_combiner_send_inductive/session.jsonl"
+          "session_file": "sessions/codex/gpt-5.6-luna/20260901_163846/flat_combine_combiner_send_inductive/session.jsonl",
+          "total_input_tokens": 272398,
+          "total_output_tokens": 4805
         },
         "flat_combine_combiner_send_skip_inductive.rs": {
           "verus_passed": true,
@@ -491,7 +553,9 @@
           "total_turns": 4,
           "total_tool_calls": 13,
           "duration_seconds": 194.087,
-          "session_file": "sessions/codex/gpt-5.6-luna/20260901_163846/flat_combine_combiner_send_skip_inductive/session.jsonl"
+          "session_file": "sessions/codex/gpt-5.6-luna/20260901_163846/flat_combine_combiner_send_skip_inductive/session.jsonl",
+          "total_input_tokens": 464261,
+          "total_output_tokens": 5698
         },
         "flat_combine_combiner_skip_inductive.rs": {
           "verus_passed": true,
@@ -503,7 +567,9 @@
           "total_turns": 4,
           "total_tool_calls": 11,
           "duration_seconds": 136.462,
-          "session_file": "sessions/codex/gpt-5.6-luna/20260901_163846/flat_combine_combiner_skip_inductive/session.jsonl"
+          "session_file": "sessions/codex/gpt-5.6-luna/20260901_163846/flat_combine_combiner_skip_inductive/session.jsonl",
+          "total_input_tokens": 290437,
+          "total_output_tokens": 3027
         },
         "free_free.rs": {
           "verus_passed": true,
@@ -515,7 +581,9 @@
           "total_turns": 5,
           "total_tool_calls": 40,
           "duration_seconds": 957.33,
-          "session_file": "sessions/codex/gpt-5.6-luna/20260901_163846/free_free/session.jsonl"
+          "session_file": "sessions/codex/gpt-5.6-luna/20260901_163846/free_free/session.jsonl",
+          "total_input_tokens": 2900542,
+          "total_output_tokens": 11870
         },
         "free_free_block_mt.rs": {
           "verus_passed": false,
@@ -527,7 +595,9 @@
           "total_turns": 6,
           "total_tool_calls": 52,
           "duration_seconds": 913.047,
-          "session_file": "sessions/codex/gpt-5.6-luna/20260901_163846/free_free_block_mt/session.jsonl"
+          "session_file": "sessions/codex/gpt-5.6-luna/20260901_163846/free_free_block_mt/session.jsonl",
+          "total_input_tokens": 4778221,
+          "total_output_tokens": 14991
         },
         "helping_try_cancel_two_flips.rs": {
           "verus_passed": false,
@@ -539,7 +609,9 @@
           "total_turns": 4,
           "total_tool_calls": 25,
           "duration_seconds": 386.768,
-          "session_file": "sessions/codex/gpt-5.6-luna/20260901_163846/helping_try_cancel_two_flips/session.jsonl"
+          "session_file": "sessions/codex/gpt-5.6-luna/20260901_163846/helping_try_cancel_two_flips/session.jsonl",
+          "total_input_tokens": 853373,
+          "total_output_tokens": 15031
         },
         "helping_try_handshake.rs": {
           "verus_passed": false,
@@ -551,7 +623,9 @@
           "total_turns": 5,
           "total_tool_calls": 55,
           "duration_seconds": 662.348,
-          "session_file": "sessions/codex/gpt-5.6-luna/20260901_163846/helping_try_handshake/session.jsonl"
+          "session_file": "sessions/codex/gpt-5.6-luna/20260901_163846/helping_try_handshake/session.jsonl",
+          "total_input_tokens": 2418894,
+          "total_output_tokens": 22765
         },
         "helping_try_simple_flip.rs": {
           "verus_passed": true,
@@ -563,7 +637,9 @@
           "total_turns": 4,
           "total_tool_calls": 14,
           "duration_seconds": 121.649,
-          "session_file": "sessions/codex/gpt-5.6-luna/20260901_163846/helping_try_simple_flip/session.jsonl"
+          "session_file": "sessions/codex/gpt-5.6-luna/20260901_163846/helping_try_simple_flip/session.jsonl",
+          "total_input_tokens": 364904,
+          "total_output_tokens": 2285
         },
         "linked_list_atomic_insert_block.rs": {
           "verus_passed": true,
@@ -575,7 +651,9 @@
           "total_turns": 8,
           "total_tool_calls": 31,
           "duration_seconds": 625.232,
-          "session_file": "sessions/codex/gpt-5.6-luna/20260901_163846/linked_list_atomic_insert_block/session.jsonl"
+          "session_file": "sessions/codex/gpt-5.6-luna/20260901_163846/linked_list_atomic_insert_block/session.jsonl",
+          "total_input_tokens": 1624973,
+          "total_output_tokens": 9339
         },
         "linked_list_check_is_good.rs": {
           "verus_passed": true,
@@ -588,7 +666,9 @@
           "total_tool_calls": 54,
           "duration_seconds": 1027.964,
           "session_file": "sessions/codex/gpt-5.6-luna/20260901_163846/linked_list_check_is_good/session.jsonl",
-          "return_error": "WARNING: proceeding, even though we could not create PATH aliases: Refusing to create helper binaries under temporary dir \"/tmp\" (codex_home: AbsolutePathBuf(\"/tmp\"))\nReading additional input from stdin...\n2026-09-03T11:51:17.199596Z ERROR codex_core::tools::router: error=write_stdin failed: Unknown process id 67340\n"
+          "return_error": "WARNING: proceeding, even though we could not create PATH aliases: Refusing to create helper binaries under temporary dir \"/tmp\" (codex_home: AbsolutePathBuf(\"/tmp\"))\nReading additional input from stdin...\n2026-09-03T11:51:17.199596Z ERROR codex_core::tools::router: error=write_stdin failed: Unknown process id 67340\n",
+          "total_input_tokens": 7269495,
+          "total_output_tokens": 14392
         },
         "linked_list_enable.rs": {
           "verus_passed": true,
@@ -600,7 +680,9 @@
           "total_turns": 4,
           "total_tool_calls": 18,
           "duration_seconds": 436.661,
-          "session_file": "sessions/codex/gpt-5.6-luna/20260901_163846/linked_list_enable/session.jsonl"
+          "session_file": "sessions/codex/gpt-5.6-luna/20260901_163846/linked_list_enable/session.jsonl",
+          "total_input_tokens": 1303173,
+          "total_output_tokens": 3498
         },
         "linked_list_take.rs": {
           "verus_passed": true,
@@ -612,7 +694,9 @@
           "total_turns": 4,
           "total_tool_calls": 26,
           "duration_seconds": 333.77,
-          "session_file": "sessions/codex/gpt-5.6-luna/20260901_163846/linked_list_take/session.jsonl"
+          "session_file": "sessions/codex/gpt-5.6-luna/20260901_163846/linked_list_take/session.jsonl",
+          "total_input_tokens": 1194725,
+          "total_output_tokens": 4018
         },
         "linked_list_take_.rs": {
           "verus_passed": true,
@@ -625,7 +709,9 @@
           "total_tool_calls": 44,
           "duration_seconds": 809.823,
           "session_file": "sessions/codex/gpt-5.6-luna/20260901_163846/linked_list_take_/session.jsonl",
-          "return_error": "WARNING: proceeding, even though we could not create PATH aliases: Refusing to create helper binaries under temporary dir \"/tmp\" (codex_home: AbsolutePathBuf(\"/tmp\"))\nReading additional input from stdin...\n2026-09-03T11:48:11.975526Z ERROR codex_core::tools::router: error=apply_patch verification failed: Failed to find expected lines in /workspace/task_env/linked_list_take__verified.rs:\n                assert(old_ll.ptr().addr() % 4 == 0);\n                assert(new_addr == old_addr & 3);\n                assert(d <= 3usize);\n                assert(old_addr % 4 == d) by (bit_vector);\n"
+          "return_error": "WARNING: proceeding, even though we could not create PATH aliases: Refusing to create helper binaries under temporary dir \"/tmp\" (codex_home: AbsolutePathBuf(\"/tmp\"))\nReading additional input from stdin...\n2026-09-03T11:48:11.975526Z ERROR codex_core::tools::router: error=apply_patch verification failed: Failed to find expected lines in /workspace/task_env/linked_list_take__verified.rs:\n                assert(old_ll.ptr().addr() % 4 == 0);\n                assert(new_addr == old_addr & 3);\n                assert(d <= 3usize);\n                assert(old_addr % 4 == d) by (bit_vector);\n",
+          "total_input_tokens": 4543925,
+          "total_output_tokens": 14844
         },
         "linked_list_try_use_delayed_free.rs": {
           "verus_passed": true,
@@ -637,7 +723,9 @@
           "total_turns": 4,
           "total_tool_calls": 36,
           "duration_seconds": 675.669,
-          "session_file": "sessions/codex/gpt-5.6-luna/20260901_163846/linked_list_try_use_delayed_free/session.jsonl"
+          "session_file": "sessions/codex/gpt-5.6-luna/20260901_163846/linked_list_try_use_delayed_free/session.jsonl",
+          "total_input_tokens": 3053529,
+          "total_output_tokens": 7219
         },
         "log_advance_head.rs": {
           "verus_passed": true,
@@ -649,7 +737,9 @@
           "total_turns": 4,
           "total_tool_calls": 19,
           "duration_seconds": 220.341,
-          "session_file": "sessions/codex/gpt-5.6-luna/20260901_163846/log_advance_head/session.jsonl"
+          "session_file": "sessions/codex/gpt-5.6-luna/20260901_163846/log_advance_head/session.jsonl",
+          "total_input_tokens": 812791,
+          "total_output_tokens": 3125
         },
         "log_append.rs": {
           "verus_passed": false,
@@ -662,7 +752,9 @@
           "total_tool_calls": 47,
           "duration_seconds": 700.999,
           "session_file": "sessions/codex/gpt-5.6-luna/20260901_163846/log_append/session.jsonl",
-          "return_error": "WARNING: proceeding, even though we could not create PATH aliases: Refusing to create helper binaries under temporary dir \"/tmp\" (codex_home: AbsolutePathBuf(\"/tmp\"))\nReading additional input from stdin...\n2026-09-03T11:44:38.174122Z ERROR codex_core::tools::router: error=apply_patch verification failed: Failed to find expected lines in /workspace/task_env/log_append_verified.rs:\n                returning tail;\n                ghost g => {\n                }\n2026-09-03T11:44:53.052102Z ERROR codex_core::tools::router: error=apply_patch verification failed: Failed to find expected lines in /workspace/task_env/log_append_verified.rs:\n                returning tail;\n                ghost g => {\n                    if result.is_ok() {\n                        cb_combiner = self.cyclic_buffer_instance.borrow()\n                            .advance_tail_start(nid as nat, cb_combiner);\n                        cb_combiner = self.cyclic_buffer_instance.borrow()\n                            .advance_tail_finish(nid as nat, new_tail, &mut g.1, cb_combiner);\n                    } else {\n                        cb_combiner = self.cyclic_buffer_instance.borrow()\n                            .advance_tail_start(nid as nat, cb_combiner);\n                        cb_combiner = self.cyclic_buffer_instance.borrow()\n2026-09-03T11:51:15.581160Z ERROR codex_core::tools::router: error=apply_patch verification failed: Failed to find expected lines in /workspace/task_env/log_append_verified.rs:\n                    ul_tail = g.0;\n                    if result.is_ok() {\n                        combiner = self.unbounded_log_instance.borrow()\n                            .exec_trivial_start(nid as nat, combiner);\n"
+          "return_error": "WARNING: proceeding, even though we could not create PATH aliases: Refusing to create helper binaries under temporary dir \"/tmp\" (codex_home: AbsolutePathBuf(\"/tmp\"))\nReading additional input from stdin...\n2026-09-03T11:44:38.174122Z ERROR codex_core::tools::router: error=apply_patch verification failed: Failed to find expected lines in /workspace/task_env/log_append_verified.rs:\n                returning tail;\n                ghost g => {\n                }\n2026-09-03T11:44:53.052102Z ERROR codex_core::tools::router: error=apply_patch verification failed: Failed to find expected lines in /workspace/task_env/log_append_verified.rs:\n                returning tail;\n                ghost g => {\n                    if result.is_ok() {\n                        cb_combiner = self.cyclic_buffer_instance.borrow()\n                            .advance_tail_start(nid as nat, cb_combiner);\n                        cb_combiner = self.cyclic_buffer_instance.borrow()\n                            .advance_tail_finish(nid as nat, new_tail, &mut g.1, cb_combiner);\n                    } else {\n                        cb_combiner = self.cyclic_buffer_instance.borrow()\n                            .advance_tail_start(nid as nat, cb_combiner);\n                        cb_combiner = self.cyclic_buffer_instance.borrow()\n2026-09-03T11:51:15.581160Z ERROR codex_core::tools::router: error=apply_patch verification failed: Failed to find expected lines in /workspace/task_env/log_append_verified.rs:\n                    ul_tail = g.0;\n                    if result.is_ok() {\n                        combiner = self.unbounded_log_instance.borrow()\n                            .exec_trivial_start(nid as nat, combiner);\n",
+          "total_input_tokens": 5042886,
+          "total_output_tokens": 21768
         },
         "log_execute.rs": {
           "verus_passed": true,
@@ -675,7 +767,9 @@
           "total_tool_calls": 63,
           "duration_seconds": 1008.805,
           "session_file": "sessions/codex/gpt-5.6-luna/20260901_163846/log_execute/session.jsonl",
-          "return_error": "WARNING: proceeding, even though we could not create PATH aliases: Refusing to create helper binaries under temporary dir \"/tmp\" (codex_home: AbsolutePathBuf(\"/tmp\"))\nReading additional input from stdin...\n"
+          "return_error": "WARNING: proceeding, even though we could not create PATH aliases: Refusing to create helper binaries under temporary dir \"/tmp\" (codex_home: AbsolutePathBuf(\"/tmp\"))\nReading additional input from stdin...\n",
+          "total_input_tokens": 7886853,
+          "total_output_tokens": 22863
         },
         "log_find_min_local_version.rs": {
           "verus_passed": true,
@@ -687,7 +781,9 @@
           "total_turns": 4,
           "total_tool_calls": 15,
           "duration_seconds": 169.318,
-          "session_file": "sessions/codex/gpt-5.6-luna/20260901_163846/log_find_min_local_version/session.jsonl"
+          "session_file": "sessions/codex/gpt-5.6-luna/20260901_163846/log_find_min_local_version/session.jsonl",
+          "total_input_tokens": 608107,
+          "total_output_tokens": 2510
         },
         "log_is_replica_synced_for_reads.rs": {
           "verus_passed": true,
@@ -699,7 +795,9 @@
           "total_turns": 4,
           "total_tool_calls": 14,
           "duration_seconds": 204.228,
-          "session_file": "sessions/codex/gpt-5.6-luna/20260901_163846/log_is_replica_synced_for_reads/session.jsonl"
+          "session_file": "sessions/codex/gpt-5.6-luna/20260901_163846/log_is_replica_synced_for_reads/session.jsonl",
+          "total_input_tokens": 668334,
+          "total_output_tokens": 2966
         },
         "once_get.rs": {
           "verus_passed": true,
@@ -711,7 +809,9 @@
           "total_turns": 5,
           "total_tool_calls": 23,
           "duration_seconds": 270.105,
-          "session_file": "sessions/codex/gpt-5.6-luna/20260901_163846/once_get/session.jsonl"
+          "session_file": "sessions/codex/gpt-5.6-luna/20260901_163846/once_get/session.jsonl",
+          "total_input_tokens": 758176,
+          "total_output_tokens": 9142
         },
         "once_init.rs": {
           "verus_passed": true,
@@ -723,7 +823,9 @@
           "total_turns": 4,
           "total_tool_calls": 11,
           "duration_seconds": 115.998,
-          "session_file": "sessions/codex/gpt-5.6-luna/20260901_163846/once_init/session.jsonl"
+          "session_file": "sessions/codex/gpt-5.6-luna/20260901_163846/once_init/session.jsonl",
+          "total_input_tokens": 333615,
+          "total_output_tokens": 2441
         },
         "replica_acquire_combiner_lock.rs": {
           "verus_passed": true,
@@ -735,7 +837,9 @@
           "total_turns": 4,
           "total_tool_calls": 14,
           "duration_seconds": 177.273,
-          "session_file": "sessions/codex/gpt-5.6-luna/20260901_163846/replica_acquire_combiner_lock/session.jsonl"
+          "session_file": "sessions/codex/gpt-5.6-luna/20260901_163846/replica_acquire_combiner_lock/session.jsonl",
+          "total_input_tokens": 559210,
+          "total_output_tokens": 2647
         },
         "replica_collect_thread_ops.rs": {
           "verus_passed": true,
@@ -748,7 +852,9 @@
           "total_tool_calls": 35,
           "duration_seconds": 498.391,
           "session_file": "sessions/codex/gpt-5.6-luna/20260901_163846/replica_collect_thread_ops/session.jsonl",
-          "return_error": "WARNING: proceeding, even though we could not create PATH aliases: Refusing to create helper binaries under temporary dir \"/tmp\" (codex_home: AbsolutePathBuf(\"/tmp\"))\nReading additional input from stdin...\n"
+          "return_error": "WARNING: proceeding, even though we could not create PATH aliases: Refusing to create helper binaries under temporary dir \"/tmp\" (codex_home: AbsolutePathBuf(\"/tmp\"))\nReading additional input from stdin...\n",
+          "total_input_tokens": 2631468,
+          "total_output_tokens": 10236
         },
         "replica_distribute_thread_resps.rs": {
           "verus_passed": true,
@@ -761,7 +867,9 @@
           "total_tool_calls": 21,
           "duration_seconds": 234.319,
           "session_file": "sessions/codex/gpt-5.6-luna/20260901_163846/replica_distribute_thread_resps/session.jsonl",
-          "return_error": "WARNING: proceeding, even though we could not create PATH aliases: Refusing to create helper binaries under temporary dir \"/tmp\" (codex_home: AbsolutePathBuf(\"/tmp\"))\nReading additional input from stdin...\n"
+          "return_error": "WARNING: proceeding, even though we could not create PATH aliases: Refusing to create helper binaries under temporary dir \"/tmp\" (codex_home: AbsolutePathBuf(\"/tmp\"))\nReading additional input from stdin...\n",
+          "total_input_tokens": 926754,
+          "total_output_tokens": 4653
         },
         "replica_release_combiner_lock.rs": {
           "verus_passed": true,
@@ -773,7 +881,9 @@
           "total_turns": 4,
           "total_tool_calls": 13,
           "duration_seconds": 154.603,
-          "session_file": "sessions/codex/gpt-5.6-luna/20260901_163846/replica_release_combiner_lock/session.jsonl"
+          "session_file": "sessions/codex/gpt-5.6-luna/20260901_163846/replica_release_combiner_lock/session.jsonl",
+          "total_input_tokens": 370618,
+          "total_output_tokens": 2205
         },
         "rwlock_readguard_drop.rs": {
           "verus_passed": false,
@@ -786,7 +896,9 @@
           "total_tool_calls": 45,
           "duration_seconds": 606.163,
           "session_file": "sessions/codex/gpt-5.6-luna/20260901_163846/rwlock_readguard_drop/session.jsonl",
-          "return_error": "WARNING: proceeding, even though we could not create PATH aliases: Refusing to create helper binaries under temporary dir \"/tmp\" (codex_home: AbsolutePathBuf(\"/tmp\"))\nReading additional input from stdin...\n"
+          "return_error": "WARNING: proceeding, even though we could not create PATH aliases: Refusing to create helper binaries under temporary dir \"/tmp\" (codex_home: AbsolutePathBuf(\"/tmp\"))\nReading additional input from stdin...\n",
+          "total_input_tokens": 3754326,
+          "total_output_tokens": 18035
         },
         "rwlock_try_read.rs": {
           "verus_passed": false,
@@ -799,7 +911,9 @@
           "total_tool_calls": 54,
           "duration_seconds": 765.109,
           "session_file": "sessions/codex/gpt-5.6-luna/20260901_163846/rwlock_try_read/session.jsonl",
-          "return_error": "WARNING: proceeding, even though we could not create PATH aliases: Refusing to create helper binaries under temporary dir \"/tmp\" (codex_home: AbsolutePathBuf(\"/tmp\"))\nReading additional input from stdin...\n"
+          "return_error": "WARNING: proceeding, even though we could not create PATH aliases: Refusing to create helper binaries under temporary dir \"/tmp\" (codex_home: AbsolutePathBuf(\"/tmp\"))\nReading additional input from stdin...\n",
+          "total_input_tokens": 5711602,
+          "total_output_tokens": 20434
         },
         "rwlock_try_upgrade.rs": {
           "verus_passed": false,
@@ -812,7 +926,9 @@
           "total_tool_calls": 48,
           "duration_seconds": 749.449,
           "session_file": "sessions/codex/gpt-5.6-luna/20260901_163846/rwlock_try_upgrade/session.jsonl",
-          "return_error": "WARNING: proceeding, even though we could not create PATH aliases: Refusing to create helper binaries under temporary dir \"/tmp\" (codex_home: AbsolutePathBuf(\"/tmp\"))\nReading additional input from stdin...\n"
+          "return_error": "WARNING: proceeding, even though we could not create PATH aliases: Refusing to create helper binaries under temporary dir \"/tmp\" (codex_home: AbsolutePathBuf(\"/tmp\"))\nReading additional input from stdin...\n",
+          "total_input_tokens": 6262608,
+          "total_output_tokens": 22517
         },
         "rwlock_try_upread.rs": {
           "verus_passed": false,
@@ -825,7 +941,9 @@
           "total_tool_calls": 41,
           "duration_seconds": 634.204,
           "session_file": "sessions/codex/gpt-5.6-luna/20260901_163846/rwlock_try_upread/session.jsonl",
-          "return_error": "WARNING: proceeding, even though we could not create PATH aliases: Refusing to create helper binaries under temporary dir \"/tmp\" (codex_home: AbsolutePathBuf(\"/tmp\"))\nReading additional input from stdin...\n"
+          "return_error": "WARNING: proceeding, even though we could not create PATH aliases: Refusing to create helper binaries under temporary dir \"/tmp\" (codex_home: AbsolutePathBuf(\"/tmp\"))\nReading additional input from stdin...\n",
+          "total_input_tokens": 5744810,
+          "total_output_tokens": 18285
         },
         "rwlock_try_write.rs": {
           "verus_passed": true,
@@ -838,7 +956,9 @@
           "total_tool_calls": 17,
           "duration_seconds": 197.78,
           "session_file": "sessions/codex/gpt-5.6-luna/20260901_163846/rwlock_try_write/session.jsonl",
-          "return_error": "WARNING: proceeding, even though we could not create PATH aliases: Refusing to create helper binaries under temporary dir \"/tmp\" (codex_home: AbsolutePathBuf(\"/tmp\"))\nReading additional input from stdin...\n"
+          "return_error": "WARNING: proceeding, even though we could not create PATH aliases: Refusing to create helper binaries under temporary dir \"/tmp\" (codex_home: AbsolutePathBuf(\"/tmp\"))\nReading additional input from stdin...\n",
+          "total_input_tokens": 683967,
+          "total_output_tokens": 4821
         },
         "rwlock_upgradableguard_drop.rs": {
           "verus_passed": true,
@@ -851,7 +971,9 @@
           "total_tool_calls": 80,
           "duration_seconds": 1027.459,
           "session_file": "sessions/codex/gpt-5.6-luna/20260901_163846/rwlock_upgradableguard_drop/session.jsonl",
-          "return_error": "WARNING: proceeding, even though we could not create PATH aliases: Refusing to create helper binaries under temporary dir \"/tmp\" (codex_home: AbsolutePathBuf(\"/tmp\"))\nReading additional input from stdin...\n"
+          "return_error": "WARNING: proceeding, even though we could not create PATH aliases: Refusing to create helper binaries under temporary dir \"/tmp\" (codex_home: AbsolutePathBuf(\"/tmp\"))\nReading additional input from stdin...\n",
+          "total_input_tokens": 10197742,
+          "total_output_tokens": 21389
         },
         "rwlock_writeguard_drop.rs": {
           "verus_passed": true,
@@ -864,7 +986,9 @@
           "total_tool_calls": 41,
           "duration_seconds": 606.905,
           "session_file": "sessions/codex/gpt-5.6-luna/20260901_163846/rwlock_writeguard_drop/session.jsonl",
-          "return_error": "WARNING: proceeding, even though we could not create PATH aliases: Refusing to create helper binaries under temporary dir \"/tmp\" (codex_home: AbsolutePathBuf(\"/tmp\"))\nReading additional input from stdin...\n"
+          "return_error": "WARNING: proceeding, even though we could not create PATH aliases: Refusing to create helper binaries under temporary dir \"/tmp\" (codex_home: AbsolutePathBuf(\"/tmp\"))\nReading additional input from stdin...\n",
+          "total_input_tokens": 2531075,
+          "total_output_tokens": 16358
         },
         "statics_get.rs": {
           "verus_passed": true,
@@ -877,7 +1001,9 @@
           "total_tool_calls": 11,
           "duration_seconds": 167.713,
           "session_file": "sessions/codex/gpt-5.6-luna/20260901_163846/statics_get/session.jsonl",
-          "return_error": "WARNING: proceeding, even though we could not create PATH aliases: Refusing to create helper binaries under temporary dir \"/tmp\" (codex_home: AbsolutePathBuf(\"/tmp\"))\nReading additional input from stdin...\n"
+          "return_error": "WARNING: proceeding, even though we could not create PATH aliases: Refusing to create helper binaries under temporary dir \"/tmp\" (codex_home: AbsolutePathBuf(\"/tmp\"))\nReading additional input from stdin...\n",
+          "total_input_tokens": 326343,
+          "total_output_tokens": 4090
         },
         "tokens_page_destroy_block_tokens_inductive.rs": {
           "verus_passed": true,
@@ -890,7 +1016,9 @@
           "total_tool_calls": 13,
           "duration_seconds": 204.304,
           "session_file": "sessions/codex/gpt-5.6-luna/20260901_163846/tokens_page_destroy_block_tokens_inductive/session.jsonl",
-          "return_error": "WARNING: proceeding, even though we could not create PATH aliases: Refusing to create helper binaries under temporary dir \"/tmp\" (codex_home: AbsolutePathBuf(\"/tmp\"))\nReading additional input from stdin...\n"
+          "return_error": "WARNING: proceeding, even though we could not create PATH aliases: Refusing to create helper binaries under temporary dir \"/tmp\" (codex_home: AbsolutePathBuf(\"/tmp\"))\nReading additional input from stdin...\n",
+          "total_input_tokens": 602020,
+          "total_output_tokens": 3758
         },
         "tokens_page_mk_block_tokens_inductive.rs": {
           "verus_passed": true,
@@ -903,7 +1031,9 @@
           "total_tool_calls": 17,
           "duration_seconds": 225.971,
           "session_file": "sessions/codex/gpt-5.6-luna/20260901_163846/tokens_page_mk_block_tokens_inductive/session.jsonl",
-          "return_error": "WARNING: proceeding, even though we could not create PATH aliases: Refusing to create helper binaries under temporary dir \"/tmp\" (codex_home: AbsolutePathBuf(\"/tmp\"))\nReading additional input from stdin...\n"
+          "return_error": "WARNING: proceeding, even though we could not create PATH aliases: Refusing to create helper binaries under temporary dir \"/tmp\" (codex_home: AbsolutePathBuf(\"/tmp\"))\nReading additional input from stdin...\n",
+          "total_input_tokens": 813926,
+          "total_output_tokens": 3752
         },
         "tokens_reserve_uniq_identifier_inductive.rs": {
           "verus_passed": true,
@@ -916,7 +1046,9 @@
           "total_tool_calls": 15,
           "duration_seconds": 264.812,
           "session_file": "sessions/codex/gpt-5.6-luna/20260901_163846/tokens_reserve_uniq_identifier_inductive/session.jsonl",
-          "return_error": "WARNING: proceeding, even though we could not create PATH aliases: Refusing to create helper binaries under temporary dir \"/tmp\" (codex_home: AbsolutePathBuf(\"/tmp\"))\nReading additional input from stdin...\n"
+          "return_error": "WARNING: proceeding, even though we could not create PATH aliases: Refusing to create helper binaries under temporary dir \"/tmp\" (codex_home: AbsolutePathBuf(\"/tmp\"))\nReading additional input from stdin...\n",
+          "total_input_tokens": 580661,
+          "total_output_tokens": 3228
         },
         "types_disable.rs": {
           "verus_passed": true,
@@ -929,7 +1061,9 @@
           "total_tool_calls": 20,
           "duration_seconds": 253.298,
           "session_file": "sessions/codex/gpt-5.6-luna/20260901_163846/types_disable/session.jsonl",
-          "return_error": "WARNING: proceeding, even though we could not create PATH aliases: Refusing to create helper binaries under temporary dir \"/tmp\" (codex_home: AbsolutePathBuf(\"/tmp\"))\nReading additional input from stdin...\n"
+          "return_error": "WARNING: proceeding, even though we could not create PATH aliases: Refusing to create helper binaries under temporary dir \"/tmp\" (codex_home: AbsolutePathBuf(\"/tmp\"))\nReading additional input from stdin...\n",
+          "total_input_tokens": 706547,
+          "total_output_tokens": 2880
         },
         "types_get_heap.rs": {
           "verus_passed": true,
@@ -942,7 +1076,9 @@
           "total_tool_calls": 29,
           "duration_seconds": 407.691,
           "session_file": "sessions/codex/gpt-5.6-luna/20260901_163846/types_get_heap/session.jsonl",
-          "return_error": "WARNING: proceeding, even though we could not create PATH aliases: Refusing to create helper binaries under temporary dir \"/tmp\" (codex_home: AbsolutePathBuf(\"/tmp\"))\nReading additional input from stdin...\n"
+          "return_error": "WARNING: proceeding, even though we could not create PATH aliases: Refusing to create helper binaries under temporary dir \"/tmp\" (codex_home: AbsolutePathBuf(\"/tmp\"))\nReading additional input from stdin...\n",
+          "total_input_tokens": 1788881,
+          "total_output_tokens": 5431
         },
         "unbounded_log_exec_dispatch_local_inductive.rs": {
           "verus_passed": true,
@@ -955,7 +1091,9 @@
           "total_tool_calls": 19,
           "duration_seconds": 237.371,
           "session_file": "sessions/codex/gpt-5.6-luna/20260901_163846/unbounded_log_exec_dispatch_local_inductive/session.jsonl",
-          "return_error": "WARNING: proceeding, even though we could not create PATH aliases: Refusing to create helper binaries under temporary dir \"/tmp\" (codex_home: AbsolutePathBuf(\"/tmp\"))\nReading additional input from stdin...\n"
+          "return_error": "WARNING: proceeding, even though we could not create PATH aliases: Refusing to create helper binaries under temporary dir \"/tmp\" (codex_home: AbsolutePathBuf(\"/tmp\"))\nReading additional input from stdin...\n",
+          "total_input_tokens": 783393,
+          "total_output_tokens": 4599
         },
         "unbounded_log_exec_trivial_start_inductive.rs": {
           "verus_passed": true,
@@ -968,7 +1106,9 @@
           "total_tool_calls": 14,
           "duration_seconds": 136.722,
           "session_file": "sessions/codex/gpt-5.6-luna/20260901_163846/unbounded_log_exec_trivial_start_inductive/session.jsonl",
-          "return_error": "WARNING: proceeding, even though we could not create PATH aliases: Refusing to create helper binaries under temporary dir \"/tmp\" (codex_home: AbsolutePathBuf(\"/tmp\"))\nReading additional input from stdin...\n"
+          "return_error": "WARNING: proceeding, even though we could not create PATH aliases: Refusing to create helper binaries under temporary dir \"/tmp\" (codex_home: AbsolutePathBuf(\"/tmp\"))\nReading additional input from stdin...\n",
+          "total_input_tokens": 428608,
+          "total_output_tokens": 2643
         },
         "unbounded_log_exec_update_version_upper_bound_inductive.rs": {
           "verus_passed": true,
@@ -981,7 +1121,9 @@
           "total_tool_calls": 12,
           "duration_seconds": 186.043,
           "session_file": "sessions/codex/gpt-5.6-luna/20260901_163846/unbounded_log_exec_update_version_upper_bound_inductive/session.jsonl",
-          "return_error": "WARNING: proceeding, even though we could not create PATH aliases: Refusing to create helper binaries under temporary dir \"/tmp\" (codex_home: AbsolutePathBuf(\"/tmp\"))\nReading additional input from stdin...\n"
+          "return_error": "WARNING: proceeding, even though we could not create PATH aliases: Refusing to create helper binaries under temporary dir \"/tmp\" (codex_home: AbsolutePathBuf(\"/tmp\"))\nReading additional input from stdin...\n",
+          "total_input_tokens": 362547,
+          "total_output_tokens": 3040
         },
         "unbounded_log_readonly_apply_inductive.rs": {
           "verus_passed": true,
@@ -994,7 +1136,9 @@
           "total_tool_calls": 15,
           "duration_seconds": 244.23,
           "session_file": "sessions/codex/gpt-5.6-luna/20260901_163846/unbounded_log_readonly_apply_inductive/session.jsonl",
-          "return_error": "WARNING: proceeding, even though we could not create PATH aliases: Refusing to create helper binaries under temporary dir \"/tmp\" (codex_home: AbsolutePathBuf(\"/tmp\"))\nReading additional input from stdin...\n2026-09-03T11:51:52.514942Z ERROR codex_models_manager::manager: failed to refresh available models: timeout waiting for child process to exit\n"
+          "return_error": "WARNING: proceeding, even though we could not create PATH aliases: Refusing to create helper binaries under temporary dir \"/tmp\" (codex_home: AbsolutePathBuf(\"/tmp\"))\nReading additional input from stdin...\n2026-09-03T11:51:52.514942Z ERROR codex_models_manager::manager: failed to refresh available models: timeout waiting for child process to exit\n",
+          "total_input_tokens": 689143,
+          "total_output_tokens": 5285
         },
         "unbounded_log_update_done_inductive.rs": {
           "verus_passed": true,
@@ -1007,7 +1151,9 @@
           "total_tool_calls": 13,
           "duration_seconds": 153.192,
           "session_file": "sessions/codex/gpt-5.6-luna/20260901_163846/unbounded_log_update_done_inductive/session.jsonl",
-          "return_error": "WARNING: proceeding, even though we could not create PATH aliases: Refusing to create helper binaries under temporary dir \"/tmp\" (codex_home: AbsolutePathBuf(\"/tmp\"))\nReading additional input from stdin...\n"
+          "return_error": "WARNING: proceeding, even though we could not create PATH aliases: Refusing to create helper binaries under temporary dir \"/tmp\" (codex_home: AbsolutePathBuf(\"/tmp\"))\nReading additional input from stdin...\n",
+          "total_input_tokens": 402465,
+          "total_output_tokens": 2358
         },
         "unbounded_log_update_place_ops_in_log_one_inductive.rs": {
           "verus_passed": false,
@@ -1020,7 +1166,9 @@
           "total_tool_calls": 75,
           "duration_seconds": 1016.593,
           "session_file": "sessions/codex/gpt-5.6-luna/20260901_163846/unbounded_log_update_place_ops_in_log_one_inductive/session.jsonl",
-          "return_error": "WARNING: proceeding, even though we could not create PATH aliases: Refusing to create helper binaries under temporary dir \"/tmp\" (codex_home: AbsolutePathBuf(\"/tmp\"))\nReading additional input from stdin...\n"
+          "return_error": "WARNING: proceeding, even though we could not create PATH aliases: Refusing to create helper binaries under temporary dir \"/tmp\" (codex_home: AbsolutePathBuf(\"/tmp\"))\nReading additional input from stdin...\n",
+          "total_input_tokens": 7163222,
+          "total_output_tokens": 24445
         },
         "wait.rs": {
           "verus_passed": true,
@@ -1033,7 +1181,9 @@
           "total_tool_calls": 11,
           "duration_seconds": 169.977,
           "session_file": "sessions/codex/gpt-5.6-luna/20260901_163846/wait/session.jsonl",
-          "return_error": "WARNING: proceeding, even though we could not create PATH aliases: Refusing to create helper binaries under temporary dir \"/tmp\" (codex_home: AbsolutePathBuf(\"/tmp\"))\nReading additional input from stdin...\n"
+          "return_error": "WARNING: proceeding, even though we could not create PATH aliases: Refusing to create helper binaries under temporary dir \"/tmp\" (codex_home: AbsolutePathBuf(\"/tmp\"))\nReading additional input from stdin...\n",
+          "total_input_tokens": 363223,
+          "total_output_tokens": 2941
         }
       }
     },
@@ -1050,7 +1200,9 @@
           "total_turns": 25,
           "total_tool_calls": 51,
           "duration_seconds": 146.71,
-          "session_file": "sessions/copilot/gpt-5.6-luna/20260901_163846/context_dequeue_response/session.jsonl"
+          "session_file": "sessions/copilot/gpt-5.6-luna/20260901_163846/context_dequeue_response/session.jsonl",
+          "total_input_tokens": 1063296,
+          "total_output_tokens": 4586
         },
         "context_enqueue_op.rs": {
           "verus_passed": true,
@@ -1063,7 +1215,9 @@
           "total_turns": 23,
           "total_tool_calls": 55,
           "duration_seconds": 135.645,
-          "session_file": "sessions/copilot/gpt-5.6-luna/20260901_163846/context_enqueue_op/session.jsonl"
+          "session_file": "sessions/copilot/gpt-5.6-luna/20260901_163846/context_enqueue_op/session.jsonl",
+          "total_input_tokens": 860123,
+          "total_output_tokens": 3730
         },
         "count_to_two_read_x.rs": {
           "verus_passed": true,
@@ -1075,7 +1229,9 @@
           "total_turns": 10,
           "total_tool_calls": 18,
           "duration_seconds": 50.486,
-          "session_file": "sessions/copilot/gpt-5.6-luna/20260901_163846/count_to_two_read_x/session.jsonl"
+          "session_file": "sessions/copilot/gpt-5.6-luna/20260901_163846/count_to_two_read_x/session.jsonl",
+          "total_input_tokens": 237247,
+          "total_output_tokens": 1808
         },
         "count_to_two_thread_routine.rs": {
           "verus_passed": true,
@@ -1088,7 +1244,9 @@
           "total_turns": 11,
           "total_tool_calls": 26,
           "duration_seconds": 60.959,
-          "session_file": "sessions/copilot/gpt-5.6-luna/20260901_163846/count_to_two_thread_routine/session.jsonl"
+          "session_file": "sessions/copilot/gpt-5.6-luna/20260901_163846/count_to_two_thread_routine/session.jsonl",
+          "total_input_tokens": 345797,
+          "total_output_tokens": 2118
         },
         "cuckoo_delete.rs": {
           "verus_passed": true,
@@ -1101,7 +1259,9 @@
           "total_turns": 15,
           "total_tool_calls": 30,
           "duration_seconds": 89.411,
-          "session_file": "sessions/copilot/gpt-5.6-luna/20260901_163846/cuckoo_delete/session.jsonl"
+          "session_file": "sessions/copilot/gpt-5.6-luna/20260901_163846/cuckoo_delete/session.jsonl",
+          "total_input_tokens": 492609,
+          "total_output_tokens": 2889
         },
         "cuckoo_inductive.rs": {
           "verus_passed": false,
@@ -1114,7 +1274,9 @@
           "total_turns": 92,
           "total_tool_calls": 105,
           "duration_seconds": 1097.587,
-          "session_file": "sessions/copilot/gpt-5.6-luna/20260901_163846/cuckoo_inductive/session.jsonl"
+          "session_file": "sessions/copilot/gpt-5.6-luna/20260901_163846/cuckoo_inductive/session.jsonl",
+          "total_input_tokens": 5046302,
+          "total_output_tokens": 18358
         },
         "cuckoo_insert.rs": {
           "verus_passed": true,
@@ -1127,7 +1289,9 @@
           "total_turns": 51,
           "total_tool_calls": 62,
           "duration_seconds": 772.858,
-          "session_file": "sessions/copilot/gpt-5.6-luna/20260901_163846/cuckoo_insert/session.jsonl"
+          "session_file": "sessions/copilot/gpt-5.6-luna/20260901_163846/cuckoo_insert/session.jsonl",
+          "total_input_tokens": 2337564,
+          "total_output_tokens": 10407
         },
         "cuckoo_read.rs": {
           "verus_passed": true,
@@ -1140,7 +1304,9 @@
           "total_turns": 11,
           "total_tool_calls": 26,
           "duration_seconds": 72.21,
-          "session_file": "sessions/copilot/gpt-5.6-luna/20260901_163846/cuckoo_read/session.jsonl"
+          "session_file": "sessions/copilot/gpt-5.6-luna/20260901_163846/cuckoo_read/session.jsonl",
+          "total_input_tokens": 339977,
+          "total_output_tokens": 2211
         },
         "cyclicbuffer_advance_head_finish_inductive.rs": {
           "verus_passed": true,
@@ -1153,7 +1319,9 @@
           "total_turns": 16,
           "total_tool_calls": 23,
           "duration_seconds": 86.585,
-          "session_file": "sessions/copilot/gpt-5.6-luna/20260901_163846/cyclicbuffer_advance_head_finish_inductive/session.jsonl"
+          "session_file": "sessions/copilot/gpt-5.6-luna/20260901_163846/cyclicbuffer_advance_head_finish_inductive/session.jsonl",
+          "total_input_tokens": 446469,
+          "total_output_tokens": 3033
         },
         "cyclicbuffer_advance_tail_finish_inductive.rs": {
           "verus_passed": true,
@@ -1166,7 +1334,9 @@
           "total_turns": 63,
           "total_tool_calls": 96,
           "duration_seconds": 518.468,
-          "session_file": "sessions/copilot/gpt-5.6-luna/20260901_163846/cyclicbuffer_advance_tail_finish_inductive/session.jsonl"
+          "session_file": "sessions/copilot/gpt-5.6-luna/20260901_163846/cyclicbuffer_advance_tail_finish_inductive/session.jsonl",
+          "total_input_tokens": 2707031,
+          "total_output_tokens": 20488
         },
         "cyclicbuffer_advance_tail_start_inductive.rs": {
           "verus_passed": true,
@@ -1179,7 +1349,9 @@
           "total_turns": 12,
           "total_tool_calls": 22,
           "duration_seconds": 66.172,
-          "session_file": "sessions/copilot/gpt-5.6-luna/20260901_163846/cyclicbuffer_advance_tail_start_inductive/session.jsonl"
+          "session_file": "sessions/copilot/gpt-5.6-luna/20260901_163846/cyclicbuffer_advance_tail_start_inductive/session.jsonl",
+          "total_input_tokens": 286640,
+          "total_output_tokens": 2318
         },
         "cyclicbuffer_append_flip_bit_inductive.rs": {
           "verus_passed": false,
@@ -1192,7 +1364,9 @@
           "total_turns": 103,
           "total_tool_calls": 110,
           "duration_seconds": 598.908,
-          "session_file": "sessions/copilot/gpt-5.6-luna/20260901_163846/cyclicbuffer_append_flip_bit_inductive/session.jsonl"
+          "session_file": "sessions/copilot/gpt-5.6-luna/20260901_163846/cyclicbuffer_append_flip_bit_inductive/session.jsonl",
+          "total_input_tokens": 4826771,
+          "total_output_tokens": 20223
         },
         "cyclicbuffer_reader_finish_inductive.rs": {
           "verus_passed": true,
@@ -1205,7 +1379,9 @@
           "total_turns": 87,
           "total_tool_calls": 105,
           "duration_seconds": 642.864,
-          "session_file": "sessions/copilot/gpt-5.6-luna/20260901_163846/cyclicbuffer_reader_finish_inductive/session.jsonl"
+          "session_file": "sessions/copilot/gpt-5.6-luna/20260901_163846/cyclicbuffer_reader_finish_inductive/session.jsonl",
+          "total_input_tokens": 4178096,
+          "total_output_tokens": 26474
         },
         "cyclicbuffer_reader_guard_inductive.rs": {
           "verus_passed": false,
@@ -1218,7 +1394,9 @@
           "total_turns": 100,
           "total_tool_calls": 110,
           "duration_seconds": 701.816,
-          "session_file": "sessions/copilot/gpt-5.6-luna/20260901_163846/cyclicbuffer_reader_guard_inductive/session.jsonl"
+          "session_file": "sessions/copilot/gpt-5.6-luna/20260901_163846/cyclicbuffer_reader_guard_inductive/session.jsonl",
+          "total_input_tokens": 5014279,
+          "total_output_tokens": 26406
         },
         "dist_rwlock_exc_check_count_inductive.rs": {
           "verus_passed": true,
@@ -1231,7 +1409,9 @@
           "total_turns": 10,
           "total_tool_calls": 21,
           "duration_seconds": 60.196,
-          "session_file": "sessions/copilot/gpt-5.6-luna/20260901_163846/dist_rwlock_exc_check_count_inductive/session.jsonl"
+          "session_file": "sessions/copilot/gpt-5.6-luna/20260901_163846/dist_rwlock_exc_check_count_inductive/session.jsonl",
+          "total_input_tokens": 239443,
+          "total_output_tokens": 2322
         },
         "dist_rwlock_initialize_inductive.rs": {
           "verus_passed": true,
@@ -1244,7 +1424,9 @@
           "total_turns": 11,
           "total_tool_calls": 24,
           "duration_seconds": 59.112,
-          "session_file": "sessions/copilot/gpt-5.6-luna/20260901_163846/dist_rwlock_initialize_inductive/session.jsonl"
+          "session_file": "sessions/copilot/gpt-5.6-luna/20260901_163846/dist_rwlock_initialize_inductive/session.jsonl",
+          "total_input_tokens": 270685,
+          "total_output_tokens": 2044
         },
         "dist_rwlock_shared_finish_inductive.rs": {
           "verus_passed": true,
@@ -1257,7 +1439,9 @@
           "total_turns": 16,
           "total_tool_calls": 25,
           "duration_seconds": 82.853,
-          "session_file": "sessions/copilot/gpt-5.6-luna/20260901_163846/dist_rwlock_shared_finish_inductive/session.jsonl"
+          "session_file": "sessions/copilot/gpt-5.6-luna/20260901_163846/dist_rwlock_shared_finish_inductive/session.jsonl",
+          "total_input_tokens": 492991,
+          "total_output_tokens": 2950
         },
         "dist_rwlock_shared_release_inductive.rs": {
           "verus_passed": true,
@@ -1270,7 +1454,9 @@
           "total_turns": 14,
           "total_tool_calls": 25,
           "duration_seconds": 90.891,
-          "session_file": "sessions/copilot/gpt-5.6-luna/20260901_163846/dist_rwlock_shared_release_inductive/session.jsonl"
+          "session_file": "sessions/copilot/gpt-5.6-luna/20260901_163846/dist_rwlock_shared_release_inductive/session.jsonl",
+          "total_input_tokens": 429582,
+          "total_output_tokens": 3354
         },
         "fifo_consume_end_inductive.rs": {
           "verus_passed": true,
@@ -1283,7 +1469,9 @@
           "total_turns": 15,
           "total_tool_calls": 28,
           "duration_seconds": 76.485,
-          "session_file": "sessions/copilot/gpt-5.6-luna/20260901_163846/fifo_consume_end_inductive/session.jsonl"
+          "session_file": "sessions/copilot/gpt-5.6-luna/20260901_163846/fifo_consume_end_inductive/session.jsonl",
+          "total_input_tokens": 374988,
+          "total_output_tokens": 2837
         },
         "fifo_consume_start_inductive.rs": {
           "verus_passed": true,
@@ -1296,7 +1484,9 @@
           "total_turns": 8,
           "total_tool_calls": 19,
           "duration_seconds": 52.317,
-          "session_file": "sessions/copilot/gpt-5.6-luna/20260901_163846/fifo_consume_start_inductive/session.jsonl"
+          "session_file": "sessions/copilot/gpt-5.6-luna/20260901_163846/fifo_consume_start_inductive/session.jsonl",
+          "total_input_tokens": 235952,
+          "total_output_tokens": 2042
         },
         "fifo_dequeue.rs": {
           "verus_passed": true,
@@ -1309,7 +1499,9 @@
           "total_turns": 44,
           "total_tool_calls": 52,
           "duration_seconds": 244.121,
-          "session_file": "sessions/copilot/gpt-5.6-luna/20260901_163846/fifo_dequeue/session.jsonl"
+          "session_file": "sessions/copilot/gpt-5.6-luna/20260901_163846/fifo_dequeue/session.jsonl",
+          "total_input_tokens": 1552000,
+          "total_output_tokens": 8682
         },
         "fifo_enqueue.rs": {
           "verus_passed": true,
@@ -1322,7 +1514,9 @@
           "total_turns": 19,
           "total_tool_calls": 37,
           "duration_seconds": 94.194,
-          "session_file": "sessions/copilot/gpt-5.6-luna/20260901_163846/fifo_enqueue/session.jsonl"
+          "session_file": "sessions/copilot/gpt-5.6-luna/20260901_163846/fifo_enqueue/session.jsonl",
+          "total_input_tokens": 644767,
+          "total_output_tokens": 3110
         },
         "fifo_initialize_inductive.rs": {
           "verus_passed": true,
@@ -1335,7 +1529,9 @@
           "total_turns": 22,
           "total_tool_calls": 27,
           "duration_seconds": 123.363,
-          "session_file": "sessions/copilot/gpt-5.6-luna/20260901_163846/fifo_initialize_inductive/session.jsonl"
+          "session_file": "sessions/copilot/gpt-5.6-luna/20260901_163846/fifo_initialize_inductive/session.jsonl",
+          "total_input_tokens": 608620,
+          "total_output_tokens": 4487
         },
         "fifo_produce_end_inductive.rs": {
           "verus_passed": true,
@@ -1348,7 +1544,9 @@
           "total_turns": 9,
           "total_tool_calls": 21,
           "duration_seconds": 52.498,
-          "session_file": "sessions/copilot/gpt-5.6-luna/20260901_163846/fifo_produce_end_inductive/session.jsonl"
+          "session_file": "sessions/copilot/gpt-5.6-luna/20260901_163846/fifo_produce_end_inductive/session.jsonl",
+          "total_input_tokens": 242369,
+          "total_output_tokens": 2085
         },
         "fifo_produce_start_inductive.rs": {
           "verus_passed": true,
@@ -1361,7 +1559,9 @@
           "total_turns": 159,
           "total_tool_calls": 168,
           "duration_seconds": 807.643,
-          "session_file": "sessions/copilot/gpt-5.6-luna/20260901_163846/fifo_produce_start_inductive/session.jsonl"
+          "session_file": "sessions/copilot/gpt-5.6-luna/20260901_163846/fifo_produce_start_inductive/session.jsonl",
+          "total_input_tokens": 12069612,
+          "total_output_tokens": 24812
         },
         "flat_combine_client_recv_inductive.rs": {
           "verus_passed": true,
@@ -1374,7 +1574,9 @@
           "total_turns": 75,
           "total_tool_calls": 82,
           "duration_seconds": 389.492,
-          "session_file": "sessions/copilot/gpt-5.6-luna/20260901_163846/flat_combine_client_recv_inductive/session.jsonl"
+          "session_file": "sessions/copilot/gpt-5.6-luna/20260901_163846/flat_combine_client_recv_inductive/session.jsonl",
+          "total_input_tokens": 3905023,
+          "total_output_tokens": 13771
         },
         "flat_combine_client_send_inductive.rs": {
           "verus_passed": true,
@@ -1387,7 +1589,9 @@
           "total_turns": 33,
           "total_tool_calls": 41,
           "duration_seconds": 177.445,
-          "session_file": "sessions/copilot/gpt-5.6-luna/20260901_163846/flat_combine_client_send_inductive/session.jsonl"
+          "session_file": "sessions/copilot/gpt-5.6-luna/20260901_163846/flat_combine_client_send_inductive/session.jsonl",
+          "total_input_tokens": 972374,
+          "total_output_tokens": 6650
         },
         "flat_combine_combiner_go_to_collecting_inductive.rs": {
           "verus_passed": true,
@@ -1400,7 +1604,9 @@
           "total_turns": 18,
           "total_tool_calls": 30,
           "duration_seconds": 103.229,
-          "session_file": "sessions/copilot/gpt-5.6-luna/20260901_163846/flat_combine_combiner_go_to_collecting_inductive/session.jsonl"
+          "session_file": "sessions/copilot/gpt-5.6-luna/20260901_163846/flat_combine_combiner_go_to_collecting_inductive/session.jsonl",
+          "total_input_tokens": 468680,
+          "total_output_tokens": 4070
         },
         "flat_combine_combiner_go_to_responding_inductive.rs": {
           "verus_passed": true,
@@ -1413,7 +1619,9 @@
           "total_turns": 12,
           "total_tool_calls": 19,
           "duration_seconds": 81.581,
-          "session_file": "sessions/copilot/gpt-5.6-luna/20260901_163846/flat_combine_combiner_go_to_responding_inductive/session.jsonl"
+          "session_file": "sessions/copilot/gpt-5.6-luna/20260901_163846/flat_combine_combiner_go_to_responding_inductive/session.jsonl",
+          "total_input_tokens": 267188,
+          "total_output_tokens": 3267
         },
         "flat_combine_combiner_recv_inductive.rs": {
           "verus_passed": true,
@@ -1426,7 +1634,9 @@
           "total_turns": 12,
           "total_tool_calls": 19,
           "duration_seconds": 77.132,
-          "session_file": "sessions/copilot/gpt-5.6-luna/20260901_163846/flat_combine_combiner_recv_inductive/session.jsonl"
+          "session_file": "sessions/copilot/gpt-5.6-luna/20260901_163846/flat_combine_combiner_recv_inductive/session.jsonl",
+          "total_input_tokens": 278915,
+          "total_output_tokens": 2948
         },
         "flat_combine_combiner_send_inductive.rs": {
           "verus_passed": true,
@@ -1439,7 +1649,9 @@
           "total_turns": 24,
           "total_tool_calls": 37,
           "duration_seconds": 209.78,
-          "session_file": "sessions/copilot/gpt-5.6-luna/20260901_163846/flat_combine_combiner_send_inductive/session.jsonl"
+          "session_file": "sessions/copilot/gpt-5.6-luna/20260901_163846/flat_combine_combiner_send_inductive/session.jsonl",
+          "total_input_tokens": 817900,
+          "total_output_tokens": 8925
         },
         "flat_combine_combiner_send_skip_inductive.rs": {
           "verus_passed": true,
@@ -1452,7 +1664,9 @@
           "total_turns": 27,
           "total_tool_calls": 44,
           "duration_seconds": 177.596,
-          "session_file": "sessions/copilot/gpt-5.6-luna/20260901_163846/flat_combine_combiner_send_skip_inductive/session.jsonl"
+          "session_file": "sessions/copilot/gpt-5.6-luna/20260901_163846/flat_combine_combiner_send_skip_inductive/session.jsonl",
+          "total_input_tokens": 764135,
+          "total_output_tokens": 6728
         },
         "flat_combine_combiner_skip_inductive.rs": {
           "verus_passed": true,
@@ -1465,7 +1679,9 @@
           "total_turns": 21,
           "total_tool_calls": 31,
           "duration_seconds": 130.001,
-          "session_file": "sessions/copilot/gpt-5.6-luna/20260901_163846/flat_combine_combiner_skip_inductive/session.jsonl"
+          "session_file": "sessions/copilot/gpt-5.6-luna/20260901_163846/flat_combine_combiner_skip_inductive/session.jsonl",
+          "total_input_tokens": 585431,
+          "total_output_tokens": 5083
         },
         "free_free.rs": {
           "verus_passed": true,
@@ -1478,7 +1694,9 @@
           "total_turns": 57,
           "total_tool_calls": 78,
           "duration_seconds": 345.068,
-          "session_file": "sessions/copilot/gpt-5.6-luna/20260901_163846/free_free/session.jsonl"
+          "session_file": "sessions/copilot/gpt-5.6-luna/20260901_163846/free_free/session.jsonl",
+          "total_input_tokens": 3524887,
+          "total_output_tokens": 13005
         },
         "free_free_block_mt.rs": {
           "verus_passed": false,
@@ -1491,7 +1709,9 @@
           "total_turns": 111,
           "total_tool_calls": 137,
           "duration_seconds": 1169.214,
-          "session_file": "sessions/copilot/gpt-5.6-luna/20260901_163846/free_free_block_mt/session.jsonl"
+          "session_file": "sessions/copilot/gpt-5.6-luna/20260901_163846/free_free_block_mt/session.jsonl",
+          "total_input_tokens": 6753958,
+          "total_output_tokens": 20752
         },
         "helping_try_cancel_two_flips.rs": {
           "verus_passed": true,
@@ -1504,7 +1724,9 @@
           "total_turns": 12,
           "total_tool_calls": 24,
           "duration_seconds": 81.687,
-          "session_file": "sessions/copilot/gpt-5.6-luna/20260901_163846/helping_try_cancel_two_flips/session.jsonl"
+          "session_file": "sessions/copilot/gpt-5.6-luna/20260901_163846/helping_try_cancel_two_flips/session.jsonl",
+          "total_input_tokens": 359328,
+          "total_output_tokens": 3376
         },
         "helping_try_handshake.rs": {
           "verus_passed": false,
@@ -1517,7 +1739,9 @@
           "total_turns": 116,
           "total_tool_calls": 142,
           "duration_seconds": 1176.654,
-          "session_file": "sessions/copilot/gpt-5.6-luna/20260901_163846/helping_try_handshake/session.jsonl"
+          "session_file": "sessions/copilot/gpt-5.6-luna/20260901_163846/helping_try_handshake/session.jsonl",
+          "total_input_tokens": 5940302,
+          "total_output_tokens": 44850
         },
         "helping_try_simple_flip.rs": {
           "verus_passed": true,
@@ -1530,7 +1754,9 @@
           "total_turns": 15,
           "total_tool_calls": 32,
           "duration_seconds": 76.853,
-          "session_file": "sessions/copilot/gpt-5.6-luna/20260901_163846/helping_try_simple_flip/session.jsonl"
+          "session_file": "sessions/copilot/gpt-5.6-luna/20260901_163846/helping_try_simple_flip/session.jsonl",
+          "total_input_tokens": 401683,
+          "total_output_tokens": 3012
         },
         "linked_list_atomic_insert_block.rs": {
           "verus_passed": true,
@@ -1543,7 +1769,9 @@
           "total_turns": 70,
           "total_tool_calls": 111,
           "duration_seconds": 584.573,
-          "session_file": "sessions/copilot/gpt-5.6-luna/20260901_163846/linked_list_atomic_insert_block/session.jsonl"
+          "session_file": "sessions/copilot/gpt-5.6-luna/20260901_163846/linked_list_atomic_insert_block/session.jsonl",
+          "total_input_tokens": 3905740,
+          "total_output_tokens": 24244
         },
         "linked_list_check_is_good.rs": {
           "verus_passed": false,
@@ -1556,7 +1784,9 @@
           "total_turns": 103,
           "total_tool_calls": 128,
           "duration_seconds": 1171.688,
-          "session_file": "sessions/copilot/gpt-5.6-luna/20260901_163846/linked_list_check_is_good/session.jsonl"
+          "session_file": "sessions/copilot/gpt-5.6-luna/20260901_163846/linked_list_check_is_good/session.jsonl",
+          "total_input_tokens": 9799071,
+          "total_output_tokens": 28621
         },
         "linked_list_enable.rs": {
           "verus_passed": true,
@@ -1569,7 +1799,9 @@
           "total_turns": 22,
           "total_tool_calls": 55,
           "duration_seconds": 114.768,
-          "session_file": "sessions/copilot/gpt-5.6-luna/20260901_163846/linked_list_enable/session.jsonl"
+          "session_file": "sessions/copilot/gpt-5.6-luna/20260901_163846/linked_list_enable/session.jsonl",
+          "total_input_tokens": 999257,
+          "total_output_tokens": 4177
         },
         "linked_list_take.rs": {
           "verus_passed": true,
@@ -1582,7 +1814,9 @@
           "total_turns": 18,
           "total_tool_calls": 31,
           "duration_seconds": 87.058,
-          "session_file": "sessions/copilot/gpt-5.6-luna/20260901_163846/linked_list_take/session.jsonl"
+          "session_file": "sessions/copilot/gpt-5.6-luna/20260901_163846/linked_list_take/session.jsonl",
+          "total_input_tokens": 536913,
+          "total_output_tokens": 3024
         },
         "linked_list_take_.rs": {
           "verus_passed": false,
@@ -1595,7 +1829,9 @@
           "total_turns": 61,
           "total_tool_calls": 84,
           "duration_seconds": 1164.447,
-          "session_file": "sessions/copilot/gpt-5.6-luna/20260901_163846/linked_list_take_/session.jsonl"
+          "session_file": "sessions/copilot/gpt-5.6-luna/20260901_163846/linked_list_take_/session.jsonl",
+          "total_input_tokens": 2792408,
+          "total_output_tokens": 9896
         },
         "linked_list_try_use_delayed_free.rs": {
           "verus_passed": false,
@@ -1608,7 +1844,9 @@
           "total_turns": 66,
           "total_tool_calls": 88,
           "duration_seconds": 1176.561,
-          "session_file": "sessions/copilot/gpt-5.6-luna/20260901_163846/linked_list_try_use_delayed_free/session.jsonl"
+          "session_file": "sessions/copilot/gpt-5.6-luna/20260901_163846/linked_list_try_use_delayed_free/session.jsonl",
+          "total_input_tokens": 3741252,
+          "total_output_tokens": 18396
         },
         "log_advance_head.rs": {
           "verus_passed": true,
@@ -1621,7 +1859,9 @@
           "total_turns": 20,
           "total_tool_calls": 40,
           "duration_seconds": 110.173,
-          "session_file": "sessions/copilot/gpt-5.6-luna/20260901_163846/log_advance_head/session.jsonl"
+          "session_file": "sessions/copilot/gpt-5.6-luna/20260901_163846/log_advance_head/session.jsonl",
+          "total_input_tokens": 913746,
+          "total_output_tokens": 3805
         },
         "log_append.rs": {
           "verus_passed": false,
@@ -1634,7 +1874,9 @@
           "total_turns": 122,
           "total_tool_calls": 140,
           "duration_seconds": 753.316,
-          "session_file": "sessions/copilot/gpt-5.6-luna/20260901_163846/log_append/session.jsonl"
+          "session_file": "sessions/copilot/gpt-5.6-luna/20260901_163846/log_append/session.jsonl",
+          "total_input_tokens": 8742413,
+          "total_output_tokens": 27023
         },
         "log_execute.rs": {
           "verus_passed": false,
@@ -1647,7 +1889,9 @@
           "total_turns": 143,
           "total_tool_calls": 164,
           "duration_seconds": 1174.542,
-          "session_file": "sessions/copilot/gpt-5.6-luna/20260901_163846/log_execute/session.jsonl"
+          "session_file": "sessions/copilot/gpt-5.6-luna/20260901_163846/log_execute/session.jsonl",
+          "total_input_tokens": 10666103,
+          "total_output_tokens": 26044
         },
         "log_find_min_local_version.rs": {
           "verus_passed": true,
@@ -1660,7 +1904,9 @@
           "total_turns": 18,
           "total_tool_calls": 35,
           "duration_seconds": 101.272,
-          "session_file": "sessions/copilot/gpt-5.6-luna/20260901_163846/log_find_min_local_version/session.jsonl"
+          "session_file": "sessions/copilot/gpt-5.6-luna/20260901_163846/log_find_min_local_version/session.jsonl",
+          "total_input_tokens": 554312,
+          "total_output_tokens": 3643
         },
         "log_is_replica_synced_for_reads.rs": {
           "verus_passed": true,
@@ -1673,7 +1919,9 @@
           "total_turns": 29,
           "total_tool_calls": 58,
           "duration_seconds": 163.842,
-          "session_file": "sessions/copilot/gpt-5.6-luna/20260901_163846/log_is_replica_synced_for_reads/session.jsonl"
+          "session_file": "sessions/copilot/gpt-5.6-luna/20260901_163846/log_is_replica_synced_for_reads/session.jsonl",
+          "total_input_tokens": 1320297,
+          "total_output_tokens": 5912
         },
         "once_get.rs": {
           "verus_passed": true,
@@ -1686,7 +1934,9 @@
           "total_turns": 20,
           "total_tool_calls": 29,
           "duration_seconds": 106.082,
-          "session_file": "sessions/copilot/gpt-5.6-luna/20260901_163846/once_get/session.jsonl"
+          "session_file": "sessions/copilot/gpt-5.6-luna/20260901_163846/once_get/session.jsonl",
+          "total_input_tokens": 453439,
+          "total_output_tokens": 3442
         },
         "once_init.rs": {
           "verus_passed": true,
@@ -1699,7 +1949,9 @@
           "total_turns": 15,
           "total_tool_calls": 27,
           "duration_seconds": 85.128,
-          "session_file": "sessions/copilot/gpt-5.6-luna/20260901_163846/once_init/session.jsonl"
+          "session_file": "sessions/copilot/gpt-5.6-luna/20260901_163846/once_init/session.jsonl",
+          "total_input_tokens": 467474,
+          "total_output_tokens": 3096
         },
         "replica_acquire_combiner_lock.rs": {
           "verus_passed": true,
@@ -1712,7 +1964,9 @@
           "total_turns": 41,
           "total_tool_calls": 58,
           "duration_seconds": 219.151,
-          "session_file": "sessions/copilot/gpt-5.6-luna/20260901_163846/replica_acquire_combiner_lock/session.jsonl"
+          "session_file": "sessions/copilot/gpt-5.6-luna/20260901_163846/replica_acquire_combiner_lock/session.jsonl",
+          "total_input_tokens": 1703325,
+          "total_output_tokens": 7825
         },
         "replica_collect_thread_ops.rs": {
           "verus_passed": true,
@@ -1725,7 +1979,9 @@
           "total_turns": 84,
           "total_tool_calls": 126,
           "duration_seconds": 409.237,
-          "session_file": "sessions/copilot/gpt-5.6-luna/20260901_163846/replica_collect_thread_ops/session.jsonl"
+          "session_file": "sessions/copilot/gpt-5.6-luna/20260901_163846/replica_collect_thread_ops/session.jsonl",
+          "total_input_tokens": 5490544,
+          "total_output_tokens": 13368
         },
         "replica_distribute_thread_resps.rs": {
           "verus_passed": true,
@@ -1738,7 +1994,9 @@
           "total_turns": 47,
           "total_tool_calls": 81,
           "duration_seconds": 267.64,
-          "session_file": "sessions/copilot/gpt-5.6-luna/20260901_163846/replica_distribute_thread_resps/session.jsonl"
+          "session_file": "sessions/copilot/gpt-5.6-luna/20260901_163846/replica_distribute_thread_resps/session.jsonl",
+          "total_input_tokens": 2529615,
+          "total_output_tokens": 9691
         },
         "replica_release_combiner_lock.rs": {
           "verus_passed": true,
@@ -1751,7 +2009,9 @@
           "total_turns": 21,
           "total_tool_calls": 40,
           "duration_seconds": 102.871,
-          "session_file": "sessions/copilot/gpt-5.6-luna/20260901_163846/replica_release_combiner_lock/session.jsonl"
+          "session_file": "sessions/copilot/gpt-5.6-luna/20260901_163846/replica_release_combiner_lock/session.jsonl",
+          "total_input_tokens": 830325,
+          "total_output_tokens": 3329
         },
         "rwlock_readguard_drop.rs": {
           "verus_passed": false,
@@ -1764,7 +2024,9 @@
           "total_turns": 168,
           "total_tool_calls": 209,
           "duration_seconds": 1171.759,
-          "session_file": "sessions/copilot/gpt-5.6-luna/20260901_163846/rwlock_readguard_drop/session.jsonl"
+          "session_file": "sessions/copilot/gpt-5.6-luna/20260901_163846/rwlock_readguard_drop/session.jsonl",
+          "total_input_tokens": 14321584,
+          "total_output_tokens": 32049
         },
         "rwlock_try_read.rs": {
           "verus_passed": false,
@@ -1777,7 +2039,9 @@
           "total_turns": 139,
           "total_tool_calls": 163,
           "duration_seconds": 1175.684,
-          "session_file": "sessions/copilot/gpt-5.6-luna/20260901_163846/rwlock_try_read/session.jsonl"
+          "session_file": "sessions/copilot/gpt-5.6-luna/20260901_163846/rwlock_try_read/session.jsonl",
+          "total_input_tokens": 12635949,
+          "total_output_tokens": 33435
         },
         "rwlock_try_upgrade.rs": {
           "verus_passed": false,
@@ -1790,7 +2054,9 @@
           "total_turns": 125,
           "total_tool_calls": 147,
           "duration_seconds": 1174.999,
-          "session_file": "sessions/copilot/gpt-5.6-luna/20260901_163846/rwlock_try_upgrade/session.jsonl"
+          "session_file": "sessions/copilot/gpt-5.6-luna/20260901_163846/rwlock_try_upgrade/session.jsonl",
+          "total_input_tokens": 10985456,
+          "total_output_tokens": 39945
         },
         "rwlock_try_upread.rs": {
           "verus_passed": false,
@@ -1803,7 +2069,9 @@
           "total_turns": 137,
           "total_tool_calls": 156,
           "duration_seconds": 1176.672,
-          "session_file": "sessions/copilot/gpt-5.6-luna/20260901_163846/rwlock_try_upread/session.jsonl"
+          "session_file": "sessions/copilot/gpt-5.6-luna/20260901_163846/rwlock_try_upread/session.jsonl",
+          "total_input_tokens": 12427192,
+          "total_output_tokens": 36079
         },
         "rwlock_try_write.rs": {
           "verus_passed": true,
@@ -1816,7 +2084,9 @@
           "total_turns": 34,
           "total_tool_calls": 54,
           "duration_seconds": 200.436,
-          "session_file": "sessions/copilot/gpt-5.6-luna/20260901_163846/rwlock_try_write/session.jsonl"
+          "session_file": "sessions/copilot/gpt-5.6-luna/20260901_163846/rwlock_try_write/session.jsonl",
+          "total_input_tokens": 1690001,
+          "total_output_tokens": 7725
         },
         "rwlock_upgradableguard_drop.rs": {
           "verus_passed": false,
@@ -1829,7 +2099,9 @@
           "total_turns": 144,
           "total_tool_calls": 176,
           "duration_seconds": 835.855,
-          "session_file": "sessions/copilot/gpt-5.6-luna/20260901_163846/rwlock_upgradableguard_drop/session.jsonl"
+          "session_file": "sessions/copilot/gpt-5.6-luna/20260901_163846/rwlock_upgradableguard_drop/session.jsonl",
+          "total_input_tokens": 8623012,
+          "total_output_tokens": 28905
         },
         "rwlock_writeguard_drop.rs": {
           "verus_passed": false,
@@ -1842,7 +2114,9 @@
           "total_turns": 124,
           "total_tool_calls": 145,
           "duration_seconds": 949.027,
-          "session_file": "sessions/copilot/gpt-5.6-luna/20260901_163846/rwlock_writeguard_drop/session.jsonl"
+          "session_file": "sessions/copilot/gpt-5.6-luna/20260901_163846/rwlock_writeguard_drop/session.jsonl",
+          "total_input_tokens": 8748806,
+          "total_output_tokens": 38211
         },
         "statics_get.rs": {
           "verus_passed": true,
@@ -1855,7 +2129,9 @@
           "total_turns": 31,
           "total_tool_calls": 44,
           "duration_seconds": 168.659,
-          "session_file": "sessions/copilot/gpt-5.6-luna/20260901_163846/statics_get/session.jsonl"
+          "session_file": "sessions/copilot/gpt-5.6-luna/20260901_163846/statics_get/session.jsonl",
+          "total_input_tokens": 1028442,
+          "total_output_tokens": 6103
         },
         "tokens_page_destroy_block_tokens_inductive.rs": {
           "verus_passed": true,
@@ -1868,7 +2144,9 @@
           "total_turns": 18,
           "total_tool_calls": 35,
           "duration_seconds": 95.982,
-          "session_file": "sessions/copilot/gpt-5.6-luna/20260901_163846/tokens_page_destroy_block_tokens_inductive/session.jsonl"
+          "session_file": "sessions/copilot/gpt-5.6-luna/20260901_163846/tokens_page_destroy_block_tokens_inductive/session.jsonl",
+          "total_input_tokens": 675913,
+          "total_output_tokens": 3573
         },
         "tokens_page_mk_block_tokens_inductive.rs": {
           "verus_passed": true,
@@ -1881,7 +2159,9 @@
           "total_turns": 33,
           "total_tool_calls": 46,
           "duration_seconds": 150.735,
-          "session_file": "sessions/copilot/gpt-5.6-luna/20260901_163846/tokens_page_mk_block_tokens_inductive/session.jsonl"
+          "session_file": "sessions/copilot/gpt-5.6-luna/20260901_163846/tokens_page_mk_block_tokens_inductive/session.jsonl",
+          "total_input_tokens": 1384207,
+          "total_output_tokens": 5177
         },
         "tokens_reserve_uniq_identifier_inductive.rs": {
           "verus_passed": true,
@@ -1894,7 +2174,9 @@
           "total_turns": 24,
           "total_tool_calls": 38,
           "duration_seconds": 146.473,
-          "session_file": "sessions/copilot/gpt-5.6-luna/20260901_163846/tokens_reserve_uniq_identifier_inductive/session.jsonl"
+          "session_file": "sessions/copilot/gpt-5.6-luna/20260901_163846/tokens_reserve_uniq_identifier_inductive/session.jsonl",
+          "total_input_tokens": 1030688,
+          "total_output_tokens": 5683
         },
         "types_disable.rs": {
           "verus_passed": true,
@@ -1907,7 +2189,9 @@
           "total_turns": 14,
           "total_tool_calls": 34,
           "duration_seconds": 75.962,
-          "session_file": "sessions/copilot/gpt-5.6-luna/20260901_163846/types_disable/session.jsonl"
+          "session_file": "sessions/copilot/gpt-5.6-luna/20260901_163846/types_disable/session.jsonl",
+          "total_input_tokens": 451215,
+          "total_output_tokens": 2858
         },
         "types_get_heap.rs": {
           "verus_passed": true,
@@ -1920,7 +2204,9 @@
           "total_turns": 81,
           "total_tool_calls": 108,
           "duration_seconds": 1153.154,
-          "session_file": "sessions/copilot/gpt-5.6-luna/20260901_163846/types_get_heap/session.jsonl"
+          "session_file": "sessions/copilot/gpt-5.6-luna/20260901_163846/types_get_heap/session.jsonl",
+          "total_input_tokens": 5980889,
+          "total_output_tokens": 22580
         },
         "unbounded_log_exec_dispatch_local_inductive.rs": {
           "verus_passed": true,
@@ -1933,7 +2219,9 @@
           "total_turns": 56,
           "total_tool_calls": 66,
           "duration_seconds": 382.448,
-          "session_file": "sessions/copilot/gpt-5.6-luna/20260901_163846/unbounded_log_exec_dispatch_local_inductive/session.jsonl"
+          "session_file": "sessions/copilot/gpt-5.6-luna/20260901_163846/unbounded_log_exec_dispatch_local_inductive/session.jsonl",
+          "total_input_tokens": 2677775,
+          "total_output_tokens": 13684
         },
         "unbounded_log_exec_trivial_start_inductive.rs": {
           "verus_passed": true,
@@ -1946,7 +2234,9 @@
           "total_turns": 22,
           "total_tool_calls": 33,
           "duration_seconds": 156.563,
-          "session_file": "sessions/copilot/gpt-5.6-luna/20260901_163846/unbounded_log_exec_trivial_start_inductive/session.jsonl"
+          "session_file": "sessions/copilot/gpt-5.6-luna/20260901_163846/unbounded_log_exec_trivial_start_inductive/session.jsonl",
+          "total_input_tokens": 822966,
+          "total_output_tokens": 6357
         },
         "unbounded_log_exec_update_version_upper_bound_inductive.rs": {
           "verus_passed": true,
@@ -1959,7 +2249,9 @@
           "total_turns": 11,
           "total_tool_calls": 22,
           "duration_seconds": 63.337,
-          "session_file": "sessions/copilot/gpt-5.6-luna/20260901_163846/unbounded_log_exec_update_version_upper_bound_inductive/session.jsonl"
+          "session_file": "sessions/copilot/gpt-5.6-luna/20260901_163846/unbounded_log_exec_update_version_upper_bound_inductive/session.jsonl",
+          "total_input_tokens": 360743,
+          "total_output_tokens": 2450
         },
         "unbounded_log_readonly_apply_inductive.rs": {
           "verus_passed": true,
@@ -1972,7 +2264,9 @@
           "total_turns": 13,
           "total_tool_calls": 26,
           "duration_seconds": 75.643,
-          "session_file": "sessions/copilot/gpt-5.6-luna/20260901_163846/unbounded_log_readonly_apply_inductive/session.jsonl"
+          "session_file": "sessions/copilot/gpt-5.6-luna/20260901_163846/unbounded_log_readonly_apply_inductive/session.jsonl",
+          "total_input_tokens": 468382,
+          "total_output_tokens": 2774
         },
         "unbounded_log_update_done_inductive.rs": {
           "verus_passed": true,
@@ -1985,7 +2279,9 @@
           "total_turns": 49,
           "total_tool_calls": 59,
           "duration_seconds": 381.812,
-          "session_file": "sessions/copilot/gpt-5.6-luna/20260901_163846/unbounded_log_update_done_inductive/session.jsonl"
+          "session_file": "sessions/copilot/gpt-5.6-luna/20260901_163846/unbounded_log_update_done_inductive/session.jsonl",
+          "total_input_tokens": 2889320,
+          "total_output_tokens": 14753
         },
         "unbounded_log_update_place_ops_in_log_one_inductive.rs": {
           "verus_passed": false,
@@ -1998,7 +2294,9 @@
           "total_turns": 164,
           "total_tool_calls": 173,
           "duration_seconds": 1177.241,
-          "session_file": "sessions/copilot/gpt-5.6-luna/20260901_163846/unbounded_log_update_place_ops_in_log_one_inductive/session.jsonl"
+          "session_file": "sessions/copilot/gpt-5.6-luna/20260901_163846/unbounded_log_update_place_ops_in_log_one_inductive/session.jsonl",
+          "total_input_tokens": 11382494,
+          "total_output_tokens": 29471
         },
         "wait.rs": {
           "verus_passed": true,
@@ -2011,7 +2309,9 @@
           "total_turns": 11,
           "total_tool_calls": 25,
           "duration_seconds": 65.177,
-          "session_file": "sessions/copilot/gpt-5.6-luna/20260901_163846/wait/session.jsonl"
+          "session_file": "sessions/copilot/gpt-5.6-luna/20260901_163846/wait/session.jsonl",
+          "total_input_tokens": 297261,
+          "total_output_tokens": 2410
         }
       }
     },
@@ -2028,7 +2328,9 @@
           "total_turns": 24,
           "total_tool_calls": 37,
           "duration_seconds": 214.296,
-          "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/context_dequeue_response/session.jsonl"
+          "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/context_dequeue_response/session.jsonl",
+          "total_input_tokens": 1324998,
+          "total_output_tokens": 2661
         },
         "context_enqueue_op.rs": {
           "verus_passed": true,
@@ -2041,7 +2343,9 @@
           "total_turns": 22,
           "total_tool_calls": 34,
           "duration_seconds": 177.715,
-          "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/context_enqueue_op/session.jsonl"
+          "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/context_enqueue_op/session.jsonl",
+          "total_input_tokens": 1273078,
+          "total_output_tokens": 2500
         },
         "count_to_two_read_x.rs": {
           "verus_passed": true,
@@ -2054,7 +2358,9 @@
           "total_turns": 16,
           "total_tool_calls": 26,
           "duration_seconds": 92.237,
-          "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/count_to_two_read_x/session.jsonl"
+          "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/count_to_two_read_x/session.jsonl",
+          "total_input_tokens": 243513,
+          "total_output_tokens": 1735
         },
         "count_to_two_thread_routine.rs": {
           "verus_passed": true,
@@ -2067,7 +2373,9 @@
           "total_turns": 15,
           "total_tool_calls": 29,
           "duration_seconds": 97.79,
-          "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/count_to_two_thread_routine/session.jsonl"
+          "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/count_to_two_thread_routine/session.jsonl",
+          "total_input_tokens": 224869,
+          "total_output_tokens": 1903
         },
         "cuckoo_delete.rs": {
           "verus_passed": true,
@@ -2080,7 +2388,9 @@
           "total_turns": 20,
           "total_tool_calls": 29,
           "duration_seconds": 175.552,
-          "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/cuckoo_delete/session.jsonl"
+          "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/cuckoo_delete/session.jsonl",
+          "total_input_tokens": 662229,
+          "total_output_tokens": 2554
         },
         "cuckoo_inductive.rs": {
           "verus_passed": true,
@@ -2093,7 +2403,9 @@
           "total_turns": 45,
           "total_tool_calls": 55,
           "duration_seconds": 375.698,
-          "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/cuckoo_inductive/session.jsonl"
+          "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/cuckoo_inductive/session.jsonl",
+          "total_input_tokens": 2375784,
+          "total_output_tokens": 5690
         },
         "cuckoo_insert.rs": {
           "verus_passed": true,
@@ -2106,7 +2418,9 @@
           "total_turns": 16,
           "total_tool_calls": 24,
           "duration_seconds": 129.357,
-          "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/cuckoo_insert/session.jsonl"
+          "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/cuckoo_insert/session.jsonl",
+          "total_input_tokens": 460438,
+          "total_output_tokens": 2925
         },
         "cuckoo_read.rs": {
           "verus_passed": true,
@@ -2119,7 +2433,9 @@
           "total_turns": 26,
           "total_tool_calls": 35,
           "duration_seconds": 263.776,
-          "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/cuckoo_read/session.jsonl"
+          "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/cuckoo_read/session.jsonl",
+          "total_input_tokens": 985145,
+          "total_output_tokens": 2855
         },
         "cyclicbuffer_advance_head_finish_inductive.rs": {
           "verus_passed": true,
@@ -2132,7 +2448,9 @@
           "total_turns": 14,
           "total_tool_calls": 24,
           "duration_seconds": 98.889,
-          "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/cyclicbuffer_advance_head_finish_inductive/session.jsonl"
+          "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/cyclicbuffer_advance_head_finish_inductive/session.jsonl",
+          "total_input_tokens": 201734,
+          "total_output_tokens": 1841
         },
         "cyclicbuffer_advance_tail_finish_inductive.rs": {
           "verus_passed": true,
@@ -2145,7 +2463,9 @@
           "total_turns": 22,
           "total_tool_calls": 33,
           "duration_seconds": 198.774,
-          "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/cyclicbuffer_advance_tail_finish_inductive/session.jsonl"
+          "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/cyclicbuffer_advance_tail_finish_inductive/session.jsonl",
+          "total_input_tokens": 389787,
+          "total_output_tokens": 3429
         },
         "cyclicbuffer_advance_tail_start_inductive.rs": {
           "verus_passed": true,
@@ -2158,7 +2478,9 @@
           "total_turns": 15,
           "total_tool_calls": 24,
           "duration_seconds": 112.537,
-          "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/cyclicbuffer_advance_tail_start_inductive/session.jsonl"
+          "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/cyclicbuffer_advance_tail_start_inductive/session.jsonl",
+          "total_input_tokens": 249029,
+          "total_output_tokens": 1974
         },
         "cyclicbuffer_append_flip_bit_inductive.rs": {
           "verus_passed": true,
@@ -2171,7 +2493,9 @@
           "total_turns": 72,
           "total_tool_calls": 75,
           "duration_seconds": 621.197,
-          "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/cyclicbuffer_append_flip_bit_inductive/session.jsonl"
+          "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/cyclicbuffer_append_flip_bit_inductive/session.jsonl",
+          "total_input_tokens": 2671515,
+          "total_output_tokens": 11030
         },
         "cyclicbuffer_reader_finish_inductive.rs": {
           "verus_passed": true,
@@ -2184,7 +2508,9 @@
           "total_turns": 40,
           "total_tool_calls": 49,
           "duration_seconds": 369.257,
-          "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/cyclicbuffer_reader_finish_inductive/session.jsonl"
+          "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/cyclicbuffer_reader_finish_inductive/session.jsonl",
+          "total_input_tokens": 1197866,
+          "total_output_tokens": 6598
         },
         "cyclicbuffer_reader_guard_inductive.rs": {
           "verus_passed": true,
@@ -2197,7 +2523,9 @@
           "total_turns": 29,
           "total_tool_calls": 39,
           "duration_seconds": 236.186,
-          "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/cyclicbuffer_reader_guard_inductive/session.jsonl"
+          "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/cyclicbuffer_reader_guard_inductive/session.jsonl",
+          "total_input_tokens": 709626,
+          "total_output_tokens": 5075
         },
         "dist_rwlock_exc_check_count_inductive.rs": {
           "verus_passed": true,
@@ -2210,7 +2538,9 @@
           "total_turns": 16,
           "total_tool_calls": 23,
           "duration_seconds": 97.604,
-          "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/dist_rwlock_exc_check_count_inductive/session.jsonl"
+          "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/dist_rwlock_exc_check_count_inductive/session.jsonl",
+          "total_input_tokens": 201562,
+          "total_output_tokens": 1818
         },
         "dist_rwlock_initialize_inductive.rs": {
           "verus_passed": true,
@@ -2223,7 +2553,9 @@
           "total_turns": 27,
           "total_tool_calls": 39,
           "duration_seconds": 230.903,
-          "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/dist_rwlock_initialize_inductive/session.jsonl"
+          "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/dist_rwlock_initialize_inductive/session.jsonl",
+          "total_input_tokens": 509886,
+          "total_output_tokens": 6070
         },
         "dist_rwlock_shared_finish_inductive.rs": {
           "verus_passed": true,
@@ -2236,7 +2568,9 @@
           "total_turns": 27,
           "total_tool_calls": 34,
           "duration_seconds": 165.304,
-          "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/dist_rwlock_shared_finish_inductive/session.jsonl"
+          "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/dist_rwlock_shared_finish_inductive/session.jsonl",
+          "total_input_tokens": 439947,
+          "total_output_tokens": 3435
         },
         "dist_rwlock_shared_release_inductive.rs": {
           "verus_passed": true,
@@ -2249,7 +2583,9 @@
           "total_turns": 20,
           "total_tool_calls": 34,
           "duration_seconds": 136.676,
-          "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/dist_rwlock_shared_release_inductive/session.jsonl"
+          "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/dist_rwlock_shared_release_inductive/session.jsonl",
+          "total_input_tokens": 410098,
+          "total_output_tokens": 2835
         },
         "fifo_consume_end_inductive.rs": {
           "verus_passed": true,
@@ -2262,7 +2598,9 @@
           "total_turns": 33,
           "total_tool_calls": 41,
           "duration_seconds": 208.304,
-          "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/fifo_consume_end_inductive/session.jsonl"
+          "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/fifo_consume_end_inductive/session.jsonl",
+          "total_input_tokens": 846050,
+          "total_output_tokens": 3871
         },
         "fifo_consume_start_inductive.rs": {
           "verus_passed": true,
@@ -2275,7 +2613,9 @@
           "total_turns": 38,
           "total_tool_calls": 52,
           "duration_seconds": 276.727,
-          "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/fifo_consume_start_inductive/session.jsonl"
+          "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/fifo_consume_start_inductive/session.jsonl",
+          "total_input_tokens": 1086780,
+          "total_output_tokens": 4658
         },
         "fifo_dequeue.rs": {
           "verus_passed": true,
@@ -2288,7 +2628,9 @@
           "total_turns": 49,
           "total_tool_calls": 66,
           "duration_seconds": 310.995,
-          "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/fifo_dequeue/session.jsonl"
+          "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/fifo_dequeue/session.jsonl",
+          "total_input_tokens": 2576339,
+          "total_output_tokens": 4397
         },
         "fifo_enqueue.rs": {
           "verus_passed": true,
@@ -2301,7 +2643,9 @@
           "total_turns": 56,
           "total_tool_calls": 72,
           "duration_seconds": 340.342,
-          "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/fifo_enqueue/session.jsonl"
+          "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/fifo_enqueue/session.jsonl",
+          "total_input_tokens": 2346535,
+          "total_output_tokens": 4020
         },
         "fifo_initialize_inductive.rs": {
           "verus_passed": true,
@@ -2314,7 +2658,9 @@
           "total_turns": 17,
           "total_tool_calls": 28,
           "duration_seconds": 102.538,
-          "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/fifo_initialize_inductive/session.jsonl"
+          "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/fifo_initialize_inductive/session.jsonl",
+          "total_input_tokens": 289827,
+          "total_output_tokens": 1768
         },
         "fifo_produce_end_inductive.rs": {
           "verus_passed": true,
@@ -2327,7 +2673,9 @@
           "total_turns": 14,
           "total_tool_calls": 24,
           "duration_seconds": 99.643,
-          "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/fifo_produce_end_inductive/session.jsonl"
+          "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/fifo_produce_end_inductive/session.jsonl",
+          "total_input_tokens": 229469,
+          "total_output_tokens": 1661
         },
         "fifo_produce_start_inductive.rs": {
           "verus_passed": true,
@@ -2340,7 +2688,9 @@
           "total_turns": 32,
           "total_tool_calls": 40,
           "duration_seconds": 177.655,
-          "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/fifo_produce_start_inductive/session.jsonl"
+          "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/fifo_produce_start_inductive/session.jsonl",
+          "total_input_tokens": 770273,
+          "total_output_tokens": 3029
         },
         "flat_combine_client_recv_inductive.rs": {
           "verus_passed": true,
@@ -2353,7 +2703,9 @@
           "total_turns": 29,
           "total_tool_calls": 34,
           "duration_seconds": 278.431,
-          "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/flat_combine_client_recv_inductive/session.jsonl"
+          "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/flat_combine_client_recv_inductive/session.jsonl",
+          "total_input_tokens": 650099,
+          "total_output_tokens": 7658
         },
         "flat_combine_client_send_inductive.rs": {
           "verus_passed": true,
@@ -2366,7 +2718,9 @@
           "total_turns": 25,
           "total_tool_calls": 36,
           "duration_seconds": 162.953,
-          "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/flat_combine_client_send_inductive/session.jsonl"
+          "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/flat_combine_client_send_inductive/session.jsonl",
+          "total_input_tokens": 580142,
+          "total_output_tokens": 3664
         },
         "flat_combine_combiner_go_to_collecting_inductive.rs": {
           "verus_passed": true,
@@ -2379,7 +2733,9 @@
           "total_turns": 20,
           "total_tool_calls": 28,
           "duration_seconds": 212.67,
-          "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/flat_combine_combiner_go_to_collecting_inductive/session.jsonl"
+          "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/flat_combine_combiner_go_to_collecting_inductive/session.jsonl",
+          "total_input_tokens": 352596,
+          "total_output_tokens": 6201
         },
         "flat_combine_combiner_go_to_responding_inductive.rs": {
           "verus_passed": true,
@@ -2392,7 +2748,9 @@
           "total_turns": 47,
           "total_tool_calls": 58,
           "duration_seconds": 342.226,
-          "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/flat_combine_combiner_go_to_responding_inductive/session.jsonl"
+          "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/flat_combine_combiner_go_to_responding_inductive/session.jsonl",
+          "total_input_tokens": 1916554,
+          "total_output_tokens": 7529
         },
         "flat_combine_combiner_recv_inductive.rs": {
           "verus_passed": true,
@@ -2405,7 +2763,9 @@
           "total_turns": 19,
           "total_tool_calls": 27,
           "duration_seconds": 170.061,
-          "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/flat_combine_combiner_recv_inductive/session.jsonl"
+          "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/flat_combine_combiner_recv_inductive/session.jsonl",
+          "total_input_tokens": 317069,
+          "total_output_tokens": 4496
         },
         "flat_combine_combiner_send_inductive.rs": {
           "verus_passed": true,
@@ -2418,7 +2778,9 @@
           "total_turns": 25,
           "total_tool_calls": 35,
           "duration_seconds": 264.44,
-          "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/flat_combine_combiner_send_inductive/session.jsonl"
+          "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/flat_combine_combiner_send_inductive/session.jsonl",
+          "total_input_tokens": 627817,
+          "total_output_tokens": 7867
         },
         "flat_combine_combiner_send_skip_inductive.rs": {
           "verus_passed": true,
@@ -2431,7 +2793,9 @@
           "total_turns": 26,
           "total_tool_calls": 39,
           "duration_seconds": 261.108,
-          "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/flat_combine_combiner_send_skip_inductive/session.jsonl"
+          "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/flat_combine_combiner_send_skip_inductive/session.jsonl",
+          "total_input_tokens": 572899,
+          "total_output_tokens": 7174
         },
         "flat_combine_combiner_skip_inductive.rs": {
           "verus_passed": true,
@@ -2444,7 +2808,9 @@
           "total_turns": 40,
           "total_tool_calls": 55,
           "duration_seconds": 325.744,
-          "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/flat_combine_combiner_skip_inductive/session.jsonl"
+          "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/flat_combine_combiner_skip_inductive/session.jsonl",
+          "total_input_tokens": 1134374,
+          "total_output_tokens": 6790
         },
         "free_free.rs": {
           "verus_passed": true,
@@ -2457,7 +2823,9 @@
           "total_turns": 35,
           "total_tool_calls": 45,
           "duration_seconds": 400.231,
-          "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/free_free/session.jsonl"
+          "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/free_free/session.jsonl",
+          "total_input_tokens": 2470042,
+          "total_output_tokens": 3154
         },
         "free_free_block_mt.rs": {
           "verus_passed": false,
@@ -2470,7 +2838,9 @@
           "total_turns": 94,
           "total_tool_calls": 97,
           "duration_seconds": 1046.869,
-          "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/free_free_block_mt/session.jsonl"
+          "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/free_free_block_mt/session.jsonl",
+          "total_input_tokens": 8011417,
+          "total_output_tokens": 6804
         },
         "helping_try_cancel_two_flips.rs": {
           "verus_passed": true,
@@ -2483,7 +2853,9 @@
           "total_turns": 25,
           "total_tool_calls": 33,
           "duration_seconds": 159.302,
-          "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/helping_try_cancel_two_flips/session.jsonl"
+          "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/helping_try_cancel_two_flips/session.jsonl",
+          "total_input_tokens": 654914,
+          "total_output_tokens": 2241
         },
         "helping_try_handshake.rs": {
           "verus_passed": false,
@@ -2496,7 +2868,9 @@
           "total_turns": 99,
           "total_tool_calls": 112,
           "duration_seconds": 743.75,
-          "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/helping_try_handshake/session.jsonl"
+          "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/helping_try_handshake/session.jsonl",
+          "total_input_tokens": 4409158,
+          "total_output_tokens": 9214
         },
         "helping_try_simple_flip.rs": {
           "verus_passed": true,
@@ -2509,7 +2883,9 @@
           "total_turns": 21,
           "total_tool_calls": 37,
           "duration_seconds": 127.733,
-          "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/helping_try_simple_flip/session.jsonl"
+          "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/helping_try_simple_flip/session.jsonl",
+          "total_input_tokens": 426004,
+          "total_output_tokens": 2239
         },
         "linked_list_atomic_insert_block.rs": {
           "verus_passed": true,
@@ -2522,7 +2898,9 @@
           "total_turns": 43,
           "total_tool_calls": 53,
           "duration_seconds": 503.689,
-          "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/linked_list_atomic_insert_block/session.jsonl"
+          "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/linked_list_atomic_insert_block/session.jsonl",
+          "total_input_tokens": 4684393,
+          "total_output_tokens": 3975
         },
         "linked_list_check_is_good.rs": {
           "verus_passed": true,
@@ -2535,7 +2913,9 @@
           "total_turns": 49,
           "total_tool_calls": 60,
           "duration_seconds": 412.863,
-          "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/linked_list_check_is_good/session.jsonl"
+          "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/linked_list_check_is_good/session.jsonl",
+          "total_input_tokens": 3344726,
+          "total_output_tokens": 3759
         },
         "linked_list_enable.rs": {
           "verus_passed": true,
@@ -2548,7 +2928,9 @@
           "total_turns": 18,
           "total_tool_calls": 38,
           "duration_seconds": 338.053,
-          "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/linked_list_enable/session.jsonl"
+          "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/linked_list_enable/session.jsonl",
+          "total_input_tokens": 1302781,
+          "total_output_tokens": 2276
         },
         "linked_list_take.rs": {
           "verus_passed": true,
@@ -2561,7 +2943,9 @@
           "total_turns": 22,
           "total_tool_calls": 34,
           "duration_seconds": 302.758,
-          "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/linked_list_take/session.jsonl"
+          "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/linked_list_take/session.jsonl",
+          "total_input_tokens": 1195367,
+          "total_output_tokens": 2156
         },
         "linked_list_take_.rs": {
           "verus_passed": false,
@@ -2574,7 +2958,9 @@
           "total_turns": 99,
           "total_tool_calls": 106,
           "duration_seconds": 1181.659,
-          "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/linked_list_take_/session.jsonl"
+          "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/linked_list_take_/session.jsonl",
+          "total_input_tokens": 9376245,
+          "total_output_tokens": 10269
         },
         "linked_list_try_use_delayed_free.rs": {
           "verus_passed": true,
@@ -2587,7 +2973,9 @@
           "total_turns": 23,
           "total_tool_calls": 31,
           "duration_seconds": 243.461,
-          "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/linked_list_try_use_delayed_free/session.jsonl"
+          "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/linked_list_try_use_delayed_free/session.jsonl",
+          "total_input_tokens": 1297806,
+          "total_output_tokens": 2283
         },
         "log_advance_head.rs": {
           "verus_passed": true,
@@ -2600,7 +2988,9 @@
           "total_turns": 19,
           "total_tool_calls": 27,
           "duration_seconds": 152.512,
-          "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/log_advance_head/session.jsonl"
+          "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/log_advance_head/session.jsonl",
+          "total_input_tokens": 1191199,
+          "total_output_tokens": 1859
         },
         "log_append.rs": {
           "verus_passed": false,
@@ -2613,7 +3003,9 @@
           "total_turns": 70,
           "total_tool_calls": 76,
           "duration_seconds": 817.926,
-          "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/log_append/session.jsonl"
+          "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/log_append/session.jsonl",
+          "total_input_tokens": 8104776,
+          "total_output_tokens": 6331
         },
         "log_execute.rs": {
           "verus_passed": true,
@@ -2626,7 +3018,9 @@
           "total_turns": 88,
           "total_tool_calls": 104,
           "duration_seconds": 894.182,
-          "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/log_execute/session.jsonl"
+          "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/log_execute/session.jsonl",
+          "total_input_tokens": 11618885,
+          "total_output_tokens": 9633
         },
         "log_find_min_local_version.rs": {
           "verus_passed": true,
@@ -2639,7 +3033,9 @@
           "total_turns": 18,
           "total_tool_calls": 24,
           "duration_seconds": 149.845,
-          "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/log_find_min_local_version/session.jsonl"
+          "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/log_find_min_local_version/session.jsonl",
+          "total_input_tokens": 818756,
+          "total_output_tokens": 1568
         },
         "log_is_replica_synced_for_reads.rs": {
           "verus_passed": true,
@@ -2652,7 +3048,9 @@
           "total_turns": 27,
           "total_tool_calls": 38,
           "duration_seconds": 242.618,
-          "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/log_is_replica_synced_for_reads/session.jsonl"
+          "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/log_is_replica_synced_for_reads/session.jsonl",
+          "total_input_tokens": 1749319,
+          "total_output_tokens": 2743
         },
         "once_get.rs": {
           "verus_passed": true,
@@ -2665,7 +3063,9 @@
           "total_turns": 20,
           "total_tool_calls": 34,
           "duration_seconds": 194.625,
-          "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/once_get/session.jsonl"
+          "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/once_get/session.jsonl",
+          "total_input_tokens": 459309,
+          "total_output_tokens": 4057
         },
         "once_init.rs": {
           "verus_passed": true,
@@ -2678,7 +3078,9 @@
           "total_turns": 38,
           "total_tool_calls": 51,
           "duration_seconds": 273.079,
-          "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/once_init/session.jsonl"
+          "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/once_init/session.jsonl",
+          "total_input_tokens": 1075573,
+          "total_output_tokens": 5338
         },
         "replica_acquire_combiner_lock.rs": {
           "verus_passed": true,
@@ -2691,7 +3093,9 @@
           "total_turns": 19,
           "total_tool_calls": 31,
           "duration_seconds": 159.461,
-          "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/replica_acquire_combiner_lock/session.jsonl"
+          "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/replica_acquire_combiner_lock/session.jsonl",
+          "total_input_tokens": 997036,
+          "total_output_tokens": 2043
         },
         "replica_collect_thread_ops.rs": {
           "verus_passed": true,
@@ -2704,7 +3108,9 @@
           "total_turns": 44,
           "total_tool_calls": 53,
           "duration_seconds": 422.707,
-          "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/replica_collect_thread_ops/session.jsonl"
+          "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/replica_collect_thread_ops/session.jsonl",
+          "total_input_tokens": 3905298,
+          "total_output_tokens": 4134
         },
         "replica_distribute_thread_resps.rs": {
           "verus_passed": true,
@@ -2717,7 +3123,9 @@
           "total_turns": 31,
           "total_tool_calls": 37,
           "duration_seconds": 233.935,
-          "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/replica_distribute_thread_resps/session.jsonl"
+          "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/replica_distribute_thread_resps/session.jsonl",
+          "total_input_tokens": 2021227,
+          "total_output_tokens": 3013
         },
         "replica_release_combiner_lock.rs": {
           "verus_passed": true,
@@ -2730,7 +3138,9 @@
           "total_turns": 13,
           "total_tool_calls": 22,
           "duration_seconds": 121.158,
-          "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/replica_release_combiner_lock/session.jsonl"
+          "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/replica_release_combiner_lock/session.jsonl",
+          "total_input_tokens": 476577,
+          "total_output_tokens": 1520
         },
         "rwlock_readguard_drop.rs": {
           "verus_passed": false,
@@ -2743,7 +3153,9 @@
           "total_turns": 45,
           "total_tool_calls": 53,
           "duration_seconds": 403.338,
-          "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/rwlock_readguard_drop/session.jsonl"
+          "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/rwlock_readguard_drop/session.jsonl",
+          "total_input_tokens": 2795919,
+          "total_output_tokens": 3409
         },
         "rwlock_try_read.rs": {
           "verus_passed": false,
@@ -2756,7 +3168,9 @@
           "total_turns": 74,
           "total_tool_calls": 85,
           "duration_seconds": 601.185,
-          "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/rwlock_try_read/session.jsonl"
+          "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/rwlock_try_read/session.jsonl",
+          "total_input_tokens": 5601850,
+          "total_output_tokens": 6819
         },
         "rwlock_try_upgrade.rs": {
           "verus_passed": false,
@@ -2769,7 +3183,9 @@
           "total_turns": 72,
           "total_tool_calls": 84,
           "duration_seconds": 656.23,
-          "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/rwlock_try_upgrade/session.jsonl"
+          "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/rwlock_try_upgrade/session.jsonl",
+          "total_input_tokens": 5721996,
+          "total_output_tokens": 6565
         },
         "rwlock_try_upread.rs": {
           "verus_passed": false,
@@ -2782,7 +3198,9 @@
           "total_turns": 131,
           "total_tool_calls": 145,
           "duration_seconds": 1067.827,
-          "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/rwlock_try_upread/session.jsonl"
+          "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/rwlock_try_upread/session.jsonl",
+          "total_input_tokens": 13673200,
+          "total_output_tokens": 11602
         },
         "rwlock_try_write.rs": {
           "verus_passed": true,
@@ -2795,7 +3213,9 @@
           "total_turns": 15,
           "total_tool_calls": 27,
           "duration_seconds": 154.13,
-          "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/rwlock_try_write/session.jsonl"
+          "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/rwlock_try_write/session.jsonl",
+          "total_input_tokens": 656340,
+          "total_output_tokens": 1756
         },
         "rwlock_upgradableguard_drop.rs": {
           "verus_passed": false,
@@ -2808,7 +3228,9 @@
           "total_turns": 76,
           "total_tool_calls": 87,
           "duration_seconds": 687.762,
-          "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/rwlock_upgradableguard_drop/session.jsonl"
+          "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/rwlock_upgradableguard_drop/session.jsonl",
+          "total_input_tokens": 5488140,
+          "total_output_tokens": 6516
         },
         "rwlock_writeguard_drop.rs": {
           "verus_passed": false,
@@ -2821,7 +3243,9 @@
           "total_turns": 73,
           "total_tool_calls": 83,
           "duration_seconds": 594.747,
-          "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/rwlock_writeguard_drop/session.jsonl"
+          "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/rwlock_writeguard_drop/session.jsonl",
+          "total_input_tokens": 5660997,
+          "total_output_tokens": 5708
         },
         "statics_get.rs": {
           "verus_passed": true,
@@ -2834,7 +3258,9 @@
           "total_turns": 17,
           "total_tool_calls": 30,
           "duration_seconds": 138.498,
-          "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/statics_get/session.jsonl"
+          "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/statics_get/session.jsonl",
+          "total_input_tokens": 336958,
+          "total_output_tokens": 3122
         },
         "tokens_page_destroy_block_tokens_inductive.rs": {
           "verus_passed": true,
@@ -2847,7 +3273,9 @@
           "total_turns": 23,
           "total_tool_calls": 31,
           "duration_seconds": 230.479,
-          "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/tokens_page_destroy_block_tokens_inductive/session.jsonl"
+          "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/tokens_page_destroy_block_tokens_inductive/session.jsonl",
+          "total_input_tokens": 854842,
+          "total_output_tokens": 3345
         },
         "tokens_page_mk_block_tokens_inductive.rs": {
           "verus_passed": true,
@@ -2860,7 +3288,9 @@
           "total_turns": 28,
           "total_tool_calls": 39,
           "duration_seconds": 238.746,
-          "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/tokens_page_mk_block_tokens_inductive/session.jsonl"
+          "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/tokens_page_mk_block_tokens_inductive/session.jsonl",
+          "total_input_tokens": 1333466,
+          "total_output_tokens": 3312
         },
         "tokens_reserve_uniq_identifier_inductive.rs": {
           "verus_passed": true,
@@ -2873,7 +3303,9 @@
           "total_turns": 20,
           "total_tool_calls": 28,
           "duration_seconds": 167.255,
-          "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/tokens_reserve_uniq_identifier_inductive/session.jsonl"
+          "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/tokens_reserve_uniq_identifier_inductive/session.jsonl",
+          "total_input_tokens": 645662,
+          "total_output_tokens": 2354
         },
         "types_disable.rs": {
           "verus_passed": true,
@@ -2886,7 +3318,9 @@
           "total_turns": 28,
           "total_tool_calls": 38,
           "duration_seconds": 241.571,
-          "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/types_disable/session.jsonl"
+          "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/types_disable/session.jsonl",
+          "total_input_tokens": 1440851,
+          "total_output_tokens": 2080
         },
         "types_get_heap.rs": {
           "verus_passed": true,
@@ -2899,7 +3333,9 @@
           "total_turns": 35,
           "total_tool_calls": 48,
           "duration_seconds": 423.515,
-          "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/types_get_heap/session.jsonl"
+          "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/types_get_heap/session.jsonl",
+          "total_input_tokens": 2512164,
+          "total_output_tokens": 3139
         },
         "unbounded_log_exec_dispatch_local_inductive.rs": {
           "verus_passed": true,
@@ -2912,7 +3348,9 @@
           "total_turns": 25,
           "total_tool_calls": 34,
           "duration_seconds": 217.467,
-          "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/unbounded_log_exec_dispatch_local_inductive/session.jsonl"
+          "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/unbounded_log_exec_dispatch_local_inductive/session.jsonl",
+          "total_input_tokens": 871366,
+          "total_output_tokens": 3449
         },
         "unbounded_log_exec_trivial_start_inductive.rs": {
           "verus_passed": true,
@@ -2925,7 +3363,9 @@
           "total_turns": 13,
           "total_tool_calls": 16,
           "duration_seconds": 107.293,
-          "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/unbounded_log_exec_trivial_start_inductive/session.jsonl"
+          "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/unbounded_log_exec_trivial_start_inductive/session.jsonl",
+          "total_input_tokens": 333278,
+          "total_output_tokens": 1925
         },
         "unbounded_log_exec_update_version_upper_bound_inductive.rs": {
           "verus_passed": true,
@@ -2938,7 +3378,9 @@
           "total_turns": 17,
           "total_tool_calls": 23,
           "duration_seconds": 123.311,
-          "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/unbounded_log_exec_update_version_upper_bound_inductive/session.jsonl"
+          "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/unbounded_log_exec_update_version_upper_bound_inductive/session.jsonl",
+          "total_input_tokens": 487791,
+          "total_output_tokens": 2245
         },
         "unbounded_log_readonly_apply_inductive.rs": {
           "verus_passed": true,
@@ -2951,7 +3393,9 @@
           "total_turns": 16,
           "total_tool_calls": 20,
           "duration_seconds": 131.551,
-          "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/unbounded_log_readonly_apply_inductive/session.jsonl"
+          "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/unbounded_log_readonly_apply_inductive/session.jsonl",
+          "total_input_tokens": 439174,
+          "total_output_tokens": 2031
         },
         "unbounded_log_update_done_inductive.rs": {
           "verus_passed": true,
@@ -2964,7 +3408,9 @@
           "total_turns": 12,
           "total_tool_calls": 19,
           "duration_seconds": 113.862,
-          "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/unbounded_log_update_done_inductive/session.jsonl"
+          "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/unbounded_log_update_done_inductive/session.jsonl",
+          "total_input_tokens": 304865,
+          "total_output_tokens": 2017
         },
         "unbounded_log_update_place_ops_in_log_one_inductive.rs": {
           "verus_passed": false,
@@ -2977,7 +3423,9 @@
           "total_turns": 15,
           "total_tool_calls": 24,
           "duration_seconds": 122.015,
-          "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/unbounded_log_update_place_ops_in_log_one_inductive/session.jsonl"
+          "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/unbounded_log_update_place_ops_in_log_one_inductive/session.jsonl",
+          "total_input_tokens": 455340,
+          "total_output_tokens": 1670
         },
         "wait.rs": {
           "verus_passed": true,
@@ -2990,7 +3438,9 @@
           "total_turns": 20,
           "total_tool_calls": 37,
           "duration_seconds": 172.198,
-          "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/wait/session.jsonl"
+          "session_file": "sessions/opencode/gpt-5.6-luna/20260901_163846/wait/session.jsonl",
+          "total_input_tokens": 529119,
+          "total_output_tokens": 3351
         }
       }
     },
@@ -3008,7 +3458,9 @@
           "total_tool_calls": 22,
           "duration_seconds": 196.243,
           "session_file": "sessions/pi/gpt-5.6-luna/20260901_163846/context_dequeue_response/session.jsonl",
-          "session_error": "Detected error that invalidated the session. Check the session file."
+          "session_error": "Detected error that invalidated the session. Check the session file.",
+          "total_input_tokens": 513051,
+          "total_output_tokens": 2393
         },
         "context_enqueue_op.rs": {
           "verus_passed": true,
@@ -3022,7 +3474,9 @@
           "total_tool_calls": 16,
           "duration_seconds": 135.808,
           "session_file": "sessions/pi/gpt-5.6-luna/20260901_163846/context_enqueue_op/session.jsonl",
-          "session_error": "Detected error that invalidated the session. Check the session file."
+          "session_error": "Detected error that invalidated the session. Check the session file.",
+          "total_input_tokens": 432541,
+          "total_output_tokens": 1245
         },
         "count_to_two_read_x.rs": {
           "verus_passed": true,
@@ -3036,7 +3490,9 @@
           "total_tool_calls": 12,
           "duration_seconds": 76.763,
           "session_file": "sessions/pi/gpt-5.6-luna/20260901_163846/count_to_two_read_x/session.jsonl",
-          "session_error": "Detected error that invalidated the session. Check the session file."
+          "session_error": "Detected error that invalidated the session. Check the session file.",
+          "total_input_tokens": 62992,
+          "total_output_tokens": 1006
         },
         "count_to_two_thread_routine.rs": {
           "verus_passed": true,
@@ -3050,7 +3506,9 @@
           "total_tool_calls": 15,
           "duration_seconds": 72.571,
           "session_file": "sessions/pi/gpt-5.6-luna/20260901_163846/count_to_two_thread_routine/session.jsonl",
-          "session_error": "Detected error that invalidated the session. Check the session file."
+          "session_error": "Detected error that invalidated the session. Check the session file.",
+          "total_input_tokens": 92243,
+          "total_output_tokens": 1109
         },
         "cuckoo_delete.rs": {
           "verus_passed": true,
@@ -3064,7 +3522,9 @@
           "total_tool_calls": 15,
           "duration_seconds": 138.821,
           "session_file": "sessions/pi/gpt-5.6-luna/20260901_163846/cuckoo_delete/session.jsonl",
-          "session_error": "Detected error that invalidated the session. Check the session file."
+          "session_error": "Detected error that invalidated the session. Check the session file.",
+          "total_input_tokens": 314234,
+          "total_output_tokens": 2947
         },
         "cuckoo_inductive.rs": {
           "verus_passed": false,
@@ -3078,7 +3538,9 @@
           "total_tool_calls": 81,
           "duration_seconds": 709.981,
           "session_file": "sessions/pi/gpt-5.6-luna/20260901_163846/cuckoo_inductive/session.jsonl",
-          "session_error": "Detected error that invalidated the session. Check the session file."
+          "session_error": "Detected error that invalidated the session. Check the session file.",
+          "total_input_tokens": 2448181,
+          "total_output_tokens": 19167
         },
         "cuckoo_insert.rs": {
           "verus_passed": true,
@@ -3092,7 +3554,9 @@
           "total_tool_calls": 14,
           "duration_seconds": 145.634,
           "session_file": "sessions/pi/gpt-5.6-luna/20260901_163846/cuckoo_insert/session.jsonl",
-          "session_error": "Detected error that invalidated the session. Check the session file."
+          "session_error": "Detected error that invalidated the session. Check the session file.",
+          "total_input_tokens": 305345,
+          "total_output_tokens": 3471
         },
         "cuckoo_read.rs": {
           "verus_passed": true,
@@ -3106,7 +3570,9 @@
           "total_tool_calls": 9,
           "duration_seconds": 97.754,
           "session_file": "sessions/pi/gpt-5.6-luna/20260901_163846/cuckoo_read/session.jsonl",
-          "session_error": "Detected error that invalidated the session. Check the session file."
+          "session_error": "Detected error that invalidated the session. Check the session file.",
+          "total_input_tokens": 147510,
+          "total_output_tokens": 2111
         },
         "cyclicbuffer_advance_head_finish_inductive.rs": {
           "verus_passed": true,
@@ -3120,7 +3586,9 @@
           "total_tool_calls": 16,
           "duration_seconds": 123.209,
           "session_file": "sessions/pi/gpt-5.6-luna/20260901_163846/cyclicbuffer_advance_head_finish_inductive/session.jsonl",
-          "session_error": "Detected error that invalidated the session. Check the session file."
+          "session_error": "Detected error that invalidated the session. Check the session file.",
+          "total_input_tokens": 181581,
+          "total_output_tokens": 2769
         },
         "cyclicbuffer_advance_tail_finish_inductive.rs": {
           "verus_passed": true,
@@ -3134,7 +3602,9 @@
           "total_tool_calls": 27,
           "duration_seconds": 224.818,
           "session_file": "sessions/pi/gpt-5.6-luna/20260901_163846/cyclicbuffer_advance_tail_finish_inductive/session.jsonl",
-          "session_error": "Detected error that invalidated the session. Check the session file."
+          "session_error": "Detected error that invalidated the session. Check the session file.",
+          "total_input_tokens": 446125,
+          "total_output_tokens": 5926
         },
         "cyclicbuffer_advance_tail_start_inductive.rs": {
           "verus_passed": true,
@@ -3148,7 +3618,9 @@
           "total_tool_calls": 10,
           "duration_seconds": 81.717,
           "session_file": "sessions/pi/gpt-5.6-luna/20260901_163846/cyclicbuffer_advance_tail_start_inductive/session.jsonl",
-          "session_error": "Detected error that invalidated the session. Check the session file."
+          "session_error": "Detected error that invalidated the session. Check the session file.",
+          "total_input_tokens": 83240,
+          "total_output_tokens": 1499
         },
         "cyclicbuffer_append_flip_bit_inductive.rs": {
           "verus_passed": false,
@@ -3162,7 +3634,9 @@
           "total_tool_calls": 38,
           "duration_seconds": 403.056,
           "session_file": "sessions/pi/gpt-5.6-luna/20260901_163846/cyclicbuffer_append_flip_bit_inductive/session.jsonl",
-          "session_error": "Detected error that invalidated the session. Check the session file."
+          "session_error": "Detected error that invalidated the session. Check the session file.",
+          "total_input_tokens": 829274,
+          "total_output_tokens": 12397
         },
         "cyclicbuffer_reader_finish_inductive.rs": {
           "verus_passed": true,
@@ -3176,7 +3650,9 @@
           "total_tool_calls": 39,
           "duration_seconds": 350.916,
           "session_file": "sessions/pi/gpt-5.6-luna/20260901_163846/cyclicbuffer_reader_finish_inductive/session.jsonl",
-          "session_error": "Detected error that invalidated the session. Check the session file."
+          "session_error": "Detected error that invalidated the session. Check the session file.",
+          "total_input_tokens": 732024,
+          "total_output_tokens": 9112
         },
         "cyclicbuffer_reader_guard_inductive.rs": {
           "verus_passed": true,
@@ -3190,7 +3666,9 @@
           "total_tool_calls": 31,
           "duration_seconds": 280.635,
           "session_file": "sessions/pi/gpt-5.6-luna/20260901_163846/cyclicbuffer_reader_guard_inductive/session.jsonl",
-          "session_error": "Detected error that invalidated the session. Check the session file."
+          "session_error": "Detected error that invalidated the session. Check the session file.",
+          "total_input_tokens": 524708,
+          "total_output_tokens": 7619
         },
         "dist_rwlock_exc_check_count_inductive.rs": {
           "verus_passed": true,
@@ -3204,7 +3682,9 @@
           "total_tool_calls": 39,
           "duration_seconds": 265.418,
           "session_file": "sessions/pi/gpt-5.6-luna/20260901_163846/dist_rwlock_exc_check_count_inductive/session.jsonl",
-          "session_error": "Detected error that invalidated the session. Check the session file."
+          "session_error": "Detected error that invalidated the session. Check the session file.",
+          "total_input_tokens": 441558,
+          "total_output_tokens": 5788
         },
         "dist_rwlock_initialize_inductive.rs": {
           "verus_passed": true,
@@ -3218,7 +3698,9 @@
           "total_tool_calls": 16,
           "duration_seconds": 127.477,
           "session_file": "sessions/pi/gpt-5.6-luna/20260901_163846/dist_rwlock_initialize_inductive/session.jsonl",
-          "session_error": "Detected error that invalidated the session. Check the session file."
+          "session_error": "Detected error that invalidated the session. Check the session file.",
+          "total_input_tokens": 97746,
+          "total_output_tokens": 3877
         },
         "dist_rwlock_shared_finish_inductive.rs": {
           "verus_passed": true,
@@ -3232,7 +3714,9 @@
           "total_tool_calls": 28,
           "duration_seconds": 262.265,
           "session_file": "sessions/pi/gpt-5.6-luna/20260901_163846/dist_rwlock_shared_finish_inductive/session.jsonl",
-          "session_error": "Detected error that invalidated the session. Check the session file."
+          "session_error": "Detected error that invalidated the session. Check the session file.",
+          "total_input_tokens": 351428,
+          "total_output_tokens": 8350
         },
         "dist_rwlock_shared_release_inductive.rs": {
           "verus_passed": true,
@@ -3246,7 +3730,9 @@
           "total_tool_calls": 12,
           "duration_seconds": 189.883,
           "session_file": "sessions/pi/gpt-5.6-luna/20260901_163846/dist_rwlock_shared_release_inductive/session.jsonl",
-          "session_error": "Detected error that invalidated the session. Check the session file."
+          "session_error": "Detected error that invalidated the session. Check the session file.",
+          "total_input_tokens": 87334,
+          "total_output_tokens": 1720
         },
         "fifo_consume_end_inductive.rs": {
           "verus_passed": true,
@@ -3260,7 +3746,9 @@
           "total_tool_calls": 25,
           "duration_seconds": 152.813,
           "session_file": "sessions/pi/gpt-5.6-luna/20260901_163846/fifo_consume_end_inductive/session.jsonl",
-          "session_error": "Detected error that invalidated the session. Check the session file."
+          "session_error": "Detected error that invalidated the session. Check the session file.",
+          "total_input_tokens": 612308,
+          "total_output_tokens": 2849
         },
         "fifo_consume_start_inductive.rs": {
           "verus_passed": true,
@@ -3274,7 +3762,9 @@
           "total_tool_calls": 12,
           "duration_seconds": 80.159,
           "session_file": "sessions/pi/gpt-5.6-luna/20260901_163846/fifo_consume_start_inductive/session.jsonl",
-          "session_error": "Detected error that invalidated the session. Check the session file."
+          "session_error": "Detected error that invalidated the session. Check the session file.",
+          "total_input_tokens": 100918,
+          "total_output_tokens": 1554
         },
         "fifo_dequeue.rs": {
           "verus_passed": true,
@@ -3288,7 +3778,9 @@
           "total_tool_calls": 105,
           "duration_seconds": 638.397,
           "session_file": "sessions/pi/gpt-5.6-luna/20260901_163846/fifo_dequeue/session.jsonl",
-          "session_error": "Detected error that invalidated the session. Check the session file."
+          "session_error": "Detected error that invalidated the session. Check the session file.",
+          "total_input_tokens": 7662359,
+          "total_output_tokens": 14599
         },
         "fifo_enqueue.rs": {
           "verus_passed": true,
@@ -3302,7 +3794,9 @@
           "total_tool_calls": 55,
           "duration_seconds": 326.874,
           "session_file": "sessions/pi/gpt-5.6-luna/20260901_163846/fifo_enqueue/session.jsonl",
-          "session_error": "Detected error that invalidated the session. Check the session file."
+          "session_error": "Detected error that invalidated the session. Check the session file.",
+          "total_input_tokens": 1227383,
+          "total_output_tokens": 6169
         },
         "fifo_initialize_inductive.rs": {
           "verus_passed": true,
@@ -3316,7 +3810,9 @@
           "total_tool_calls": 24,
           "duration_seconds": 177.611,
           "session_file": "sessions/pi/gpt-5.6-luna/20260901_163846/fifo_initialize_inductive/session.jsonl",
-          "session_error": "Detected error that invalidated the session. Check the session file."
+          "session_error": "Detected error that invalidated the session. Check the session file.",
+          "total_input_tokens": 303514,
+          "total_output_tokens": 4300
         },
         "fifo_produce_end_inductive.rs": {
           "verus_passed": true,
@@ -3330,7 +3826,9 @@
           "total_tool_calls": 31,
           "duration_seconds": 183.224,
           "session_file": "sessions/pi/gpt-5.6-luna/20260901_163846/fifo_produce_end_inductive/session.jsonl",
-          "session_error": "Detected error that invalidated the session. Check the session file."
+          "session_error": "Detected error that invalidated the session. Check the session file.",
+          "total_input_tokens": 377525,
+          "total_output_tokens": 4102
         },
         "fifo_produce_start_inductive.rs": {
           "verus_passed": true,
@@ -3344,7 +3842,9 @@
           "total_tool_calls": 44,
           "duration_seconds": 258.555,
           "session_file": "sessions/pi/gpt-5.6-luna/20260901_163846/fifo_produce_start_inductive/session.jsonl",
-          "session_error": "Detected error that invalidated the session. Check the session file."
+          "session_error": "Detected error that invalidated the session. Check the session file.",
+          "total_input_tokens": 851512,
+          "total_output_tokens": 4644
         },
         "flat_combine_client_recv_inductive.rs": {
           "verus_passed": true,
@@ -3358,7 +3858,9 @@
           "total_tool_calls": 16,
           "duration_seconds": 153.537,
           "session_file": "sessions/pi/gpt-5.6-luna/20260901_163846/flat_combine_client_recv_inductive/session.jsonl",
-          "session_error": "Detected error that invalidated the session. Check the session file."
+          "session_error": "Detected error that invalidated the session. Check the session file.",
+          "total_input_tokens": 145336,
+          "total_output_tokens": 3635
         },
         "flat_combine_client_send_inductive.rs": {
           "verus_passed": true,
@@ -3372,7 +3874,9 @@
           "total_tool_calls": 20,
           "duration_seconds": 163.45,
           "session_file": "sessions/pi/gpt-5.6-luna/20260901_163846/flat_combine_client_send_inductive/session.jsonl",
-          "session_error": "Detected error that invalidated the session. Check the session file."
+          "session_error": "Detected error that invalidated the session. Check the session file.",
+          "total_input_tokens": 185169,
+          "total_output_tokens": 3939
         },
         "flat_combine_combiner_go_to_collecting_inductive.rs": {
           "verus_passed": true,
@@ -3386,7 +3890,9 @@
           "total_tool_calls": 15,
           "duration_seconds": 98.463,
           "session_file": "sessions/pi/gpt-5.6-luna/20260901_163846/flat_combine_combiner_go_to_collecting_inductive/session.jsonl",
-          "session_error": "Detected error that invalidated the session. Check the session file."
+          "session_error": "Detected error that invalidated the session. Check the session file.",
+          "total_input_tokens": 204678,
+          "total_output_tokens": 1742
         },
         "flat_combine_combiner_go_to_responding_inductive.rs": {
           "verus_passed": true,
@@ -3400,7 +3906,9 @@
           "total_tool_calls": 17,
           "duration_seconds": 142.27,
           "session_file": "sessions/pi/gpt-5.6-luna/20260901_163846/flat_combine_combiner_go_to_responding_inductive/session.jsonl",
-          "session_error": "Detected error that invalidated the session. Check the session file."
+          "session_error": "Detected error that invalidated the session. Check the session file.",
+          "total_input_tokens": 139539,
+          "total_output_tokens": 3411
         },
         "flat_combine_combiner_recv_inductive.rs": {
           "verus_passed": true,
@@ -3414,7 +3922,9 @@
           "total_tool_calls": 13,
           "duration_seconds": 115.321,
           "session_file": "sessions/pi/gpt-5.6-luna/20260901_163846/flat_combine_combiner_recv_inductive/session.jsonl",
-          "session_error": "Detected error that invalidated the session. Check the session file."
+          "session_error": "Detected error that invalidated the session. Check the session file.",
+          "total_input_tokens": 114484,
+          "total_output_tokens": 2427
         },
         "flat_combine_combiner_send_inductive.rs": {
           "verus_passed": true,
@@ -3428,7 +3938,9 @@
           "total_tool_calls": 29,
           "duration_seconds": 215.736,
           "session_file": "sessions/pi/gpt-5.6-luna/20260901_163846/flat_combine_combiner_send_inductive/session.jsonl",
-          "session_error": "Detected error that invalidated the session. Check the session file."
+          "session_error": "Detected error that invalidated the session. Check the session file.",
+          "total_input_tokens": 672953,
+          "total_output_tokens": 6049
         },
         "flat_combine_combiner_send_skip_inductive.rs": {
           "verus_passed": true,
@@ -3442,7 +3954,9 @@
           "total_tool_calls": 30,
           "duration_seconds": 210.37,
           "session_file": "sessions/pi/gpt-5.6-luna/20260901_163846/flat_combine_combiner_send_skip_inductive/session.jsonl",
-          "session_error": "Detected error that invalidated the session. Check the session file."
+          "session_error": "Detected error that invalidated the session. Check the session file.",
+          "total_input_tokens": 365178,
+          "total_output_tokens": 5152
         },
         "flat_combine_combiner_skip_inductive.rs": {
           "verus_passed": true,
@@ -3456,7 +3970,9 @@
           "total_tool_calls": 29,
           "duration_seconds": 208.376,
           "session_file": "sessions/pi/gpt-5.6-luna/20260901_163846/flat_combine_combiner_skip_inductive/session.jsonl",
-          "session_error": "Detected error that invalidated the session. Check the session file."
+          "session_error": "Detected error that invalidated the session. Check the session file.",
+          "total_input_tokens": 351251,
+          "total_output_tokens": 5574
         },
         "free_free.rs": {
           "verus_passed": true,
@@ -3470,7 +3986,9 @@
           "total_tool_calls": 54,
           "duration_seconds": 832.73,
           "session_file": "sessions/pi/gpt-5.6-luna/20260901_163846/free_free/session.jsonl",
-          "session_error": "Detected error that invalidated the session. Check the session file."
+          "session_error": "Detected error that invalidated the session. Check the session file.",
+          "total_input_tokens": 2825057,
+          "total_output_tokens": 8775
         },
         "free_free_block_mt.rs": {
           "verus_passed": false,
@@ -3484,7 +4002,9 @@
           "total_tool_calls": 76,
           "duration_seconds": 984.297,
           "session_file": "sessions/pi/gpt-5.6-luna/20260901_163846/free_free_block_mt/session.jsonl",
-          "session_error": "Detected error that invalidated the session. Check the session file."
+          "session_error": "Detected error that invalidated the session. Check the session file.",
+          "total_input_tokens": 3658353,
+          "total_output_tokens": 13373
         },
         "helping_try_cancel_two_flips.rs": {
           "verus_passed": true,
@@ -3498,7 +4018,9 @@
           "total_tool_calls": 23,
           "duration_seconds": 169.492,
           "session_file": "sessions/pi/gpt-5.6-luna/20260901_163846/helping_try_cancel_two_flips/session.jsonl",
-          "session_error": "Detected error that invalidated the session. Check the session file."
+          "session_error": "Detected error that invalidated the session. Check the session file.",
+          "total_input_tokens": 257947,
+          "total_output_tokens": 3971
         },
         "helping_try_handshake.rs": {
           "verus_passed": false,
@@ -3512,7 +4034,9 @@
           "total_tool_calls": 59,
           "duration_seconds": 465.31,
           "session_file": "sessions/pi/gpt-5.6-luna/20260901_163846/helping_try_handshake/session.jsonl",
-          "session_error": "Detected error that invalidated the session. Check the session file."
+          "session_error": "Detected error that invalidated the session. Check the session file.",
+          "total_input_tokens": 1267616,
+          "total_output_tokens": 13658
         },
         "helping_try_simple_flip.rs": {
           "verus_passed": true,
@@ -3526,7 +4050,9 @@
           "total_tool_calls": 10,
           "duration_seconds": 123.414,
           "session_file": "sessions/pi/gpt-5.6-luna/20260901_163846/helping_try_simple_flip/session.jsonl",
-          "session_error": "Detected error that invalidated the session. Check the session file."
+          "session_error": "Detected error that invalidated the session. Check the session file.",
+          "total_input_tokens": 74544,
+          "total_output_tokens": 4233
         },
         "linked_list_atomic_insert_block.rs": {
           "verus_passed": true,
@@ -3540,7 +4066,9 @@
           "total_tool_calls": 50,
           "duration_seconds": 885.366,
           "session_file": "sessions/pi/gpt-5.6-luna/20260901_163846/linked_list_atomic_insert_block/session.jsonl",
-          "session_error": "Detected error that invalidated the session. Check the session file."
+          "session_error": "Detected error that invalidated the session. Check the session file.",
+          "total_input_tokens": 1364943,
+          "total_output_tokens": 12506
         },
         "linked_list_check_is_good.rs": {
           "verus_passed": true,
@@ -3554,7 +4082,9 @@
           "total_tool_calls": 40,
           "duration_seconds": 521.472,
           "session_file": "sessions/pi/gpt-5.6-luna/20260901_163846/linked_list_check_is_good/session.jsonl",
-          "session_error": "Detected error that invalidated the session. Check the session file."
+          "session_error": "Detected error that invalidated the session. Check the session file.",
+          "total_input_tokens": 1984526,
+          "total_output_tokens": 7340
         },
         "linked_list_enable.rs": {
           "verus_passed": true,
@@ -3568,7 +4098,9 @@
           "total_tool_calls": 29,
           "duration_seconds": 423.685,
           "session_file": "sessions/pi/gpt-5.6-luna/20260901_163846/linked_list_enable/session.jsonl",
-          "session_error": "Detected error that invalidated the session. Check the session file."
+          "session_error": "Detected error that invalidated the session. Check the session file.",
+          "total_input_tokens": 985441,
+          "total_output_tokens": 2237
         },
         "linked_list_take.rs": {
           "verus_passed": true,
@@ -3582,7 +4114,9 @@
           "total_tool_calls": 23,
           "duration_seconds": 260.287,
           "session_file": "sessions/pi/gpt-5.6-luna/20260901_163846/linked_list_take/session.jsonl",
-          "session_error": "Detected error that invalidated the session. Check the session file."
+          "session_error": "Detected error that invalidated the session. Check the session file.",
+          "total_input_tokens": 552767,
+          "total_output_tokens": 2016
         },
         "linked_list_take_.rs": {
           "verus_passed": false,
@@ -3596,7 +4130,9 @@
           "total_tool_calls": 66,
           "duration_seconds": 1174.759,
           "session_file": "sessions/pi/gpt-5.6-luna/20260901_163846/linked_list_take_/session.jsonl",
-          "session_error": "Detected error that invalidated the session. Check the session file."
+          "session_error": "Detected error that invalidated the session. Check the session file.",
+          "total_input_tokens": 3368594,
+          "total_output_tokens": 14938
         },
         "linked_list_try_use_delayed_free.rs": {
           "verus_passed": true,
@@ -3610,7 +4146,9 @@
           "total_tool_calls": 27,
           "duration_seconds": 340.568,
           "session_file": "sessions/pi/gpt-5.6-luna/20260901_163846/linked_list_try_use_delayed_free/session.jsonl",
-          "session_error": "Detected error that invalidated the session. Check the session file."
+          "session_error": "Detected error that invalidated the session. Check the session file.",
+          "total_input_tokens": 1121553,
+          "total_output_tokens": 2710
         },
         "log_advance_head.rs": {
           "verus_passed": true,
@@ -3624,7 +4162,9 @@
           "total_tool_calls": 21,
           "duration_seconds": 160.601,
           "session_file": "sessions/pi/gpt-5.6-luna/20260901_163846/log_advance_head/session.jsonl",
-          "session_error": "Detected error that invalidated the session. Check the session file."
+          "session_error": "Detected error that invalidated the session. Check the session file.",
+          "total_input_tokens": 694502,
+          "total_output_tokens": 1873
         },
         "log_append.rs": {
           "verus_passed": false,
@@ -3638,7 +4178,9 @@
           "total_tool_calls": 61,
           "duration_seconds": 631.562,
           "session_file": "sessions/pi/gpt-5.6-luna/20260901_163846/log_append/session.jsonl",
-          "session_error": "Detected error that invalidated the session. Check the session file."
+          "session_error": "Detected error that invalidated the session. Check the session file.",
+          "total_input_tokens": 3520569,
+          "total_output_tokens": 15785
         },
         "log_execute.rs": {
           "verus_passed": true,
@@ -3652,7 +4194,9 @@
           "total_tool_calls": 83,
           "duration_seconds": 822.175,
           "session_file": "sessions/pi/gpt-5.6-luna/20260901_163846/log_execute/session.jsonl",
-          "session_error": "Detected error that invalidated the session. Check the session file."
+          "session_error": "Detected error that invalidated the session. Check the session file.",
+          "total_input_tokens": 4300818,
+          "total_output_tokens": 14600
         },
         "log_find_min_local_version.rs": {
           "verus_passed": true,
@@ -3666,7 +4210,9 @@
           "total_tool_calls": 17,
           "duration_seconds": 142.878,
           "session_file": "sessions/pi/gpt-5.6-luna/20260901_163846/log_find_min_local_version/session.jsonl",
-          "session_error": "Detected error that invalidated the session. Check the session file."
+          "session_error": "Detected error that invalidated the session. Check the session file.",
+          "total_input_tokens": 441426,
+          "total_output_tokens": 1706
         },
         "log_is_replica_synced_for_reads.rs": {
           "verus_passed": true,
@@ -3680,7 +4226,9 @@
           "total_tool_calls": 31,
           "duration_seconds": 243.919,
           "session_file": "sessions/pi/gpt-5.6-luna/20260901_163846/log_is_replica_synced_for_reads/session.jsonl",
-          "session_error": "Detected error that invalidated the session. Check the session file."
+          "session_error": "Detected error that invalidated the session. Check the session file.",
+          "total_input_tokens": 859820,
+          "total_output_tokens": 2937
         },
         "once_get.rs": {
           "verus_passed": true,
@@ -3694,7 +4242,9 @@
           "total_tool_calls": 15,
           "duration_seconds": 101.296,
           "session_file": "sessions/pi/gpt-5.6-luna/20260901_163846/once_get/session.jsonl",
-          "session_error": "Detected error that invalidated the session. Check the session file."
+          "session_error": "Detected error that invalidated the session. Check the session file.",
+          "total_input_tokens": 89787,
+          "total_output_tokens": 3140
         },
         "once_init.rs": {
           "verus_passed": true,
@@ -3708,7 +4258,9 @@
           "total_tool_calls": 21,
           "duration_seconds": 138.256,
           "session_file": "sessions/pi/gpt-5.6-luna/20260901_163846/once_init/session.jsonl",
-          "session_error": "Detected error that invalidated the session. Check the session file."
+          "session_error": "Detected error that invalidated the session. Check the session file.",
+          "total_input_tokens": 172244,
+          "total_output_tokens": 3483
         },
         "replica_acquire_combiner_lock.rs": {
           "verus_passed": true,
@@ -3722,7 +4274,9 @@
           "total_tool_calls": 14,
           "duration_seconds": 118.1,
           "session_file": "sessions/pi/gpt-5.6-luna/20260901_163846/replica_acquire_combiner_lock/session.jsonl",
-          "session_error": "Detected error that invalidated the session. Check the session file."
+          "session_error": "Detected error that invalidated the session. Check the session file.",
+          "total_input_tokens": 271047,
+          "total_output_tokens": 1296
         },
         "replica_collect_thread_ops.rs": {
           "verus_passed": true,
@@ -3736,7 +4290,9 @@
           "total_tool_calls": 56,
           "duration_seconds": 489.424,
           "session_file": "sessions/pi/gpt-5.6-luna/20260901_163846/replica_collect_thread_ops/session.jsonl",
-          "session_error": "Detected error that invalidated the session. Check the session file."
+          "session_error": "Detected error that invalidated the session. Check the session file.",
+          "total_input_tokens": 2366501,
+          "total_output_tokens": 9656
         },
         "replica_distribute_thread_resps.rs": {
           "verus_passed": true,
@@ -3750,7 +4306,9 @@
           "total_tool_calls": 26,
           "duration_seconds": 253.998,
           "session_file": "sessions/pi/gpt-5.6-luna/20260901_163846/replica_distribute_thread_resps/session.jsonl",
-          "session_error": "Detected error that invalidated the session. Check the session file."
+          "session_error": "Detected error that invalidated the session. Check the session file.",
+          "total_input_tokens": 842213,
+          "total_output_tokens": 4196
         },
         "replica_release_combiner_lock.rs": {
           "verus_passed": true,
@@ -3764,7 +4322,9 @@
           "total_tool_calls": 11,
           "duration_seconds": 110.881,
           "session_file": "sessions/pi/gpt-5.6-luna/20260901_163846/replica_release_combiner_lock/session.jsonl",
-          "session_error": "Detected error that invalidated the session. Check the session file."
+          "session_error": "Detected error that invalidated the session. Check the session file.",
+          "total_input_tokens": 240651,
+          "total_output_tokens": 1012
         },
         "rwlock_readguard_drop.rs": {
           "verus_passed": false,
@@ -3778,7 +4338,9 @@
           "total_tool_calls": 60,
           "duration_seconds": 421.678,
           "session_file": "sessions/pi/gpt-5.6-luna/20260901_163846/rwlock_readguard_drop/session.jsonl",
-          "session_error": "Detected error that invalidated the session. Check the session file."
+          "session_error": "Detected error that invalidated the session. Check the session file.",
+          "total_input_tokens": 4048004,
+          "total_output_tokens": 11104
         },
         "rwlock_try_read.rs": {
           "verus_passed": false,
@@ -3792,7 +4354,9 @@
           "total_tool_calls": 57,
           "duration_seconds": 413.283,
           "session_file": "sessions/pi/gpt-5.6-luna/20260901_163846/rwlock_try_read/session.jsonl",
-          "session_error": "Detected error that invalidated the session. Check the session file."
+          "session_error": "Detected error that invalidated the session. Check the session file.",
+          "total_input_tokens": 2811017,
+          "total_output_tokens": 10908
         },
         "rwlock_try_upgrade.rs": {
           "verus_passed": false,
@@ -3806,7 +4370,9 @@
           "total_tool_calls": 73,
           "duration_seconds": 589.431,
           "session_file": "sessions/pi/gpt-5.6-luna/20260901_163846/rwlock_try_upgrade/session.jsonl",
-          "session_error": "Detected error that invalidated the session. Check the session file."
+          "session_error": "Detected error that invalidated the session. Check the session file.",
+          "total_input_tokens": 3962245,
+          "total_output_tokens": 18476
         },
         "rwlock_try_upread.rs": {
           "verus_passed": false,
@@ -3820,7 +4386,9 @@
           "total_tool_calls": 69,
           "duration_seconds": 534.954,
           "session_file": "sessions/pi/gpt-5.6-luna/20260901_163846/rwlock_try_upread/session.jsonl",
-          "session_error": "Detected error that invalidated the session. Check the session file."
+          "session_error": "Detected error that invalidated the session. Check the session file.",
+          "total_input_tokens": 4478802,
+          "total_output_tokens": 13322
         },
         "rwlock_try_write.rs": {
           "verus_passed": true,
@@ -3834,7 +4402,9 @@
           "total_tool_calls": 27,
           "duration_seconds": 180.435,
           "session_file": "sessions/pi/gpt-5.6-luna/20260901_163846/rwlock_try_write/session.jsonl",
-          "session_error": "Detected error that invalidated the session. Check the session file."
+          "session_error": "Detected error that invalidated the session. Check the session file.",
+          "total_input_tokens": 912723,
+          "total_output_tokens": 4202
         },
         "rwlock_upgradableguard_drop.rs": {
           "verus_passed": true,
@@ -3848,7 +4418,9 @@
           "total_tool_calls": 48,
           "duration_seconds": 334.366,
           "session_file": "sessions/pi/gpt-5.6-luna/20260901_163846/rwlock_upgradableguard_drop/session.jsonl",
-          "session_error": "Detected error that invalidated the session. Check the session file."
+          "session_error": "Detected error that invalidated the session. Check the session file.",
+          "total_input_tokens": 2063056,
+          "total_output_tokens": 9018
         },
         "rwlock_writeguard_drop.rs": {
           "verus_passed": true,
@@ -3862,7 +4434,9 @@
           "total_tool_calls": 23,
           "duration_seconds": 204.894,
           "session_file": "sessions/pi/gpt-5.6-luna/20260901_163846/rwlock_writeguard_drop/session.jsonl",
-          "session_error": "Detected error that invalidated the session. Check the session file."
+          "session_error": "Detected error that invalidated the session. Check the session file.",
+          "total_input_tokens": 684031,
+          "total_output_tokens": 5896
         },
         "statics_get.rs": {
           "verus_passed": true,
@@ -3876,7 +4450,9 @@
           "total_tool_calls": 25,
           "duration_seconds": 120.201,
           "session_file": "sessions/pi/gpt-5.6-luna/20260901_163846/statics_get/session.jsonl",
-          "session_error": "Detected error that invalidated the session. Check the session file."
+          "session_error": "Detected error that invalidated the session. Check the session file.",
+          "total_input_tokens": 287725,
+          "total_output_tokens": 2298
         },
         "tokens_page_destroy_block_tokens_inductive.rs": {
           "verus_passed": true,
@@ -3890,7 +4466,9 @@
           "total_tool_calls": 19,
           "duration_seconds": 160.438,
           "session_file": "sessions/pi/gpt-5.6-luna/20260901_163846/tokens_page_destroy_block_tokens_inductive/session.jsonl",
-          "session_error": "Detected error that invalidated the session. Check the session file."
+          "session_error": "Detected error that invalidated the session. Check the session file.",
+          "total_input_tokens": 448303,
+          "total_output_tokens": 2741
         },
         "tokens_page_mk_block_tokens_inductive.rs": {
           "verus_passed": true,
@@ -3904,7 +4482,9 @@
           "total_tool_calls": 20,
           "duration_seconds": 168.992,
           "session_file": "sessions/pi/gpt-5.6-luna/20260901_163846/tokens_page_mk_block_tokens_inductive/session.jsonl",
-          "session_error": "Detected error that invalidated the session. Check the session file."
+          "session_error": "Detected error that invalidated the session. Check the session file.",
+          "total_input_tokens": 558577,
+          "total_output_tokens": 2848
         },
         "tokens_reserve_uniq_identifier_inductive.rs": {
           "verus_passed": true,
@@ -3918,7 +4498,9 @@
           "total_tool_calls": 26,
           "duration_seconds": 206.95,
           "session_file": "sessions/pi/gpt-5.6-luna/20260901_163846/tokens_reserve_uniq_identifier_inductive/session.jsonl",
-          "session_error": "Detected error that invalidated the session. Check the session file."
+          "session_error": "Detected error that invalidated the session. Check the session file.",
+          "total_input_tokens": 864025,
+          "total_output_tokens": 2881
         },
         "types_disable.rs": {
           "verus_passed": true,
@@ -3932,7 +4514,9 @@
           "total_tool_calls": 54,
           "duration_seconds": 390.997,
           "session_file": "sessions/pi/gpt-5.6-luna/20260901_163846/types_disable/session.jsonl",
-          "session_error": "Detected error that invalidated the session. Check the session file."
+          "session_error": "Detected error that invalidated the session. Check the session file.",
+          "total_input_tokens": 3124306,
+          "total_output_tokens": 5580
         },
         "types_get_heap.rs": {
           "verus_passed": true,
@@ -3946,7 +4530,9 @@
           "total_tool_calls": 51,
           "duration_seconds": 771.098,
           "session_file": "sessions/pi/gpt-5.6-luna/20260901_163846/types_get_heap/session.jsonl",
-          "session_error": "Detected error that invalidated the session. Check the session file."
+          "session_error": "Detected error that invalidated the session. Check the session file.",
+          "total_input_tokens": 2381701,
+          "total_output_tokens": 7194
         },
         "unbounded_log_exec_dispatch_local_inductive.rs": {
           "verus_passed": true,
@@ -3960,7 +4546,9 @@
           "total_tool_calls": 16,
           "duration_seconds": 144.609,
           "session_file": "sessions/pi/gpt-5.6-luna/20260901_163846/unbounded_log_exec_dispatch_local_inductive/session.jsonl",
-          "session_error": "Detected error that invalidated the session. Check the session file."
+          "session_error": "Detected error that invalidated the session. Check the session file.",
+          "total_input_tokens": 279063,
+          "total_output_tokens": 3628
         },
         "unbounded_log_exec_trivial_start_inductive.rs": {
           "verus_passed": true,
@@ -3974,7 +4562,9 @@
           "total_tool_calls": 10,
           "duration_seconds": 73.487,
           "session_file": "sessions/pi/gpt-5.6-luna/20260901_163846/unbounded_log_exec_trivial_start_inductive/session.jsonl",
-          "session_error": "Detected error that invalidated the session. Check the session file."
+          "session_error": "Detected error that invalidated the session. Check the session file.",
+          "total_input_tokens": 165896,
+          "total_output_tokens": 1318
         },
         "unbounded_log_exec_update_version_upper_bound_inductive.rs": {
           "verus_passed": true,
@@ -3988,7 +4578,9 @@
           "total_tool_calls": 21,
           "duration_seconds": 157.547,
           "session_file": "sessions/pi/gpt-5.6-luna/20260901_163846/unbounded_log_exec_update_version_upper_bound_inductive/session.jsonl",
-          "session_error": "Detected error that invalidated the session. Check the session file."
+          "session_error": "Detected error that invalidated the session. Check the session file.",
+          "total_input_tokens": 353988,
+          "total_output_tokens": 3524
         },
         "unbounded_log_readonly_apply_inductive.rs": {
           "verus_passed": false,
@@ -4002,7 +4594,9 @@
           "total_tool_calls": 64,
           "duration_seconds": 533.221,
           "session_file": "sessions/pi/gpt-5.6-luna/20260901_163846/unbounded_log_readonly_apply_inductive/session.jsonl",
-          "session_error": "Detected error that invalidated the session. Check the session file."
+          "session_error": "Detected error that invalidated the session. Check the session file.",
+          "total_input_tokens": 2497454,
+          "total_output_tokens": 16324
         },
         "unbounded_log_update_done_inductive.rs": {
           "verus_passed": true,
@@ -4016,7 +4610,9 @@
           "total_tool_calls": 50,
           "duration_seconds": 402.34,
           "session_file": "sessions/pi/gpt-5.6-luna/20260901_163846/unbounded_log_update_done_inductive/session.jsonl",
-          "session_error": "Detected error that invalidated the session. Check the session file."
+          "session_error": "Detected error that invalidated the session. Check the session file.",
+          "total_input_tokens": 1535727,
+          "total_output_tokens": 11314
         },
         "unbounded_log_update_place_ops_in_log_one_inductive.rs": {
           "verus_passed": true,
@@ -4030,7 +4626,9 @@
           "total_tool_calls": 77,
           "duration_seconds": 649.361,
           "session_file": "sessions/pi/gpt-5.6-luna/20260901_163846/unbounded_log_update_place_ops_in_log_one_inductive/session.jsonl",
-          "session_error": "Detected error that invalidated the session. Check the session file."
+          "session_error": "Detected error that invalidated the session. Check the session file.",
+          "total_input_tokens": 4272865,
+          "total_output_tokens": 19065
         },
         "wait.rs": {
           "verus_passed": true,
@@ -4044,7 +4642,9 @@
           "total_tool_calls": 24,
           "duration_seconds": 147.935,
           "session_file": "sessions/pi/gpt-5.6-luna/20260901_163846/wait/session.jsonl",
-          "session_error": "Detected error that invalidated the session. Check the session file."
+          "session_error": "Detected error that invalidated the session. Check the session file.",
+          "total_input_tokens": 412167,
+          "total_output_tokens": 4235
         }
       }
     }
