@@ -188,16 +188,36 @@ tokenized_state_machine! {
         fn client_send_inductive(pre: Self,
             post: Self, j: nat, request: Request, cur_slot: bool)
         {
-            reveal(FlatCombiner::not_waiting_inv);
-            reveal(FlatCombiner::waiting_inv);
-            reveal(FlatCombiner::request_stored_inv);
-            reveal(FlatCombiner::response_stored_inv);
-            reveal(FlatCombiner::combiner_has_inv);
-            assert(post.not_waiting_inv());
-            assert(post.waiting_inv());
-            assert(post.request_stored_inv());
-            assert(post.response_stored_inv());
-            assert(post.combiner_has_inv());
+            assert(post.clients_complete());
+            assert(post.slots_complete());
+            assert(post.clients_size());
+            assert(post.not_waiting_inv()) by {
+                assert(post.clients == pre.clients.insert(j, Client::Waiting{rid: request.rid}));
+                assert(post.slots == pre.slots.insert(j, true));
+                assert(pre.not_waiting_inv());
+                assert forall |i: nat| (post.valid_idx(i)
+                    && post.clients.index(i).is_Idle()) ==> !post.slots.index(i) by {
+                    if post.valid_idx(i) && post.clients.index(i).is_Idle() {
+                        assert(post.clients.dom().contains(i));
+                        assert(post.slots.dom().contains(i));
+                        if i == j {
+                            assert(post.clients.index(i).is_Waiting());
+                        } else {
+                            assert(pre.valid_idx(i));
+                            assert(pre.clients.index(i).is_Idle());
+                            assert(pre.not_waiting_inv());
+                            assert(post.clients.index(i) == pre.clients.index(i));
+                            assert(post.slots.index(i) == pre.slots.index(i));
+                        }
+                    }
+                }
+            }
+            assert(post.waiting_inv()) by {
+                assert(pre.invariant());
+            }
+            assert(post.request_stored_inv()) by { assert(pre.request_stored_inv()); }
+            assert(post.response_stored_inv()) by { assert(pre.response_stored_inv()); }
+            assert(post.combiner_has_inv()) by { assert(pre.combiner_has_inv()); }
         }
 
         transition!{
@@ -221,11 +241,17 @@ tokenized_state_machine! {
 
         #[inductive(client_recv)]
         fn client_recv_inductive(pre: Self, post: Self, j: nat) {
-            reveal(FlatCombiner::not_waiting_inv);
-            reveal(FlatCombiner::waiting_inv);
-            reveal(FlatCombiner::request_stored_inv);
-            reveal(FlatCombiner::response_stored_inv);
-            reveal(FlatCombiner::combiner_has_inv);
+            assert(pre.clients_complete());
+            assert(pre.slots_complete());
+            assert(pre.clients_size());
+            assert(pre.not_waiting_inv());
+            assert(pre.waiting_inv());
+            assert(pre.request_stored_inv());
+            assert(pre.response_stored_inv());
+            assert(pre.combiner_has_inv());
+            assert(post.clients_complete());
+            assert(post.slots_complete());
+            assert(post.clients_size());
             assert(post.not_waiting_inv());
             assert(post.waiting_inv());
             assert(post.request_stored_inv());
@@ -256,11 +282,17 @@ tokenized_state_machine! {
 
         #[inductive(combiner_recv)]
         fn combiner_recv_inductive(pre: Self, post: Self) {
-            reveal(FlatCombiner::not_waiting_inv);
-            reveal(FlatCombiner::waiting_inv);
-            reveal(FlatCombiner::request_stored_inv);
-            reveal(FlatCombiner::response_stored_inv);
-            reveal(FlatCombiner::combiner_has_inv);
+            assert(pre.clients_complete());
+            assert(pre.slots_complete());
+            assert(pre.clients_size());
+            assert(pre.not_waiting_inv());
+            assert(pre.waiting_inv());
+            assert(pre.request_stored_inv());
+            assert(pre.response_stored_inv());
+            assert(pre.combiner_has_inv());
+            assert(post.clients_complete());
+            assert(post.slots_complete());
+            assert(post.clients_size());
             assert(post.not_waiting_inv());
             assert(post.waiting_inv());
             assert(post.request_stored_inv());
@@ -283,11 +315,17 @@ tokenized_state_machine! {
 
         #[inductive(combiner_skip)]
         fn combiner_skip_inductive(pre: Self, post: Self) {
-            reveal(FlatCombiner::not_waiting_inv);
-            reveal(FlatCombiner::waiting_inv);
-            reveal(FlatCombiner::request_stored_inv);
-            reveal(FlatCombiner::response_stored_inv);
-            reveal(FlatCombiner::combiner_has_inv);
+            assert(pre.clients_complete());
+            assert(pre.slots_complete());
+            assert(pre.clients_size());
+            assert(pre.not_waiting_inv());
+            assert(pre.waiting_inv());
+            assert(pre.request_stored_inv());
+            assert(pre.response_stored_inv());
+            assert(pre.combiner_has_inv());
+            assert(post.clients_complete());
+            assert(post.slots_complete());
+            assert(post.clients_size());
             assert(post.not_waiting_inv());
             assert(post.waiting_inv());
             assert(post.request_stored_inv());
@@ -333,11 +371,17 @@ tokenized_state_machine! {
 
         #[inductive(combiner_send)]
         fn combiner_send_inductive(pre: Self, post: Self, response: Response, cur_slot: bool) {
-            reveal(FlatCombiner::not_waiting_inv);
-            reveal(FlatCombiner::waiting_inv);
-            reveal(FlatCombiner::request_stored_inv);
-            reveal(FlatCombiner::response_stored_inv);
-            reveal(FlatCombiner::combiner_has_inv);
+            assert(pre.clients_complete());
+            assert(pre.slots_complete());
+            assert(pre.clients_size());
+            assert(pre.not_waiting_inv());
+            assert(pre.waiting_inv());
+            assert(pre.request_stored_inv());
+            assert(pre.response_stored_inv());
+            assert(pre.combiner_has_inv());
+            assert(post.clients_complete());
+            assert(post.slots_complete());
+            assert(post.clients_size());
             assert(post.not_waiting_inv());
             assert(post.waiting_inv());
             assert(post.request_stored_inv());
@@ -363,11 +407,17 @@ tokenized_state_machine! {
 
         #[inductive(combiner_send_skip)]
         fn combiner_send_skip_inductive(pre: Self, post: Self) {
-            reveal(FlatCombiner::not_waiting_inv);
-            reveal(FlatCombiner::waiting_inv);
-            reveal(FlatCombiner::request_stored_inv);
-            reveal(FlatCombiner::response_stored_inv);
-            reveal(FlatCombiner::combiner_has_inv);
+            assert(pre.clients_complete());
+            assert(pre.slots_complete());
+            assert(pre.clients_size());
+            assert(pre.not_waiting_inv());
+            assert(pre.waiting_inv());
+            assert(pre.request_stored_inv());
+            assert(pre.response_stored_inv());
+            assert(pre.combiner_has_inv());
+            assert(post.clients_complete());
+            assert(post.slots_complete());
+            assert(post.clients_size());
             assert(post.not_waiting_inv());
             assert(post.waiting_inv());
             assert(post.request_stored_inv());
@@ -377,11 +427,17 @@ tokenized_state_machine! {
 
         #[inductive(combiner_go_to_responding)]
         fn combiner_go_to_responding_inductive(pre: Self, post: Self) {
-            reveal(FlatCombiner::not_waiting_inv);
-            reveal(FlatCombiner::waiting_inv);
-            reveal(FlatCombiner::request_stored_inv);
-            reveal(FlatCombiner::response_stored_inv);
-            reveal(FlatCombiner::combiner_has_inv);
+            assert(pre.clients_complete());
+            assert(pre.slots_complete());
+            assert(pre.clients_size());
+            assert(pre.not_waiting_inv());
+            assert(pre.waiting_inv());
+            assert(pre.request_stored_inv());
+            assert(pre.response_stored_inv());
+            assert(pre.combiner_has_inv());
+            assert(post.clients_complete());
+            assert(post.slots_complete());
+            assert(post.clients_size());
             assert(post.not_waiting_inv());
             assert(post.waiting_inv());
             assert(post.request_stored_inv());
@@ -399,11 +455,17 @@ tokenized_state_machine! {
 
         #[inductive(combiner_go_to_collecting)]
         fn combiner_go_to_collecting_inductive(pre: Self, post: Self) {
-            reveal(FlatCombiner::not_waiting_inv);
-            reveal(FlatCombiner::waiting_inv);
-            reveal(FlatCombiner::request_stored_inv);
-            reveal(FlatCombiner::response_stored_inv);
-            reveal(FlatCombiner::combiner_has_inv);
+            assert(pre.clients_complete());
+            assert(pre.slots_complete());
+            assert(pre.clients_size());
+            assert(pre.not_waiting_inv());
+            assert(pre.waiting_inv());
+            assert(pre.request_stored_inv());
+            assert(pre.response_stored_inv());
+            assert(pre.combiner_has_inv());
+            assert(post.clients_complete());
+            assert(post.slots_complete());
+            assert(post.clients_size());
             assert(post.not_waiting_inv());
             assert(post.waiting_inv());
             assert(post.request_stored_inv());
