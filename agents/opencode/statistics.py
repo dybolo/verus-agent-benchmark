@@ -89,10 +89,10 @@ def compute_statistics(session_dir: str) -> Stats:
 
     duration_seconds = (last_ts - first_ts) / 1000
 
-    # total_tokens = input_tokens + output_tokens + cache_read_tokens + cache_write_tokens
-
     return Stats(
         total_costs=round(total_cost, 8),
+        total_input_tokens=input_tokens + cache_read_tokens + cache_write_tokens,
+        total_output_tokens=output_tokens,
         total_turns=turn_count,
         total_tool_calls=tool_call_count,
         duration_seconds=duration_seconds,

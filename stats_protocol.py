@@ -48,6 +48,8 @@ def calculate_price(
 @dataclass
 class Stats:
     total_costs: float = 0.0
+    total_input_tokens: int = 0
+    total_output_tokens: int = 0
     total_turns: int = 0
     total_tool_calls: int = 0
     duration_seconds: float = 0.0

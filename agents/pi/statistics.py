@@ -29,6 +29,8 @@ def compute_statistics(session_dir: str) -> Stats:
         path = session_dir
 
     cost_total = 0.0
+    input_tokens = 0
+    output_tokens = 0
     tool_call_count = 0
     assistant_msg_count = 0
     first_ts = None
@@ -56,6 +58,12 @@ def compute_statistics(session_dir: str) -> Stats:
                 usage = msg.get("usage")
                 if usage:
                     cost_total += _usage_cost(msg.get("model"), usage)
+                    input_tokens += (
+                        usage.get("input", 0)
+                        + usage.get("cacheRead", 0)
+                        + usage.get("cacheWrite", 0)
+                    )
+                    output_tokens += usage.get("output", 0)
                 if role == "assistant":
                     assistant_msg_count += 1
                     content = msg.get("content", [])
@@ -70,6 +78,8 @@ def compute_statistics(session_dir: str) -> Stats:
 
     return Stats(
         total_costs=round(cost_total, 8),
+        total_input_tokens=input_tokens,
+        total_output_tokens=output_tokens,
         total_turns=assistant_msg_count,
         total_tool_calls=tool_call_count,
         duration_seconds=duration_seconds,

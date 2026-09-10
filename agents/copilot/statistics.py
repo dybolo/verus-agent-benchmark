@@ -16,8 +16,8 @@ def _output_event_data(event):
     return data if isinstance(data, dict) else event
 
 
-def _model_call_cost(data):
-    """Calculate the cost of one model call from Copilot's usage details."""
+def _model_call_usage(data):
+    """Return the model and mutually exclusive token buckets for one call."""
     response_chunk = data.get("responseChunk", {})
     copilot_usage = response_chunk.get("copilot_usage", {})
     token_details = copilot_usage.get("token_details", [])
@@ -38,16 +38,18 @@ def _model_call_cost(data):
         usage = response_chunk.get("usage", {})
         details = usage.get("prompt_tokens_details", {})
         token_counts["cache_read"] = details.get("cached_tokens", 0)
-        token_counts["input"] = max(usage.get("prompt_tokens", 0) - token_counts["cache_read"], 0)
+        token_counts["cache_write"] = details.get(
+            "cache_write_tokens", details.get("cache_creation_tokens", 0)
+        )
+        token_counts["input"] = max(
+            usage.get("prompt_tokens", 0)
+            - token_counts["cache_read"]
+            - token_counts["cache_write"],
+            0,
+        )
         token_counts["output"] = usage.get("completion_tokens", 0)
 
-    return calculate_price(
-        model,
-        token_counts["input"],
-        token_counts["cache_read"],
-        token_counts["cache_write"],
-        token_counts["output"],
-    )
+    return model, token_counts
 
 
 def _otel_attribute(attributes, name, *aliases, default=0):
@@ -57,7 +59,7 @@ def _otel_attribute(attributes, name, *aliases, default=0):
     return default
 
 
-def _compute_otel_cost(path: str):
+def _compute_otel_usage(path: str):
     """Sum completed LLM calls from Copilot's streaming OTel JSONL file.
 
     Copilot writes a chat span when each model request completes.  Only chat
@@ -66,6 +68,8 @@ def _compute_otel_cost(path: str):
     incomplete, so malformed lines are ignored while retaining earlier calls.
     """
     total_cost = 0.0
+    total_input_tokens = 0
+    total_output_tokens = 0
     chat_span_count = 0
 
     with open(path, encoding="utf-8") as f:
@@ -119,8 +123,12 @@ def _compute_otel_cost(path: str):
                 cache_write_tokens,
                 output_tokens,
             )
+            total_input_tokens += input_tokens
+            total_output_tokens += output_tokens
 
-    return total_cost if chat_span_count else None
+    if not chat_span_count:
+        return None
+    return total_cost, total_input_tokens, total_output_tokens
 
 
 def _compute_output_statistics(path: str, otel_path: str | None = None) -> Stats:
@@ -131,6 +139,8 @@ def _compute_output_statistics(path: str, otel_path: str | None = None) -> Stats
     last_ts = None
     result = None
     total_cost = 0.0
+    total_input_tokens = 0
+    total_output_tokens = 0
 
     with open(path) as f:
         for line in f:
@@ -158,14 +168,27 @@ def _compute_output_statistics(path: str, otel_path: str | None = None) -> Stats
             elif etype == "assistant.turn_start":
                 turn_count += 1
             elif etype == "model.model_call_success":
-                total_cost += _model_call_cost(_output_event_data(event))
+                model, token_counts = _model_call_usage(_output_event_data(event))
+                total_cost += calculate_price(
+                    model,
+                    token_counts["input"],
+                    token_counts["cache_read"],
+                    token_counts["cache_write"],
+                    token_counts["output"],
+                )
+                total_input_tokens += (
+                    token_counts["input"]
+                    + token_counts["cache_read"]
+                    + token_counts["cache_write"]
+                )
+                total_output_tokens += token_counts["output"]
             elif etype == "result":
                 result = _output_event_data(event)
 
     if otel_path and os.path.isfile(otel_path):
-        otel_cost = _compute_otel_cost(otel_path)
-        if otel_cost is not None:
-            total_cost = otel_cost
+        otel_usage = _compute_otel_usage(otel_path)
+        if otel_usage is not None:
+            total_cost, total_input_tokens, total_output_tokens = otel_usage
 
     usage = result.get("usage", {}) if result else {}
     duration_ms = usage.get("totalApiDurationMs", usage.get("sessionDurationMs", 0))
@@ -174,6 +197,8 @@ def _compute_output_statistics(path: str, otel_path: str | None = None) -> Stats
 
     return Stats(
         total_costs=round(total_cost, 8),
+        total_input_tokens=total_input_tokens,
+        total_output_tokens=total_output_tokens,
         total_turns=turn_count,
         total_tool_calls=tool_call_count,
         duration_seconds=duration_ms / 1000,
@@ -267,9 +292,10 @@ def compute_statistics(session_dir: str) -> Stats:
     if total_duration_ms == 0 and first_ts and last_ts:
         total_duration_ms = (last_ts - first_ts).total_seconds() * 1000
 
-    # total_tokens = input_tokens + output_tokens + cache_read_tokens + cache_write_tokens
     return Stats(
         total_costs=round(total_cost, 8),
+        total_input_tokens=input_tokens + cache_read_tokens + cache_write_tokens,
+        total_output_tokens=output_tokens,
         total_turns=turn_count,
         total_tool_calls=tool_call_count,
         duration_seconds=total_duration_ms / 1000,

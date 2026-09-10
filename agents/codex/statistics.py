@@ -135,6 +135,8 @@ def compute_statistics(session_dir: str) -> Stats:
 
     return Stats(
         total_costs=round(total_cost, 8),
+        total_input_tokens=input_tokens,
+        total_output_tokens=output_tokens,
         total_turns=assistant_turns or len(turn_ids),
         total_tool_calls=len(tool_call_ids),
         duration_seconds=duration_seconds,
