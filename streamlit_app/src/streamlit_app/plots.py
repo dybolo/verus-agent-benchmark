@@ -10,6 +10,7 @@ from dataclasses import dataclass
 import matplotlib as mpl
 import matplotlib.colors as mcolors
 import matplotlib.pyplot as plt
+import matplotlib.ticker as mticker
 import numpy as np
 import pandas as pd
 from matplotlib.figure import Figure
@@ -79,6 +80,11 @@ def _ordered_conditions(attempts: pd.DataFrame) -> list[str]:
     conditions = attempts[["condition", "harness", "model"]].drop_duplicates()
     conditions = conditions.sort_values(["harness", "model"], kind="stable")
     return conditions["condition"].tolist()
+
+
+def _format_usd_tick(value: float) -> str:
+    """Format agent costs precisely enough to distinguish nearby plot positions."""
+    return f"${value:,.4f}".rstrip("0").rstrip(".")
 
 
 def outcome_composition(attempts: pd.DataFrame, width: float, height: float) -> PlotResult:
@@ -231,6 +237,15 @@ def quality_cost(
             )
         if cost_scale == "log" and not plotted.empty:
             axis.set_xscale("log")
+            axis.xaxis.set_minor_formatter(mticker.NullFormatter())
+        if not plotted.empty:
+            agent_costs = np.sort(plotted["mean_cost_per_attempt_usd"].unique())
+            axis.set_xticks(
+                agent_costs,
+                [_format_usd_tick(cost) for cost in agent_costs],
+                rotation=30,
+                ha="right",
+            )
         axis.set_ylim(0, 100)
         axis.set_xlabel("Mean cost per attempted task (USD)")
         axis.set_ylabel("Valid repair rate (%)")

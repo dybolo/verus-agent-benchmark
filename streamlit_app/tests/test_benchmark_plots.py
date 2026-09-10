@@ -4,6 +4,7 @@ import unittest
 from pathlib import Path
 
 import matplotlib
+import numpy as np
 
 matplotlib.use("Agg")
 
@@ -61,6 +62,28 @@ class PlotSmokeTests(unittest.TestCase):
         result = outcome_composition(self.selected, 10, 5)
         self.assertTrue(result.figure.axes[0].patches)
         self.assertTrue(all(not patch.get_hatch() for patch in result.figure.axes[0].patches))
+
+    def test_quality_cost_axis_marks_each_agent_cost(self) -> None:
+        for scale in ("log", "linear"):
+            with self.subTest(scale=scale):
+                result = quality_cost(self.selected, 10, 5, scale)
+                expected = result.data.dropna(subset=["mean_cost_per_attempt_usd"])
+                if scale == "log":
+                    expected = expected[expected["mean_cost_per_attempt_usd"] > 0]
+                costs = np.sort(expected["mean_cost_per_attempt_usd"].unique())
+
+                np.testing.assert_allclose(result.figure.axes[0].get_xticks(), costs)
+                self.assertEqual(
+                    [label.get_text() for label in result.figure.axes[0].get_xticklabels()],
+                    [f"${cost:,.4f}".rstrip("0").rstrip(".") for cost in costs],
+                )
+                if scale == "log":
+                    self.assertTrue(
+                        all(
+                            not label.get_text()
+                            for label in result.figure.axes[0].xaxis.get_minorticklabels()
+                        )
+                    )
 
     def test_caterpillar_contains_expected_current_taxonomy(self) -> None:
         result = caterpillar(self.selected, 12, 5)
