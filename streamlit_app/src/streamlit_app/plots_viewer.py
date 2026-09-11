@@ -23,6 +23,8 @@ from streamlit_app.plots import (
     harness_resource_usage,
     outcome_composition,
     quality_cost,
+    task_normalized_harness_effect,
+    token_usage_by_outcome,
 )
 
 
@@ -212,6 +214,11 @@ def main() -> None:
     with question_three:
         st.header("How does agent harness design affect proof-repair performance?")
         render_plot(
+            task_normalized_harness_effect(selected, figure_width, figure_height),
+            "task-normalized-harness-effect",
+        )
+        st.divider()
+        render_plot(
             exclusive_solves_matrix(selected, figure_width, figure_height),
             "harness-exclusive-solves",
         )
@@ -219,6 +226,11 @@ def main() -> None:
         render_plot(
             harness_resource_usage(selected, figure_width, figure_height),
             "harness-resource-usage",
+        )
+        st.divider()
+        render_plot(
+            token_usage_by_outcome(selected, figure_width, figure_height),
+            "token-usage-by-outcome",
         )
 
     # with question_four:

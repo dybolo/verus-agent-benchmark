@@ -48,6 +48,7 @@ OUTCOME_COLORS = {
 @dataclass
 class PlotResult:
     """A rendered figure, its export table, and an optional caveat for the viewer."""
+
     figure: Figure
     data: pd.DataFrame
     warning: str | None = None
@@ -99,14 +100,9 @@ def outcome_composition(attempts: pd.DataFrame, width: float, height: float) -> 
     totals = counts.sum(axis=1)
     percentages = counts.div(totals.replace(0, np.nan), axis=0) * 100
     export = (
-        counts.rename_axis(index="condition", columns="outcome")
-        .stack(future_stack=True)
-        .rename("count")
-        .reset_index()
+        counts.rename_axis(index="condition", columns="outcome").stack(future_stack=True).rename("count").reset_index()
     )
-    export["percentage"] = export.apply(
-        lambda row: percentages.loc[row["condition"], row["outcome"]], axis=1
-    )
+    export["percentage"] = export.apply(lambda row: percentages.loc[row["condition"], row["outcome"]], axis=1)
 
     with _style():
         figure, axis = plt.subplots(
@@ -156,9 +152,7 @@ def outcome_composition(attempts: pd.DataFrame, width: float, height: float) -> 
     return PlotResult(figure=figure, data=export)
 
 
-def quality_cost(
-    attempts: pd.DataFrame, width: float, height: float, cost_scale: str = "log"
-) -> PlotResult:
+def quality_cost(attempts: pd.DataFrame, width: float, height: float, cost_scale: str = "log") -> PlotResult:
     """Plot valid-repair rate against mean cost per attempt."""
     summary = (
         attempts.groupby(["condition", "harness", "model"], observed=True)
@@ -191,17 +185,18 @@ def quality_cost(
         model: color
         for model, color in zip(
             sorted(plotted["model"].unique()),
-            [COLORS["blue"], COLORS["orange"], COLORS["green"], COLORS["purple"], COLORS["red"]],
+            [
+                COLORS["blue"],
+                COLORS["orange"],
+                COLORS["green"],
+                COLORS["purple"],
+                COLORS["red"],
+            ],
         )
     }
 
-    frontier = plotted.sort_values(
-        ["mean_cost_per_attempt_usd", "repair_rate"], ascending=[True, False]
-    )
-    frontier = frontier[
-        frontier["repair_rate"]
-        > frontier["repair_rate"].cummax().shift(1, fill_value=-np.inf)
-    ]
+    frontier = plotted.sort_values(["mean_cost_per_attempt_usd", "repair_rate"], ascending=[True, False])
+    frontier = frontier[frontier["repair_rate"] > frontier["repair_rate"].cummax().shift(1, fill_value=-np.inf)]
 
     with _style():
         figure, axis = plt.subplots(figsize=(width, height), constrained_layout=True)
@@ -278,9 +273,7 @@ def caterpillar(attempts: pd.DataFrame, width: float, minimum_height: float) -> 
     )
     summary["solve_rate"] = summary["solved"] / summary["observed"]
     proof_order = [
-        proof
-        for proof in ("atomic-operation", "tokenized_state_machine!")
-        if proof in set(summary["proof_style"])
+        proof for proof in ("atomic-operation", "tokenized_state_machine!") if proof in set(summary["proof_style"])
     ]
     proof_order.extend(sorted(set(summary["proof_style"]) - set(proof_order)))
     if not proof_order:
@@ -313,9 +306,7 @@ def caterpillar(attempts: pd.DataFrame, width: float, minimum_height: float) -> 
             labels: list[str] = []
             header_ticks: list[bool] = []
             cursor = 0.0
-            for source_module, module_tasks in panel.groupby(
-                "source_module", observed=True, sort=False
-            ):
+            for source_module, module_tasks in panel.groupby("source_module", observed=True, sort=False):
                 header_position = cursor
                 tick_positions.append(header_position)
                 labels.append(str(source_module))
@@ -379,25 +370,17 @@ def caterpillar(attempts: pd.DataFrame, width: float, minimum_height: float) -> 
 
 def harness_comparisons(attempts: pd.DataFrame) -> pd.DataFrame:
     """Build task-level same-model comparisons between harnesses."""
-    metadata = (
-        attempts[["task_id", "proof_style", "source_module"]]
-        .drop_duplicates("task_id")
-        .set_index("task_id")
-    )
+    metadata = attempts[["task_id", "proof_style", "source_module"]].drop_duplicates("task_id").set_index("task_id")
     all_tasks = sorted(attempts["task_id"].unique())
     records: list[dict[str, object]] = []
     for model, model_attempts in attempts.groupby("model", observed=True):
         harnesses = sorted(model_attempts["harness"].unique())
         for harness_a, harness_b in itertools.combinations(harnesses, 2):
             success_a = (
-                model_attempts[model_attempts["harness"] == harness_a]
-                .set_index("task_id")["strict_success"]
-                .to_dict()
+                model_attempts[model_attempts["harness"] == harness_a].set_index("task_id")["strict_success"].to_dict()
             )
             success_b = (
-                model_attempts[model_attempts["harness"] == harness_b]
-                .set_index("task_id")["strict_success"]
-                .to_dict()
+                model_attempts[model_attempts["harness"] == harness_b].set_index("task_id")["strict_success"].to_dict()
             )
             comparison = f"{model}\n{harness_a} ↔ {harness_b}"
             for identifier in all_tasks:
@@ -447,7 +430,13 @@ def _matrix(
     if comparison_data.empty:
         with _style():
             figure, axis = plt.subplots(figsize=(width, minimum_height))
-            axis.text(0.5, 0.5, "No same-model harness pair is available", ha="center", va="center")
+            axis.text(
+                0.5,
+                0.5,
+                "No same-model harness pair is available",
+                ha="center",
+                va="center",
+            )
             axis.axis("off")
         return PlotResult(
             figure,
@@ -458,8 +447,7 @@ def _matrix(
     ordered_tasks = (
         comparison_data[["task_id", "proof_style", "source_module"]]
         .drop_duplicates("task_id")
-        .sort_values(["proof_style", "source_module", "task_id"], na_position="last")
-        ["task_id"]
+        .sort_values(["proof_style", "source_module", "task_id"], na_position="last")["task_id"]
         .tolist()
     )
     comparisons = comparison_data["comparison"].drop_duplicates().tolist()
@@ -483,7 +471,12 @@ def _matrix(
             "Missing": COLORS["gray"],
         }
         palette = [status_colors[status] for status in status_order]
-        labels = {"Both fail": "F", "Disagreement": "·", "Both pass": "P", "Missing": "×"}
+        labels = {
+            "Both fail": "F",
+            "Disagreement": "·",
+            "Both pass": "P",
+            "Missing": "×",
+        }
         title = "Task-level harness agreements"
         value_column = "agreement"
 
@@ -526,28 +519,20 @@ def _matrix(
     return PlotResult(figure=figure, data=comparison_data)
 
 
-def disagreement_matrix(
-    comparison_data: pd.DataFrame, width: float, minimum_height: float
-) -> PlotResult:
+def disagreement_matrix(comparison_data: pd.DataFrame, width: float, minimum_height: float) -> PlotResult:
     """Render directional differences between same-model harness results."""
     return _matrix(comparison_data, "disagreement", width, minimum_height)
 
 
-def agreement_matrix(
-    comparison_data: pd.DataFrame, width: float, minimum_height: float
-) -> PlotResult:
+def agreement_matrix(comparison_data: pd.DataFrame, width: float, minimum_height: float) -> PlotResult:
     """Render matching and non-matching same-model harness results."""
     return _matrix(comparison_data, "agreement", width, minimum_height)
 
 
-def exclusive_solves_matrix(
-    attempts: pd.DataFrame, width: float, minimum_height: float
-) -> PlotResult:
+def exclusive_solves_matrix(attempts: pd.DataFrame, width: float, minimum_height: float) -> PlotResult:
     """Plot task outcomes and highlight solves unique to one same-model harness."""
     comparable_models = [
-        model
-        for model, group in attempts.groupby("model", observed=True)
-        if group["harness"].nunique() >= 2
+        model for model, group in attempts.groupby("model", observed=True) if group["harness"].nunique() >= 2
     ]
     records: list[dict[str, object]] = []
     panels: list[tuple[str, pd.DataFrame, list[str]]] = []
@@ -562,9 +547,7 @@ def exclusive_solves_matrix(
         ).reindex(columns=harnesses)
         solver_counts = success.fillna(False).sum(axis=1).astype(int)
         exclusive_solver = success.apply(
-            lambda row: str(row[row.fillna(False).astype(bool)].index[0])
-            if row.fillna(False).sum() == 1
-            else None,
+            lambda row: str(row[row.fillna(False).astype(bool)].index[0]) if row.fillna(False).sum() == 1 else None,
             axis=1,
         )
         ordering = pd.DataFrame(
@@ -620,7 +603,13 @@ def exclusive_solves_matrix(
     if not panels:
         with _style():
             figure, axis = plt.subplots(figsize=(width, minimum_height))
-            axis.text(0.5, 0.5, "No same-model harness comparison is available", ha="center", va="center")
+            axis.text(
+                0.5,
+                0.5,
+                "No same-model harness comparison is available",
+                ha="center",
+                va="center",
+            )
             axis.axis("off")
         return PlotResult(
             figure,
@@ -631,7 +620,12 @@ def exclusive_solves_matrix(
     total_rows = sum(len(panel) for _, panel, _ in panels)
     figure_height = max(minimum_height, 1.8 + 0.25 * total_rows)
     status_order = ["Failed", "Shared solve", "Exclusive solve", "Missing"]
-    status_colors = [COLORS["light_gray"], COLORS["green"], COLORS["blue"], COLORS["gray"]]
+    status_colors = [
+        COLORS["light_gray"],
+        COLORS["green"],
+        COLORS["blue"],
+        COLORS["gray"],
+    ]
     cmap = mcolors.ListedColormap(status_colors)
     norm = mcolors.BoundaryNorm(np.arange(-0.5, len(status_order) + 0.5), cmap.N)
 
@@ -686,10 +680,7 @@ def exclusive_solves_matrix(
             fontweight="bold",
         )
         axes[-1, 0].legend(
-            handles=[
-                Patch(facecolor=color, label=status)
-                for color, status in zip(status_colors, status_order)
-            ],
+            handles=[Patch(facecolor=color, label=status) for color, status in zip(status_colors, status_order)],
             frameon=False,
             loc="upper center",
             bbox_to_anchor=(0.5, -0.12),
@@ -698,16 +689,241 @@ def exclusive_solves_matrix(
     omitted_models = attempts["model"].nunique() - len(comparable_models)
     warning = None
     if omitted_models:
-        warning = (
-            f"{omitted_models} model(s) omitted because fewer than two harnesses "
-            "evaluated that model."
-        )
+        warning = f"{omitted_models} model(s) omitted because fewer than two harnesses evaluated that model."
     return PlotResult(figure=figure, data=export, warning=warning)
 
 
-def harness_resource_usage(
-    attempts: pd.DataFrame, width: float, height: float
+def task_normalized_harness_effect(
+    attempts: pd.DataFrame,
+    width: float,
+    minimum_height: float,
+    *,
+    reference_harness: str = "pi",
+    bootstrap_samples: int = 10_000,
+    random_seed: int = 0,
 ) -> PlotResult:
+    """Compare each harness with Pi on the same tasks and model.
+
+    Resource effects are median within-task ratios. Repair effects are paired
+    repair-rate differences because a ratio is not meaningful for binary task
+    outcomes. Confidence intervals bootstrap whole task contrasts.
+    """
+    metric_specs = (
+        ("total_input_tokens", "Input tokens", "ratio"),
+        ("total_output_tokens", "Output tokens", "ratio"),
+        ("total_tool_calls", "Tool calls", "ratio"),
+        ("strict_success", "Valid proof repairs", "difference"),
+    )
+    values = (
+        attempts.groupby(["model", "harness", "task_id"], observed=True)
+        .agg(
+            total_input_tokens=("total_input_tokens", "median"),
+            total_output_tokens=("total_output_tokens", "median"),
+            total_tool_calls=("total_tool_calls", "median"),
+            strict_success=("strict_success", "max"),
+        )
+        .reset_index()
+    )
+    rng = np.random.default_rng(random_seed)
+    records: list[dict[str, object]] = []
+    models_without_reference = 0
+
+    for model, model_values in values.groupby("model", observed=True, sort=True):
+        if reference_harness not in set(model_values["harness"]):
+            models_without_reference += 1
+            continue
+        reference = model_values[model_values["harness"] == reference_harness]
+        harnesses = sorted(set(model_values["harness"]) - {reference_harness})
+        for harness in harnesses:
+            candidate = model_values[model_values["harness"] == harness]
+            available_tasks = len(set(reference["task_id"]) | set(candidate["task_id"]))
+            for metric, metric_label, effect_type in metric_specs:
+                paired = candidate[["task_id", metric]].merge(
+                    reference[["task_id", metric]],
+                    on="task_id",
+                    how="inner",
+                    suffixes=("_harness", "_reference"),
+                )
+                harness_values = pd.to_numeric(paired[f"{metric}_harness"], errors="coerce")
+                reference_values = pd.to_numeric(paired[f"{metric}_reference"], errors="coerce")
+                valid = harness_values.notna() & reference_values.notna()
+                if effect_type == "ratio":
+                    valid &= (harness_values > 0) & (reference_values > 0)
+                paired = paired[valid]
+                if paired.empty:
+                    continue
+
+                harness_array = pd.to_numeric(paired[f"{metric}_harness"]).to_numpy(dtype=float)
+                reference_array = pd.to_numeric(paired[f"{metric}_reference"]).to_numpy(dtype=float)
+                contrasts = harness_array / reference_array if effect_type == "ratio" else harness_array - reference_array
+                statistic = np.median if effect_type == "ratio" else np.mean
+                estimate = float(statistic(contrasts))
+                if bootstrap_samples > 0:
+                    samples = rng.choice(contrasts, size=(bootstrap_samples, len(contrasts)), replace=True)
+                    bootstrap_estimates = statistic(samples, axis=1)
+                    ci_low, ci_high = np.quantile(bootstrap_estimates, [0.025, 0.975])
+                else:
+                    ci_low = ci_high = estimate
+
+                scale = 1 if effect_type == "ratio" else 100
+                records.append(
+                    {
+                        "model": model,
+                        "harness": harness,
+                        "reference_harness": reference_harness,
+                        "comparison": f"{harness} vs {reference_harness}",
+                        "metric": metric,
+                        "metric_label": metric_label,
+                        "effect_type": "median within-task ratio" if effect_type == "ratio" else "paired rate difference",
+                        "paired_tasks": len(contrasts),
+                        "excluded_tasks": available_tasks - len(contrasts),
+                        "harness_task_median": float(np.median(harness_array)),
+                        "reference_task_median": float(np.median(reference_array)),
+                        "estimate": estimate * scale,
+                        "ci_low": float(ci_low) * scale,
+                        "ci_high": float(ci_high) * scale,
+                        "unit": "ratio" if effect_type == "ratio" else "percentage points",
+                    }
+                )
+
+    summary = pd.DataFrame.from_records(
+        records,
+        columns=[
+            "model",
+            "harness",
+            "reference_harness",
+            "comparison",
+            "metric",
+            "metric_label",
+            "effect_type",
+            "paired_tasks",
+            "excluded_tasks",
+            "harness_task_median",
+            "reference_task_median",
+            "estimate",
+            "ci_low",
+            "ci_high",
+            "unit",
+        ],
+    )
+    if summary.empty:
+        with _style():
+            figure, axis = plt.subplots(figsize=(width, minimum_height))
+            axis.text(
+                0.5,
+                0.5,
+                f"No same-model comparison with {reference_harness} is available",
+                ha="center",
+                va="center",
+            )
+            axis.axis("off")
+        return PlotResult(
+            figure,
+            summary,
+            f"Select {reference_harness} and at least one other harness that evaluated the same model on a shared task.",
+        )
+
+    comparison_order = (
+        summary[["harness", "model", "comparison"]]
+        .drop_duplicates()
+        .sort_values(["harness", "model"], kind="stable")["comparison"]
+        .tolist()
+    )
+    metric_order = [metric for metric, _, _ in metric_specs]
+    summary["comparison"] = pd.Categorical(summary["comparison"], comparison_order, ordered=True)
+    summary["metric"] = pd.Categorical(summary["metric"], metric_order, ordered=True)
+    summary = summary.sort_values(["comparison", "metric"], kind="stable").reset_index(drop=True)
+    labels = []
+    for comparison in comparison_order:
+        row = summary[summary["comparison"] == comparison].iloc[0]
+        labels.append(f"{row['harness']} | {row['model']}")
+    y = np.arange(len(comparison_order))
+    figure_height = max(minimum_height, 2.2 + 0.58 * len(comparison_order))
+    harnesses = sorted(summary["harness"].unique())
+    palette = [COLORS["blue"], COLORS["orange"], COLORS["green"], COLORS["purple"], COLORS["red"]]
+    harness_colors = {harness: palette[index % len(palette)] for index, harness in enumerate(harnesses)}
+
+    resource_summary = summary[summary["unit"] == "ratio"]
+    if resource_summary.empty:
+        log_low, log_high = 0.5, 2.0
+    else:
+        resource_low = max(float(resource_summary["ci_low"].min()), np.finfo(float).tiny)
+        resource_high = float(resource_summary["ci_high"].max())
+        log_low = 2.0 ** np.floor(np.log2(min(resource_low, 1.0)))
+        log_high = 2.0 ** np.ceil(np.log2(max(resource_high, 1.0)))
+    if log_low == log_high:
+        log_low /= 2
+        log_high *= 2
+    ratio_ticks = [tick for tick in (0.125, 0.25, 0.5, 1, 2, 4, 8, 16, 32) if log_low <= tick <= log_high]
+
+    with _style():
+        figure, axes = plt.subplots(1, len(metric_specs), figsize=(width, figure_height), constrained_layout=True, sharey=True)
+        for axis, (metric, metric_label, effect_type) in zip(axes, metric_specs):
+            panel = summary[summary["metric"] == metric].set_index("comparison").reindex(comparison_order)
+            estimates = panel["estimate"].to_numpy(dtype=float)
+            ci_low = panel["ci_low"].to_numpy(dtype=float)
+            ci_high = panel["ci_high"].to_numpy(dtype=float)
+            valid = ~np.isnan(estimates)
+            reference_value = 1 if effect_type == "ratio" else 0
+            axis.axvline(reference_value, color=COLORS["dark"], linewidth=1, linestyle="--", zorder=1)
+            for position in y[valid]:
+                row = panel.iloc[position]
+                estimate = float(row["estimate"])
+                low = float(row["ci_low"])
+                high = float(row["ci_high"])
+                axis.errorbar(
+                    estimate,
+                    position,
+                    xerr=np.array([[estimate - low], [high - estimate]]),
+                    fmt="o",
+                    color=harness_colors[str(row["harness"])],
+                    markeredgecolor=COLORS["dark"],
+                    markeredgewidth=0.5,
+                    ecolor=COLORS["dark"],
+                    elinewidth=1.2,
+                    capsize=3,
+                    markersize=6,
+                    zorder=3,
+                )
+                label = f"{estimate:.2f}×" if effect_type == "ratio" else f"{estimate:+.1f} pp"
+                axis.annotate(label, (estimate, position), xytext=(5, 6), textcoords="offset points", fontsize=7)
+            if effect_type == "ratio":
+                axis.set_xscale("log", base=2)
+                axis.set_xlim(log_low / 1.08, log_high * 1.08)
+                axis.set_xticks(ratio_ticks, [f"{tick:g}×" for tick in ratio_ticks])
+                axis.xaxis.set_minor_formatter(mticker.NullFormatter())
+                axis.set_xlabel(f"Relative to {reference_harness.capitalize()}")
+            else:
+                extent = min(100.0, max(10.0, float(np.nanmax(np.abs([ci_low, ci_high]))) + 8.0))
+                axis.set_xlim(-extent, extent)
+                axis.xaxis.set_major_formatter(mticker.PercentFormatter(xmax=100, decimals=0))
+                axis.set_xlabel(f"Difference from {reference_harness.capitalize()} (pp)")
+            axis.set_title(metric_label, loc="left", fontweight="bold")
+            axis.grid(axis="x", color=COLORS["light_gray"], linewidth=0.7)
+            axis.set_axisbelow(True)
+        axes[0].set_yticks(y, labels)
+        axes[0].invert_yaxis()
+        axes[0].set_ylabel("Harness | model")
+        figure.suptitle(
+            f"Task-normalized harness effects relative to {reference_harness.capitalize()}",
+            fontweight="bold",
+        )
+
+    warning_parts = []
+    excluded = int(summary["excluded_tasks"].sum())
+    if excluded:
+        warning_parts.append(
+            f"{excluded} task–metric observation(s) were excluded because the task was unpaired, missing, or had a non-positive resource value"
+        )
+    if models_without_reference:
+        warning_parts.append(
+            f"{models_without_reference} selected model(s) were omitted because {reference_harness} was not available"
+        )
+    warning = "; ".join(warning_parts) + "." if warning_parts else None
+    return PlotResult(figure=figure, data=summary, warning=warning)
+
+
+def harness_resource_usage(attempts: pd.DataFrame, width: float, height: float) -> PlotResult:
     """Compare per-task duration, token usage, and tool calls across conditions."""
     metrics = [
         ("duration_seconds", "Duration", "minutes", 1 / 60),
@@ -771,11 +987,7 @@ def harness_resource_usage(
                 zorder=3,
             )
             for median, position in zip(medians[valid], y[valid]):
-                value_label = (
-                    f"{median:.1f}"
-                    if column == "duration_seconds"
-                    else f"{median:,.0f}"
-                )
+                value_label = f"{median:.1f}" if column == "duration_seconds" else f"{median:,.0f}"
                 axis.annotate(
                     value_label,
                     (median, position),
@@ -812,6 +1024,102 @@ def harness_resource_usage(
     return PlotResult(figure=figure, data=summary, warning=warning)
 
 
+def token_usage_by_outcome(attempts: pd.DataFrame, width: float, height: float) -> PlotResult:
+    """Compare input and output token usage for successful and unsuccessful attempts."""
+    metrics = (
+        ("total_input_tokens", "Input tokens"),
+        ("total_output_tokens", "Output tokens"),
+    )
+    outcomes = (
+        (True, "Successful attempt", COLORS["green"], "o", -0.14),
+        (False, "Unsuccessful attempt", COLORS["red"], "s", 0.14),
+    )
+    conditions = _ordered_conditions(attempts)
+    records: list[dict[str, object]] = []
+
+    for condition in conditions:
+        condition_attempts = attempts[attempts["condition"] == condition]
+        for success, outcome_label, _, _, _ in outcomes:
+            outcome_attempts = condition_attempts[condition_attempts["strict_success"] == success]
+            for metric, metric_label in metrics:
+                values = pd.to_numeric(outcome_attempts[metric], errors="coerce").dropna()
+                records.append(
+                    {
+                        "condition": condition,
+                        "harness": condition_attempts["harness"].iloc[0],
+                        "model": condition_attempts["model"].iloc[0],
+                        "successful": success,
+                        "outcome": outcome_label,
+                        "metric": metric,
+                        "metric_label": metric_label,
+                        "attempts": len(outcome_attempts),
+                        "observations": len(values),
+                        "total": values.sum() if len(values) else np.nan,
+                        "median": values.median() if len(values) else np.nan,
+                        "q1": values.quantile(0.25) if len(values) else np.nan,
+                        "q3": values.quantile(0.75) if len(values) else np.nan,
+                    }
+                )
+
+    summary = pd.DataFrame.from_records(records)
+    y = np.arange(len(conditions))
+    with _style():
+        figure, axes = plt.subplots(
+            1,
+            len(metrics),
+            figsize=(width, max(height, 1.8 + 0.62 * len(conditions))),
+            constrained_layout=True,
+            sharey=True,
+        )
+        for axis, (metric, metric_label) in zip(axes, metrics):
+            for success, outcome_label, color, marker, offset in outcomes:
+                panel = (
+                    summary[(summary["metric"] == metric) & (summary["successful"] == success)]
+                    .set_index("condition")
+                    .reindex(conditions)
+                )
+                medians = panel["median"].to_numpy(dtype=float)
+                q1 = panel["q1"].to_numpy(dtype=float)
+                q3 = panel["q3"].to_numpy(dtype=float)
+                valid = ~np.isnan(medians)
+                axis.errorbar(
+                    medians[valid],
+                    y[valid] + offset,
+                    xerr=np.vstack((medians[valid] - q1[valid], q3[valid] - medians[valid])),
+                    fmt=marker,
+                    color=color,
+                    markeredgecolor=COLORS["dark"],
+                    markeredgewidth=0.4,
+                    ecolor=color,
+                    elinewidth=1.2,
+                    capsize=3,
+                    markersize=6,
+                    label=outcome_label,
+                    zorder=3,
+                )
+            axis.set_xlim(left=0)
+            axis.ticklabel_format(axis="x", style="sci", scilimits=(0, 0))
+            axis.set_xlabel("Median per attempt (tokens)")
+            axis.set_title(metric_label, loc="left", fontweight="bold")
+            axis.grid(axis="x", color=COLORS["light_gray"], linewidth=0.7)
+            axis.set_axisbelow(True)
+        axes[0].set_yticks(y, conditions)
+        axes[0].invert_yaxis()
+        axes[0].set_ylabel("Harness / model")
+        axes[-1].legend(frameon=False, loc="best")
+        figure.suptitle("Token usage by proof-repair outcome (median and IQR)", fontweight="bold")
+
+    incomplete = summary[summary["observations"] < summary["attempts"]]
+    warning = None
+    if not incomplete.empty:
+        affected = incomplete[["condition", "outcome", "metric_label"]].drop_duplicates()
+        warning = (
+            f"{len(affected)} condition–outcome–metric combination(s) have missing observations; "
+            "summaries use available attempts."
+        )
+    return PlotResult(figure=figure, data=summary, warning=warning)
+
+
 def _has_complete_two_by_two(summary: pd.DataFrame) -> bool:
     """Return whether two harnesses evaluated each of two models."""
     cells = set(zip(summary["harness"], summary["model"]))
@@ -822,9 +1130,7 @@ def _has_complete_two_by_two(summary: pd.DataFrame) -> bool:
     return False
 
 
-def harness_model_interaction(
-    attempts: pd.DataFrame, width: float, height: float
-) -> PlotResult:
+def harness_model_interaction(attempts: pd.DataFrame, width: float, height: float) -> PlotResult:
     """Plot repair rate for each observed harness and model combination."""
     summary = (
         attempts.groupby(["harness", "model", "condition"], observed=True)
@@ -835,12 +1141,7 @@ def harness_model_interaction(
         .reset_index()
     )
     summary["repair_rate"] = summary["valid_repairs"] / summary["attempted_tasks"]
-    model_order = (
-        summary.groupby("model", observed=True)["repair_rate"]
-        .mean()
-        .sort_values()
-        .index.tolist()
-    )
+    model_order = summary.groupby("model", observed=True)["repair_rate"].mean().sort_values().index.tolist()
     harnesses = sorted(summary["harness"].unique())
     palette = [COLORS["blue"], COLORS["orange"], COLORS["green"], COLORS["purple"]]
     markers = ["o", "s", "^", "D"]
@@ -852,9 +1153,7 @@ def harness_model_interaction(
             harness_summary = summary[summary["harness"] == harness].set_index("model")
             values = np.array(
                 [
-                    harness_summary.loc[model, "repair_rate"] * 100
-                    if model in harness_summary.index
-                    else np.nan
+                    harness_summary.loc[model, "repair_rate"] * 100 if model in harness_summary.index else np.nan
                     for model in model_order
                 ],
                 dtype=float,

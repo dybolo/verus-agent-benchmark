@@ -26,9 +26,13 @@ from streamlit_app.plots import (
     harness_resource_usage,
     outcome_composition,
     quality_cost,
+    task_normalized_harness_effect,
+    token_usage_by_outcome,
 )
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
+
+
 class PlotSmokeTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
@@ -38,10 +42,20 @@ class PlotSmokeTests(unittest.TestCase):
             [REPO_ROOT / "tasks", REPO_ROOT / "full_tasks"],
         )
         attempts = flatten_runs(runs, metadata)
-        cls.selected = cohort_attempts(attempts, discover_cohorts(attempts)[0])
+        cls.attempts = attempts
+        qwen_cohort = next(
+            cohort
+            for cohort in discover_cohorts(attempts)
+            if {
+                "opencode / bedrock-qwen3-coder-480b-a35b",
+                "pi / bedrock-qwen3-coder-480b-a35b",
+            }.issubset(cohort.conditions)
+            and len(cohort.task_ids) == 50
+        )
+        cls.selected = cohort_attempts(attempts, qwen_cohort)
         cls.comparisons = harness_comparisons(cls.selected)
 
-    def test_all_six_plots_render_and_export(self) -> None:
+    def test_all_plots_render_and_export(self) -> None:
         results = [
             outcome_composition(self.selected, 10, 5),
             quality_cost(self.selected, 10, 5, "log"),
@@ -49,6 +63,8 @@ class PlotSmokeTests(unittest.TestCase):
             exclusive_solves_matrix(self.selected, 10, 5),
             harness_resource_usage(self.selected, 12, 5),
             harness_model_interaction(self.selected, 10, 5),
+            task_normalized_harness_effect(self.selected, 10, 5),
+            token_usage_by_outcome(self.selected, 10, 5),
         ]
         for result in results:
             with self.subTest(columns=list(result.data.columns)):
@@ -79,10 +95,7 @@ class PlotSmokeTests(unittest.TestCase):
                 )
                 if scale == "log":
                     self.assertTrue(
-                        all(
-                            not label.get_text()
-                            for label in result.figure.axes[0].xaxis.get_minorticklabels()
-                        )
+                        all(not label.get_text() for label in result.figure.axes[0].xaxis.get_minorticklabels())
                     )
 
     def test_caterpillar_contains_expected_current_taxonomy(self) -> None:
@@ -115,13 +128,104 @@ class PlotSmokeTests(unittest.TestCase):
         self.assertTrue((exclusive["harness"] == exclusive["exclusive_solver"]).all())
         self.assertTrue((exclusive["solver_count"] == 1).all())
 
-    def test_resource_usage_exports_all_three_metrics(self) -> None:
+    def test_task_normalized_effect_compares_all_metrics_with_pi(self) -> None:
+        cohort = next(
+            cohort
+            for cohort in discover_cohorts(self.attempts)
+            if {
+                "codex / gpt-5.6-luna",
+                "copilot / gpt-5.6-luna",
+                "opencode / gpt-5.6-luna",
+                "pi / gpt-5.6-luna",
+            }.issubset(cohort.conditions)
+        )
+        selected = cohort_attempts(self.attempts, cohort)
+        result = task_normalized_harness_effect(selected, 10, 5)
+        self.assertEqual(
+            set(result.data["metric"]),
+            {
+                "total_input_tokens",
+                "total_output_tokens",
+                "total_tool_calls",
+                "strict_success",
+            },
+        )
+        self.assertEqual(set(result.data["reference_harness"]), {"pi"})
+        self.assertEqual(len(result.figure.axes), 4)
+        self.assertTrue(all(axis.get_xscale() == "log" for axis in result.figure.axes[:3]))
+        self.assertEqual(result.figure.axes[3].get_xscale(), "linear")
+
+        row = result.data[result.data["metric"] == "total_input_tokens"].iloc[0]
+        harness_values = selected[
+            (selected["model"] == row["model"]) & (selected["harness"] == row["harness"])
+        ][["task_id", "total_input_tokens"]]
+        pi_values = selected[
+            (selected["model"] == row["model"]) & (selected["harness"] == "pi")
+        ][["task_id", "total_input_tokens"]]
+        paired = harness_values.merge(pi_values, on="task_id", suffixes=("_harness", "_pi"))
+        expected = np.median(paired["total_input_tokens_harness"] / paired["total_input_tokens_pi"])
+        self.assertAlmostEqual(row["estimate"], expected)
+        self.assertLessEqual(row["ci_low"], row["estimate"])
+        self.assertGreaterEqual(row["ci_high"], row["estimate"])
+
+        repairs = result.data[result.data["metric"] == "strict_success"].iloc[0]
+        harness_repairs = selected[
+            (selected["model"] == repairs["model"]) & (selected["harness"] == repairs["harness"])
+        ][["task_id", "strict_success"]]
+        pi_repairs = selected[
+            (selected["model"] == repairs["model"]) & (selected["harness"] == "pi")
+        ][["task_id", "strict_success"]]
+        paired_repairs = harness_repairs.merge(pi_repairs, on="task_id", suffixes=("_harness", "_pi"))
+        expected_repairs = (
+            paired_repairs["strict_success_harness"].astype(float)
+            - paired_repairs["strict_success_pi"].astype(float)
+        ).mean() * 100
+        self.assertAlmostEqual(repairs["estimate"], expected_repairs)
+        self.assertEqual(repairs["unit"], "percentage points")
+
+    def test_task_normalized_effect_warns_when_tasks_are_unpaired(self) -> None:
+        attempts = self.selected.copy()
+        comparison = task_normalized_harness_effect(attempts, 10, 5).data.iloc[0]
+        condition_rows = (attempts["model"] == comparison["model"]) & (
+            attempts["harness"] == comparison["harness"]
+        )
+        task = attempts.loc[condition_rows, "task_id"].iloc[0]
+        attempts = attempts[~(condition_rows & (attempts["task_id"] == task))]
+
+        result = task_normalized_harness_effect(attempts, 10, 5)
+
+        self.assertIsNotNone(result.warning)
+        self.assertTrue((result.data["excluded_tasks"] >= 1).all())
+
+    def test_resource_usage_exports_all_metrics(self) -> None:
         result = harness_resource_usage(self.selected, 12, 5)
         self.assertEqual(
             set(result.data["metric"]),
-            {"duration_seconds", "total_turns", "total_tool_calls"},
+            {
+                "duration_seconds",
+                "total_input_tokens",
+                "total_output_tokens",
+                "total_tool_calls",
+            },
         )
         self.assertTrue({"total", "median", "q1", "q3"}.issubset(result.data.columns))
+
+    def test_token_usage_is_split_by_successful_outcome(self) -> None:
+        result = token_usage_by_outcome(self.selected, 10, 5)
+
+        self.assertEqual(
+            set(result.data["metric"]),
+            {"total_input_tokens", "total_output_tokens"},
+        )
+        self.assertEqual(set(result.data["successful"]), {True, False})
+        self.assertEqual(len(result.figure.axes), 2)
+        expected_attempts = (
+            self.selected.groupby(["condition", "strict_success"], observed=True)
+            .size()
+            .to_dict()
+        )
+        for row in result.data.itertuples():
+            self.assertEqual(row.attempts, expected_attempts.get((row.condition, row.successful), 0))
 
     def test_resource_usage_counts_timeouts_as_twenty_minutes(self) -> None:
         attempts = self.selected.copy()
@@ -132,8 +236,7 @@ class PlotSmokeTests(unittest.TestCase):
 
         result = harness_resource_usage(attempts, 12, 5)
         duration = result.data[
-            (result.data["condition"] == condition)
-            & (result.data["metric"] == "duration_seconds")
+            (result.data["condition"] == condition) & (result.data["metric"] == "duration_seconds")
         ].iloc[0]
 
         self.assertEqual(duration["median"], 20)
