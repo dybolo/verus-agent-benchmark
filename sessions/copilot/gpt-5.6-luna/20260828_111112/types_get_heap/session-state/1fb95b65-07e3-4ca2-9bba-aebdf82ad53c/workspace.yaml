@@ -1,8 +1,0 @@
-id: 1fb95b65-07e3-4ca2-9bba-aebdf82ad53c
-cwd: /workspace
-client_name: github/cli
-name: The file /workspace/task_env/types_get_heap.rs cannot be verified by Verus, a verification tool for Rust programs, yet. Please add proof annotations to /workspace/task_env/types_get_heap.rs so that it can be successfully verified by Verus, and write the resulting code with proof into a new file with the name /workspace/task_env/types_get_heap_verified.rs. The /workspace/vstd folder is a copy of Verus' vstd definitions and helper lemmas; please feel free to check it when needed. You should KEEP e...
-user_named: false
-summary_count: 0
-created_at: 2026-08-29T12:01:09.094Z
-updated_at: 2026-08-29T12:01:09.388Z

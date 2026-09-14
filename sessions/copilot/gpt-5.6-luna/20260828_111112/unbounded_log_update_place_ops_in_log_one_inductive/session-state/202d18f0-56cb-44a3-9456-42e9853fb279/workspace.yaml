@@ -1,8 +1,0 @@
-id: 202d18f0-56cb-44a3-9456-42e9853fb279
-cwd: /workspace
-client_name: github/cli
-name: The file /workspace/task_env/unbounded_log_update_place_ops_in_log_one_inductive.rs cannot be verified by Verus, a verification tool for Rust programs, yet. Please add proof annotations to /workspace/task_env/unbounded_log_update_place_ops_in_log_one_inductive.rs so that it can be successfully verified by Verus, and write the resulting code with proof into a new file with the name /workspace/task_env/unbounded_log_update_place_ops_in_log_one_inductive_verified.rs. The /workspace/vstd folder is a...
-user_named: false
-summary_count: 0
-created_at: 2026-08-28T15:39:27.299Z
-updated_at: 2026-08-28T15:39:27.643Z

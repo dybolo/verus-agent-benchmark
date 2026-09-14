@@ -1,8 +1,0 @@
-id: 920fb2ba-2670-4d96-8de0-30962227cb1b
-cwd: /workspace
-client_name: github/cli
-name: The file /workspace/task_env/cyclicbuffer_full.rs cannot be verified by Verus, a verification tool for Rust programs, yet. Please add proof annotations to /workspace/task_env/cyclicbuffer_full.rs so that it can be successfully verified by Verus, and write the resulting code with proof into a new file with the name /workspace/task_env/cyclicbuffer_full_verified.rs. The /workspace/vstd folder is a copy of Verus' vstd definitions and helper lemmas; please feel free to check it when needed. You shou...
-user_named: false
-summary_count: 0
-created_at: 2026-08-29T16:58:50.146Z
-updated_at: 2026-08-29T16:58:50.465Z

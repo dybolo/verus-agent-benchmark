@@ -1,8 +1,0 @@
-id: 3ffee403-c9ff-4b4f-a512-d75ac74dca21
-cwd: /workspace
-client_name: github/cli
-name: The file /workspace/task_env/once_get.rs cannot be verified by Verus, a verification tool for Rust programs, yet. Please add proof annotations to /workspace/task_env/once_get.rs so that it can be successfully verified by Verus, and write the resulting code with proof into a new file with the name /workspace/task_env/once_get_verified.rs. The /workspace/vstd folder is a copy of Verus' vstd definitions and helper lemmas; please feel free to check it when needed. You should KEEP editing your proof...
-user_named: false
-summary_count: 0
-created_at: 2026-08-28T12:42:38.043Z
-updated_at: 2026-08-28T12:42:38.406Z

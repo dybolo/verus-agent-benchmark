@@ -1,8 +1,0 @@
-id: 73d67b03-cbcc-4611-a2d3-0da9e6c167e5
-cwd: /workspace
-client_name: github/cli
-name: The file /workspace/task_env/helping_try_simple_flip.rs cannot be verified by Verus, a verification tool for Rust programs, yet. Please add proof annotations to /workspace/task_env/helping_try_simple_flip.rs so that it can be successfully verified by Verus, and write the resulting code with proof into a new file with the name /workspace/task_env/helping_try_simple_flip_verified.rs. The /workspace/vstd folder is a copy of Verus' vstd definitions and helper lemmas; please feel free to check it whe...
-user_named: false
-summary_count: 0
-created_at: 2026-08-28T12:26:21.266Z
-updated_at: 2026-08-28T12:26:21.581Z

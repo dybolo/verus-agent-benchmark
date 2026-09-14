@@ -1,8 +1,0 @@
-id: d9bde69f-0c68-4aac-848a-df871a59120c
-cwd: /workspace
-client_name: github/cli
-name: The file /workspace/task_env/tokens_page_mk_block_tokens_inductive.rs cannot be verified by Verus, a verification tool for Rust programs, yet. Please add proof annotations to /workspace/task_env/tokens_page_mk_block_tokens_inductive.rs so that it can be successfully verified by Verus, and write the resulting code with proof into a new file with the name /workspace/task_env/tokens_page_mk_block_tokens_inductive_verified.rs. The /workspace/vstd folder is a copy of Verus' vstd definitions and helpe...
-user_named: false
-summary_count: 0
-created_at: 2026-08-28T15:29:28.573Z
-updated_at: 2026-08-28T15:29:28.938Z

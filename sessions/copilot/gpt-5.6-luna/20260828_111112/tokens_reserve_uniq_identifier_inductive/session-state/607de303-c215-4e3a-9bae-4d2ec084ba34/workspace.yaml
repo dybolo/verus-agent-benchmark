@@ -1,8 +1,0 @@
-id: 607de303-c215-4e3a-9bae-4d2ec084ba34
-cwd: /workspace
-client_name: github/cli
-name: The file /workspace/task_env/tokens_reserve_uniq_identifier_inductive.rs cannot be verified by Verus, a verification tool for Rust programs, yet. Please add proof annotations to /workspace/task_env/tokens_reserve_uniq_identifier_inductive.rs so that it can be successfully verified by Verus, and write the resulting code with proof into a new file with the name /workspace/task_env/tokens_reserve_uniq_identifier_inductive_verified.rs. The /workspace/vstd folder is a copy of Verus' vstd definitions...
-user_named: false
-summary_count: 0
-created_at: 2026-08-28T15:30:53.274Z
-updated_at: 2026-08-28T15:30:53.634Z

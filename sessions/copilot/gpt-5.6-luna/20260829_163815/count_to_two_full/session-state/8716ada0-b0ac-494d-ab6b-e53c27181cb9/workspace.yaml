@@ -1,8 +1,0 @@
-id: 8716ada0-b0ac-494d-ab6b-e53c27181cb9
-cwd: /workspace
-client_name: github/cli
-name: The file /workspace/task_env/count_to_two_full.rs cannot be verified by Verus, a verification tool for Rust programs, yet. Please add proof annotations to /workspace/task_env/count_to_two_full.rs so that it can be successfully verified by Verus, and write the resulting code with proof into a new file with the name /workspace/task_env/count_to_two_full_verified.rs. The /workspace/vstd folder is a copy of Verus' vstd definitions and helper lemmas; please feel free to check it when needed. You shou...
-user_named: false
-summary_count: 0
-created_at: 2026-08-29T16:58:43.626Z
-updated_at: 2026-08-29T16:58:48.174Z

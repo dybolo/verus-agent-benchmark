@@ -1,8 +1,0 @@
-id: 67d86644-fb6e-4775-97b5-e305335e04d9
-cwd: /workspace
-client_name: github/cli
-name: The file /workspace/task_env/fifo_enqueue.rs cannot be verified by Verus, a verification tool for Rust programs, yet. Please add proof annotations to /workspace/task_env/fifo_enqueue.rs so that it can be successfully verified by Verus, and write the resulting code with proof into a new file with the name /workspace/task_env/fifo_enqueue_verified.rs. The /workspace/vstd folder is a copy of Verus' vstd definitions and helper lemmas; please feel free to check it when needed. You should KEEP editing...
-user_named: false
-summary_count: 0
-created_at: 2026-08-28T12:12:53.105Z
-updated_at: 2026-08-28T12:12:53.436Z

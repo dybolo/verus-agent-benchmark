@@ -1,8 +1,0 @@
-id: bf86e5d2-27cb-414c-98eb-1d03cba4b19e
-cwd: /workspace
-client_name: github/cli
-name: The file /workspace/task_env/flat_combine_client_send_inductive.rs cannot be verified by Verus, a verification tool for Rust programs, yet. Please add proof annotations to /workspace/task_env/flat_combine_client_send_inductive.rs so that it can be successfully verified by Verus, and write the resulting code with proof into a new file with the name /workspace/task_env/flat_combine_client_send_inductive_verified.rs. The /workspace/vstd folder is a copy of Verus' vstd definitions and helper lemmas;...
-user_named: false
-summary_count: 0
-created_at: 2026-08-28T12:16:39.828Z
-updated_at: 2026-08-28T12:16:40.153Z

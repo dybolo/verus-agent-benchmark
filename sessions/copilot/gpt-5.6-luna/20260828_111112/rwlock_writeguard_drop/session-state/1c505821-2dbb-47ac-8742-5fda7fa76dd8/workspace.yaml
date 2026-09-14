@@ -1,8 +1,0 @@
-id: 1c505821-2dbb-47ac-8742-5fda7fa76dd8
-cwd: /workspace
-client_name: github/cli
-name: The file /workspace/task_env/rwlock_writeguard_drop.rs cannot be verified by Verus, a verification tool for Rust programs, yet. Please add proof annotations to /workspace/task_env/rwlock_writeguard_drop.rs so that it can be successfully verified by Verus, and write the resulting code with proof into a new file with the name /workspace/task_env/rwlock_writeguard_drop_verified.rs. The /workspace/vstd folder is a copy of Verus' vstd definitions and helper lemmas; please feel free to check it when n...
-user_named: false
-summary_count: 1
-created_at: 2026-08-29T12:00:30.314Z
-updated_at: 2026-08-29T12:13:57.284Z

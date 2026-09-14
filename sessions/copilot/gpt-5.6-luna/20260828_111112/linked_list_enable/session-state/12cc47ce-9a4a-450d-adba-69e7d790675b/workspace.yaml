@@ -1,8 +1,0 @@
-id: 12cc47ce-9a4a-450d-adba-69e7d790675b
-cwd: /workspace
-client_name: github/cli
-name: The file /workspace/task_env/linked_list_enable.rs cannot be verified by Verus, a verification tool for Rust programs, yet. Please add proof annotations to /workspace/task_env/linked_list_enable.rs so that it can be successfully verified by Verus, and write the resulting code with proof into a new file with the name /workspace/task_env/linked_list_enable_verified.rs. The /workspace/vstd folder is a copy of Verus' vstd definitions and helper lemmas; please feel free to check it when needed. You s...
-user_named: false
-summary_count: 0
-created_at: 2026-08-28T12:29:12.736Z
-updated_at: 2026-08-28T12:29:13.159Z

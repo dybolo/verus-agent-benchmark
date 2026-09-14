@@ -1,8 +1,0 @@
-id: 34ed6ef4-9457-4408-b0a7-d1e41303eba2
-cwd: /workspace
-client_name: github/cli
-name: The file /workspace/task_env/flat_combine_combiner_skip_inductive.rs cannot be verified by Verus, a verification tool for Rust programs, yet. Please add proof annotations to /workspace/task_env/flat_combine_combiner_skip_inductive.rs so that it can be successfully verified by Verus, and write the resulting code with proof into a new file with the name /workspace/task_env/flat_combine_combiner_skip_inductive_verified.rs. The /workspace/vstd folder is a copy of Verus' vstd definitions and helper l...
-user_named: false
-summary_count: 0
-created_at: 2026-08-28T12:21:23.940Z
-updated_at: 2026-08-28T12:21:24.302Z

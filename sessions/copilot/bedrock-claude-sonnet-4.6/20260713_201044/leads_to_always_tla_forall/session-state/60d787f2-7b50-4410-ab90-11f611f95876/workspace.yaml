@@ -1,8 +1,0 @@
-id: 60d787f2-7b50-4410-ab90-11f611f95876
-cwd: /workspace
-client_name: github/cli
-name: The file /workspace/task_env/leads_to_always_tla_forall.rs cannot be verified by Verus, a verification tool for Rust programs, yet. Please add proof annotations to /workspace/task_env/leads_to_always_tla_forall.rs so that it can be successfully verified by Verus, and write the resulting code with proof into a new file with the name /workspace/task_env/leads_to_always_tla_forall_verified.rs. The /workspace/vstd folder is a copy of Verus' vstd definitions and helper lemmas; please feel free to che...
-user_named: false
-summary_count: 0
-created_at: 2026-07-13T19:11:08.814Z
-updated_at: 2026-07-13T19:11:09.080Z
