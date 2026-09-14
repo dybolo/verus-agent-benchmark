@@ -41,7 +41,13 @@
           "duration_seconds": 1193.226,
           "session_file": "sessions/opencode/claude-sonnet-4.6/20260903_180554/free_free_block_mt/session.jsonl",
           "total_input_tokens": 11062215,
-          "total_output_tokens": 46768
+          "total_output_tokens": 46768,
+          "tool_calls_by_type": {
+            "read": 21,
+            "shell_command": 45,
+            "patch": 11,
+            "other": 4
+          }
         },
         "helping_try_handshake.rs": {
           "verus_passed": true,
@@ -51,11 +57,17 @@
           "solution_file": "solutions/opencode/claude-sonnet-4.6/20260903_180554/helping_try_handshake_verified.rs",
           "total_costs": 1.71883575,
           "total_turns": 46,
-          "total_tool_calls": 49,
+          "total_tool_calls": 50,
           "duration_seconds": 536.426,
           "session_file": "sessions/opencode/claude-sonnet-4.6/20260903_180554/helping_try_handshake/session.jsonl",
           "total_input_tokens": 2826219,
-          "total_output_tokens": 37894
+          "total_output_tokens": 37894,
+          "tool_calls_by_type": {
+            "read": 14,
+            "shell_command": 25,
+            "patch": 6,
+            "other": 5
+          }
         },
         "log_append.rs": {
           "verus_passed": true,
@@ -69,7 +81,13 @@
           "duration_seconds": 1034.991,
           "session_file": "sessions/opencode/claude-sonnet-4.6/20260903_180554/log_append/session.jsonl",
           "total_input_tokens": 12376902,
-          "total_output_tokens": 50653
+          "total_output_tokens": 50653,
+          "tool_calls_by_type": {
+            "read": 18,
+            "shell_command": 57,
+            "patch": 7,
+            "other": 5
+          }
         },
         "rwlock_readguard_drop.rs": {
           "verus_passed": false,
@@ -79,11 +97,17 @@
           "solution_file": "solutions/opencode/claude-sonnet-4.6/20260903_180554/rwlock_readguard_drop_verified.rs",
           "total_costs": 6.3509775,
           "total_turns": 126,
-          "total_tool_calls": 126,
+          "total_tool_calls": 127,
           "duration_seconds": 1190.637,
           "session_file": "sessions/opencode/claude-sonnet-4.6/20260903_180554/rwlock_readguard_drop/session.jsonl",
           "total_input_tokens": 15208551,
-          "total_output_tokens": 77614
+          "total_output_tokens": 77614,
+          "tool_calls_by_type": {
+            "read": 20,
+            "shell_command": 81,
+            "patch": 22,
+            "other": 4
+          }
         },
         "rwlock_try_read.rs": {
           "verus_passed": true,
@@ -97,7 +121,13 @@
           "duration_seconds": 761.794,
           "session_file": "sessions/opencode/claude-sonnet-4.6/20260903_180554/rwlock_try_read/session.jsonl",
           "total_input_tokens": 5965685,
-          "total_output_tokens": 50968
+          "total_output_tokens": 50968,
+          "tool_calls_by_type": {
+            "read": 10,
+            "shell_command": 39,
+            "patch": 11,
+            "other": 5
+          }
         },
         "rwlock_try_upgrade.rs": {
           "verus_passed": true,
@@ -111,7 +141,13 @@
           "duration_seconds": 957.984,
           "session_file": "sessions/opencode/claude-sonnet-4.6/20260903_180554/rwlock_try_upgrade/session.jsonl",
           "total_input_tokens": 8717765,
-          "total_output_tokens": 62710
+          "total_output_tokens": 62710,
+          "tool_calls_by_type": {
+            "read": 12,
+            "shell_command": 52,
+            "patch": 12,
+            "other": 7
+          }
         },
         "rwlock_try_upread.rs": {
           "verus_passed": true,
@@ -121,11 +157,17 @@
           "solution_file": "solutions/opencode/claude-sonnet-4.6/20260903_180554/rwlock_try_upread_verified.rs",
           "total_costs": 4.16961915,
           "total_turns": 90,
-          "total_tool_calls": 88,
+          "total_tool_calls": 89,
           "duration_seconds": 975.876,
           "session_file": "sessions/opencode/claude-sonnet-4.6/20260903_180554/rwlock_try_upread/session.jsonl",
           "total_input_tokens": 9118040,
-          "total_output_tokens": 63426
+          "total_output_tokens": 63426,
+          "tool_calls_by_type": {
+            "read": 14,
+            "shell_command": 56,
+            "patch": 13,
+            "other": 6
+          }
         }
       }
     },
@@ -143,7 +185,13 @@
           "duration_seconds": 1126.635,
           "session_file": "sessions/pi/claude-sonnet-4.6/20260903_180554/free_free_block_mt/session.jsonl",
           "total_input_tokens": 10071885,
-          "total_output_tokens": 73003
+          "total_output_tokens": 73003,
+          "tool_calls_by_type": {
+            "read": 27,
+            "shell_command": 61,
+            "patch": 15,
+            "other": 0
+          }
         },
         "helping_try_handshake.rs": {
           "verus_passed": true,
@@ -157,7 +205,13 @@
           "duration_seconds": 1176.796,
           "session_file": "sessions/pi/claude-sonnet-4.6/20260903_180554/helping_try_handshake/session.jsonl",
           "total_input_tokens": 3613278,
-          "total_output_tokens": 86782
+          "total_output_tokens": 86782,
+          "tool_calls_by_type": {
+            "read": 10,
+            "shell_command": 52,
+            "patch": 9,
+            "other": 0
+          }
         },
         "log_append.rs": {
           "verus_passed": false,
@@ -171,7 +225,13 @@
           "duration_seconds": 953.335,
           "session_file": "sessions/pi/claude-sonnet-4.6/20260903_180554/log_append/session.jsonl",
           "total_input_tokens": 3554024,
-          "total_output_tokens": 77211
+          "total_output_tokens": 77211,
+          "tool_calls_by_type": {
+            "read": 8,
+            "shell_command": 20,
+            "patch": 2,
+            "other": 0
+          }
         },
         "rwlock_readguard_drop.rs": {
           "verus_passed": false,
@@ -185,7 +245,13 @@
           "duration_seconds": 1209.517,
           "session_file": "sessions/pi/claude-sonnet-4.6/20260903_180554/rwlock_readguard_drop/session.jsonl",
           "total_input_tokens": 2809370,
-          "total_output_tokens": 102760
+          "total_output_tokens": 102760,
+          "tool_calls_by_type": {
+            "read": 4,
+            "shell_command": 28,
+            "patch": 3,
+            "other": 0
+          }
         },
         "rwlock_try_read.rs": {
           "verus_passed": true,
@@ -199,7 +265,13 @@
           "duration_seconds": 1207.207,
           "session_file": "sessions/pi/claude-sonnet-4.6/20260903_180554/rwlock_try_read/session.jsonl",
           "total_input_tokens": 4134977,
-          "total_output_tokens": 101712
+          "total_output_tokens": 101712,
+          "tool_calls_by_type": {
+            "read": 4,
+            "shell_command": 29,
+            "patch": 6,
+            "other": 0
+          }
         },
         "rwlock_try_upgrade.rs": {
           "verus_passed": false,
@@ -213,7 +285,13 @@
           "duration_seconds": 711.467,
           "session_file": "sessions/pi/claude-sonnet-4.6/20260903_180554/rwlock_try_upgrade/session.jsonl",
           "total_input_tokens": 57687,
-          "total_output_tokens": 64179
+          "total_output_tokens": 64179,
+          "tool_calls_by_type": {
+            "read": 2,
+            "shell_command": 0,
+            "patch": 0,
+            "other": 0
+          }
         },
         "rwlock_try_upread.rs": {
           "verus_passed": true,
@@ -227,7 +305,13 @@
           "duration_seconds": 1003.153,
           "session_file": "sessions/pi/claude-sonnet-4.6/20260903_180554/rwlock_try_upread/session.jsonl",
           "total_input_tokens": 3259565,
-          "total_output_tokens": 82721
+          "total_output_tokens": 82721,
+          "tool_calls_by_type": {
+            "read": 6,
+            "shell_command": 34,
+            "patch": 2,
+            "other": 0
+          }
         }
       }
     }

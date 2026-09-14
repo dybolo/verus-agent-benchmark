@@ -37,11 +37,17 @@
           "solution_file": "solutions/opencode/claude-sonnet-4.6/20260904_092213/cuckoo_full_verified.rs",
           "total_costs": 5.41482975,
           "total_turns": 110,
-          "total_tool_calls": 106,
+          "total_tool_calls": 110,
           "duration_seconds": 1162.495,
           "session_file": "sessions/opencode/claude-sonnet-4.6/20260904_092213/cuckoo_full/session.jsonl",
           "total_input_tokens": 11902569,
-          "total_output_tokens": 79894
+          "total_output_tokens": 79894,
+          "tool_calls_by_type": {
+            "read": 35,
+            "shell_command": 58,
+            "patch": 14,
+            "other": 3
+          }
         },
         "cyclicbuffer_full.rs": {
           "verus_passed": false,
@@ -55,7 +61,13 @@
           "duration_seconds": 1190.865,
           "session_file": "sessions/opencode/claude-sonnet-4.6/20260904_092213/cyclicbuffer_full/session.jsonl",
           "total_input_tokens": 14412691,
-          "total_output_tokens": 64486
+          "total_output_tokens": 64486,
+          "tool_calls_by_type": {
+            "read": 46,
+            "shell_command": 84,
+            "patch": 35,
+            "other": 4
+          }
         },
         "free_full.rs": {
           "verus_passed": false,
@@ -69,7 +81,13 @@
           "duration_seconds": 1189.476,
           "session_file": "sessions/opencode/claude-sonnet-4.6/20260904_092213/free_full/session.jsonl",
           "total_input_tokens": 11053936,
-          "total_output_tokens": 63813
+          "total_output_tokens": 63813,
+          "tool_calls_by_type": {
+            "read": 34,
+            "shell_command": 43,
+            "patch": 11,
+            "other": 3
+          }
         },
         "helping_full.rs": {
           "verus_passed": true,
@@ -83,7 +101,13 @@
           "duration_seconds": 1091.33,
           "session_file": "sessions/opencode/claude-sonnet-4.6/20260904_092213/helping_full/session.jsonl",
           "total_input_tokens": 4557567,
-          "total_output_tokens": 79573
+          "total_output_tokens": 79573,
+          "tool_calls_by_type": {
+            "read": 14,
+            "shell_command": 41,
+            "patch": 8,
+            "other": 4
+          }
         },
         "linked_list_full.rs": {
           "verus_passed": false,
@@ -97,7 +121,13 @@
           "duration_seconds": 1195.164,
           "session_file": "sessions/opencode/claude-sonnet-4.6/20260904_092213/linked_list_full/session.jsonl",
           "total_input_tokens": 21965959,
-          "total_output_tokens": 64354
+          "total_output_tokens": 64354,
+          "tool_calls_by_type": {
+            "read": 47,
+            "shell_command": 63,
+            "patch": 11,
+            "other": 6
+          }
         },
         "log_full.rs": {
           "verus_passed": false,
@@ -107,11 +137,17 @@
           "solution_file": "solutions/opencode/claude-sonnet-4.6/20260904_092213/log_full_verified.rs",
           "total_costs": 6.1402554,
           "total_turns": 92,
-          "total_tool_calls": 91,
+          "total_tool_calls": 92,
           "duration_seconds": 1187.821,
           "session_file": "sessions/opencode/claude-sonnet-4.6/20260904_092213/log_full/session.jsonl",
           "total_input_tokens": 15715663,
-          "total_output_tokens": 45601
+          "total_output_tokens": 45601,
+          "tool_calls_by_type": {
+            "read": 21,
+            "shell_command": 47,
+            "patch": 20,
+            "other": 4
+          }
         },
         "rwlock_full.rs": {
           "verus_passed": false,
@@ -125,7 +161,13 @@
           "duration_seconds": 1076.089,
           "session_file": "sessions/opencode/claude-sonnet-4.6/20260904_092213/rwlock_full/session.jsonl",
           "total_input_tokens": 11040629,
-          "total_output_tokens": 67584
+          "total_output_tokens": 67584,
+          "tool_calls_by_type": {
+            "read": 6,
+            "shell_command": 71,
+            "patch": 16,
+            "other": 4
+          }
         }
       }
     },
@@ -143,7 +185,13 @@
           "duration_seconds": 1191.47,
           "session_file": "sessions/pi/claude-sonnet-4.6/20260904_092213/cuckoo_full/session.jsonl",
           "total_input_tokens": 6144931,
-          "total_output_tokens": 91693
+          "total_output_tokens": 91693,
+          "tool_calls_by_type": {
+            "read": 4,
+            "shell_command": 72,
+            "patch": 0,
+            "other": 0
+          }
         },
         "cyclicbuffer_full.rs": {
           "verus_passed": false,
@@ -157,7 +205,13 @@
           "duration_seconds": 985.537,
           "session_file": "sessions/pi/claude-sonnet-4.6/20260904_092213/cyclicbuffer_full/session.jsonl",
           "total_input_tokens": 956700,
-          "total_output_tokens": 86881
+          "total_output_tokens": 86881,
+          "tool_calls_by_type": {
+            "read": 1,
+            "shell_command": 16,
+            "patch": 0,
+            "other": 0
+          }
         },
         "free_full.rs": {
           "verus_passed": false,
@@ -171,7 +225,13 @@
           "duration_seconds": 1049.037,
           "session_file": "sessions/pi/claude-sonnet-4.6/20260904_092213/free_full/session.jsonl",
           "total_input_tokens": 5859934,
-          "total_output_tokens": 76272
+          "total_output_tokens": 76272,
+          "tool_calls_by_type": {
+            "read": 41,
+            "shell_command": 45,
+            "patch": 1,
+            "other": 0
+          }
         },
         "helping_full.rs": {
           "verus_passed": false,
@@ -186,7 +246,13 @@
           "session_file": "sessions/pi/claude-sonnet-4.6/20260904_092213/helping_full/session.jsonl",
           "session_error": "Detected error that invalidated the session. Check the session file.",
           "total_input_tokens": 525254,
-          "total_output_tokens": 36129
+          "total_output_tokens": 36129,
+          "tool_calls_by_type": {
+            "read": 11,
+            "shell_command": 12,
+            "patch": 0,
+            "other": 0
+          }
         },
         "linked_list_full.rs": {
           "verus_passed": false,
@@ -200,7 +266,13 @@
           "duration_seconds": 1196.986,
           "session_file": "sessions/pi/claude-sonnet-4.6/20260904_092213/linked_list_full/session.jsonl",
           "total_input_tokens": 7594737,
-          "total_output_tokens": 75489
+          "total_output_tokens": 75489,
+          "tool_calls_by_type": {
+            "read": 36,
+            "shell_command": 51,
+            "patch": 2,
+            "other": 0
+          }
         },
         "log_full.rs": {
           "verus_passed": false,
@@ -214,7 +286,13 @@
           "duration_seconds": 1062.149,
           "session_file": "sessions/pi/claude-sonnet-4.6/20260904_092213/log_full/session.jsonl",
           "total_input_tokens": 3612138,
-          "total_output_tokens": 85101
+          "total_output_tokens": 85101,
+          "tool_calls_by_type": {
+            "read": 20,
+            "shell_command": 15,
+            "patch": 2,
+            "other": 0
+          }
         },
         "rwlock_full.rs": {
           "verus_passed": false,
@@ -228,7 +306,13 @@
           "duration_seconds": 975.067,
           "session_file": "sessions/pi/claude-sonnet-4.6/20260904_092213/rwlock_full/session.jsonl",
           "total_input_tokens": 2879002,
-          "total_output_tokens": 74837
+          "total_output_tokens": 74837,
+          "tool_calls_by_type": {
+            "read": 4,
+            "shell_command": 37,
+            "patch": 1,
+            "other": 0
+          }
         }
       }
     }
