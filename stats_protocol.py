@@ -1,4 +1,5 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from enum import Enum
 from typing import Protocol, runtime_checkable
 
 
@@ -23,6 +24,18 @@ MODEL_ALIASES = {
     # Pi records Bedrock's inference profile ID in its session events.
     "global.anthropic.claude-sonnet-4-6": "claude-sonnet-4.6",
 }
+
+
+class ToolCallType(str, Enum):
+    READ = "read"
+    SHELL_COMMAND = "shell_command"
+    PATCH = "patch"
+    Other = "other"
+
+
+def empty_tool_call_counts() -> dict[ToolCallType, int]:
+    """Return the exhaustive cross-agent tool-call categories."""
+    return {tool_call_type: 0 for tool_call_type in ToolCallType}
 
 
 def calculate_price(
@@ -52,6 +65,9 @@ class Stats:
     total_output_tokens: int = 0
     total_turns: int = 0
     total_tool_calls: int = 0
+    tool_calls_by_type: dict[ToolCallType, int] = field(
+        default_factory=empty_tool_call_counts
+    )
     duration_seconds: float = 0.0
     session_file: str = ""
 

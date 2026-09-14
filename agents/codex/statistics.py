@@ -2,7 +2,12 @@ import json
 import os
 from datetime import datetime
 
-from stats_protocol import Stats, calculate_price
+from stats_protocol import (
+    Stats,
+    ToolCallType,
+    calculate_price,
+    empty_tool_call_counts,
+)
 
 
 def _timestamp(value):
@@ -29,12 +34,51 @@ def _session_file(session_dir: str) -> str:
     return jsonl_files[0]
 
 
+def _tool_call_type(tool_name: str) -> ToolCallType:
+    """Map Codex item/tool names to the three benchmark categories."""
+    match tool_name.lower():
+        case (
+            "read"
+            | "read_file"
+            | "grep"
+            | "rg"
+            | "find"
+            | "glob"
+            | "view"
+        ):
+            return ToolCallType.READ
+        case (
+            "commandexecution"
+            | "command_execution"
+            | "bash"
+            | "shell"
+            | "exec_command"
+        ):
+            return ToolCallType.SHELL_COMMAND
+        case "filechange" | "file_change" | "apply_patch" | "edit" | "write":
+            return ToolCallType.PATCH
+        case "task" | "todowrite" | "task_complete":
+            return ToolCallType.Other
+        case _:
+            raise ValueError(f"unknown Codex tool type {tool_name!r}")
+
+
+def _record_tool_call(tool_call_ids, tool_calls_by_type, call_id, tool_name):
+    """Record one uniquely identified, classified tool invocation."""
+    if not call_id or not tool_name or call_id in tool_call_ids:
+        return
+    category = _tool_call_type(tool_name)
+    tool_call_ids.add(call_id)
+    tool_calls_by_type[category] += 1
+
+
 def compute_statistics(session_dir: str) -> Stats:
     path = _session_file(session_dir)
     first_ts = None
     last_ts = None
     turn_ids = set()
     tool_call_ids = set()
+    tool_calls_by_type = empty_tool_call_counts()
     assistant_turns = 0
     duration_seconds = None
     model_name = "gpt-5.6-luna"
@@ -54,58 +98,114 @@ def compute_statistics(session_dir: str) -> Stats:
             payload = event.get("payload", {})
             payload_type = payload.get("type") if isinstance(payload, dict) else None
 
-            if event.get("type") == "turn_context" and isinstance(payload, dict):
-                if payload.get("turn_id"):
-                    turn_ids.add(payload["turn_id"])
-                model_name = payload.get("model") or model_name
-            elif event.get("type") == "response_item" and isinstance(payload, dict):
-                if payload.get("type") == "custom_tool_call":
-                    call_id = payload.get("call_id") or payload.get("id")
-                    if call_id and payload.get("status") in (None, "completed"):
-                        tool_call_ids.add(call_id)
-            elif event.get("type") == "event_msg" and isinstance(payload, dict):
-                if payload_type == "task_complete":
-                    duration_ms = payload.get("duration_ms")
-                    if duration_ms is not None:
-                        duration_seconds = duration_ms / 1000
-                elif payload_type == "agent_message":
-                    assistant_turns += 1
-                elif payload_type == "token_count":
-                    # token_count events are cumulative; use only the last one.
-                    final_usage = payload.get("info", {}).get("total_token_usage")
-                elif payload_type == "item_completed":
-                    # Recent Codex CLI versions wrap completed items in
-                    # event_msg rather than emitting item.completed directly.
-                    item = payload.get("item", {})
+            # Counted Codex messages:
+            # - response_item/custom_tool_call: an internal-format invocation.
+            # - event_msg/item_started (item_completed is a compatibility
+            #   fallback): an internal-format command or file invocation.
+            # - item.started (item.completed is a compatibility fallback): a
+            #   public codex-exec command_execution or file_change invocation.
+            # - event_msg/token_count or turn.completed: cumulative token usage;
+            #   only the last such message is used.
+            match event.get("type"):
+                case "turn_context" if isinstance(payload, dict):
+                    if payload.get("turn_id"):
+                        turn_ids.add(payload["turn_id"])
+                    model_name = payload.get("model") or model_name
+                case "response_item" if isinstance(payload, dict):
+                    match payload.get("type"):
+                        case "custom_tool_call":
+                            _record_tool_call(
+                                tool_call_ids,
+                                tool_calls_by_type,
+                                payload.get("call_id") or payload.get("id"),
+                                payload.get("name", ""),
+                            )
+                        case _:
+                            pass
+                case "event_msg" if isinstance(payload, dict):
+                    match payload_type:
+                        case "task_complete":
+                            duration_ms = payload.get("duration_ms")
+                            if duration_ms is not None:
+                                duration_seconds = duration_ms / 1000
+                        case "agent_message":
+                            assistant_turns += 1
+                        case "token_count":
+                            final_usage = payload.get("info", {}).get(
+                                "total_token_usage"
+                            )
+                        case "item_started" | "item_completed":
+                            item = payload.get("item", {})
+                            item_type = str(item.get("type", "")).lower()
+                            match item_type:
+                                case "agentmessage" | "agent_message" | "message":
+                                    if payload_type == "item_completed":
+                                        assistant_turns += 1
+                                case (
+                                    "commandexecution"
+                                    | "command_execution"
+                                    | "filechange"
+                                    | "file_change"
+                                ):
+                                    _record_tool_call(
+                                        tool_call_ids,
+                                        tool_calls_by_type,
+                                        item.get("id"),
+                                        item_type,
+                                    )
+                                case (
+                                    "toolcall"
+                                    | "tool_call"
+                                    | "functioncall"
+                                    | "function_call"
+                                ):
+                                    _record_tool_call(
+                                        tool_call_ids,
+                                        tool_calls_by_type,
+                                        item.get("call_id") or item.get("id"),
+                                        item.get("name") or item.get("tool") or "",
+                                    )
+                                case _:
+                                    pass
+                        case _:
+                            pass
+                case "turn.started":
+                    turn_ids.add(
+                        event.get("id")
+                        or event.get("turn_id")
+                        or str(len(turn_ids))
+                    )
+                    model_name = event.get("model") or model_name
+                case "item.started" | "item.completed":
+                    item = event.get("item", {})
                     item_type = str(item.get("type", "")).lower()
-                    if item_type in ("agentmessage", "agent_message", "message"):
-                        assistant_turns += 1
-                    elif item_type in (
-                        "commandexecution",
-                        "command_execution",
-                        "toolcall",
-                        "tool_call",
-                        "functioncall",
-                        "function_call",
-                    ):
-                        call_id = item.get("id")
-                        if call_id:
-                            tool_call_ids.add(call_id)
-
-            # Also accept the public codex exec JSONL event names.
-            event_type = event.get("type")
-            if event_type == "turn.started":
-                turn_ids.add(event.get("id") or event.get("turn_id") or str(len(turn_ids)))
-                model_name = event.get("model") or model_name
-            elif event_type == "item.completed":
-                item = event.get("item", {})
-                if item.get("type") in ("agent_message", "message"):
-                    assistant_turns += 1
-                elif item.get("type") in ("command_execution", "tool_call"):
-                    tool_call_ids.add(item.get("id") or str(len(tool_call_ids)))
-            elif event_type == "turn.completed":
-                final_usage = event.get("usage") or event.get("result", {}).get("usage")
-                model_name = event.get("model") or model_name
+                    match item_type:
+                        case "agent_message" | "message":
+                            if event.get("type") == "item.completed":
+                                assistant_turns += 1
+                        case "command_execution" | "file_change":
+                            _record_tool_call(
+                                tool_call_ids,
+                                tool_calls_by_type,
+                                item.get("id"),
+                                item_type,
+                            )
+                        case "tool_call":
+                            _record_tool_call(
+                                tool_call_ids,
+                                tool_calls_by_type,
+                                item.get("call_id") or item.get("id"),
+                                item.get("name") or item.get("tool") or "",
+                            )
+                        case _:
+                            pass
+                case "turn.completed":
+                    final_usage = event.get("usage") or event.get("result", {}).get(
+                        "usage"
+                    )
+                    model_name = event.get("model") or model_name
+                case _:
+                    pass
 
     # Some `codex exec --json` versions omit event timestamps and only report
     # usage in turn.completed. There is then no reliable duration to derive.
@@ -119,17 +219,22 @@ def compute_statistics(session_dir: str) -> Stats:
     cached_input_tokens = usage.get(
         "cached_input_tokens", usage.get("cachedInputTokens", 0)
     )
+    cache_write_input_tokens = usage.get(
+        "cache_write_input_tokens", usage.get("cacheWriteInputTokens", 0)
+    )
     output_tokens = usage.get("output_tokens", usage.get("outputTokens", 0))
 
     # Codex reports input_tokens as total input, with cached_input_tokens as a
     # subset. Charge uncached input at the normal rate and the cached subset at
     # the discounted rate.
-    uncached_input_tokens = max(input_tokens - cached_input_tokens, 0)
+    uncached_input_tokens = max(
+        input_tokens - cached_input_tokens - cache_write_input_tokens, 0
+    )
     total_cost = calculate_price(
         model_name,
         uncached_input_tokens,
         cached_input_tokens,
-        0,
+        cache_write_input_tokens,
         output_tokens,
     )
 
@@ -138,7 +243,8 @@ def compute_statistics(session_dir: str) -> Stats:
         total_input_tokens=input_tokens,
         total_output_tokens=output_tokens,
         total_turns=assistant_turns or len(turn_ids),
-        total_tool_calls=len(tool_call_ids),
+        total_tool_calls=sum(tool_calls_by_type.values()),
+        tool_calls_by_type=tool_calls_by_type,
         duration_seconds=duration_seconds,
         session_file=os.path.relpath(path),
     )

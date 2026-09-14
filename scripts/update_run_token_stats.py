@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Backfill token totals and costs in selected benchmark run files."""
+"""Backfill token, cost, and tool-call statistics in benchmark run files."""
 
 from __future__ import annotations
 
@@ -19,7 +19,13 @@ from typing import Any, Callable
 ROOT = Path(__file__).resolve().parents[1]
 RUNS_DIR = ROOT / "runs"
 SESSIONS_DIR = ROOT / "sessions"
-STATS_FIELDS = ("total_input_tokens", "total_output_tokens", "total_costs")
+STATS_FIELDS = (
+    "total_input_tokens",
+    "total_output_tokens",
+    "total_costs",
+    "total_tool_calls",
+    "tool_calls_by_type",
+)
 
 sys.path.insert(0, str(ROOT))
 
