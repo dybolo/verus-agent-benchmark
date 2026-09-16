@@ -1,8 +1,5 @@
 fn main() {}
 
-// =============================================================================
-// Inlined from verified_libs/vstd_extra/src/ownership.rs
-// =============================================================================
 
 verus! {
 
@@ -19,11 +16,8 @@ impl<T: Inv> Inv for Option<T> {
     }
 }
 
-} // verus!
+} 
 
-// =============================================================================
-// Inlined from ostd/src/sync/atomic_data.rs
-// =============================================================================
 
 use core::ops::Deref;
 
@@ -31,17 +25,14 @@ use vstd::{predicate::Predicate as DataPredicate, prelude::*};
 
 verus! {
 
-/// A structure that combines some data with a permission to access it.
 #[repr(transparent)]
 #[allow(repr_transparent_non_zst_fields)]
 pub struct AtomicDataWithOwner<V, Own> {
-    /// The underlying data.
     pub data: V,
-    /// The permission to access the data.
     pub permission: Tracked<Own>,
 }
 
-} // verus!
+} 
 
 #[verus_verify]
 impl<V, Own> Deref for AtomicDataWithOwner<V, Own> {
@@ -87,11 +78,8 @@ impl<T, Own> View for AtomicDataWithOwner<T, Own> {
     }
 }
 
-} // verus!
+} 
 
-// =============================================================================
-// Verbatim contents of ostd/src/sync/once.rs
-// =============================================================================
 
 mod once {
 use vstd::{
@@ -111,26 +99,16 @@ pub const OCCUPIED: u64 = 1;
 
 pub const INITED: u64 = 2;
 
-/// A tracked state of a¸ [`Once`] that can be used to ensure that the cell is
-/// initialized before accessing its value.
 pub tracked enum OnceState<V: 'static> {
-    /// The cell is uninitialized.
     Uninit(PointsTo<Option<V>>),
-    /// The cell is occupied meaning it is being *written*.
     Occupied,
-    /// The cell is initialized with a value and extended with
-    /// static lifetime.
     Init(&'static PointsTo<Option<V>>),
 }
 
-/// A [`Predicate`] is something you're gonna preserve during the lifetime
-/// of any synchronization primitives like [`Once`].
 pub trait Predicate<V> {
     spec fn inv(self, v: V) -> bool;
 }
 
-/// A trivial predicate that holds for any value.
-/// Use with [`OnceImpl`] when no invariant is needed.
 pub struct TrivialPred;
 
 impl<V> Predicate<V> for TrivialPred {
@@ -140,25 +118,6 @@ impl<V> Predicate<V> for TrivialPred {
 }
 
 struct_with_invariants! {
-/// A synchronization primitive which can nominally be written to only once.
-///
-/// This type is a thread-safe [`Once`], and can be used in statics.
-/// In many simple cases, you can use [`LazyLock<T, F>`] instead to get the benefits of this type
-/// with less effort: `LazyLock<T, F>` "looks like" `&T` because it initializes with `F` on deref!
-/// Where OnceLock shines is when LazyLock is too simple to support a given case, as LazyLock
-/// doesn't allow additional inputs to its function after you call [`LazyLock::new(|| ...)`].
-///
-/// A `OnceLock` can be thought of as a safe abstraction over uninitialized data that becomes
-/// initialized once written.
-///
-/// # Examples
-///
-/// ```rust
-/// static MY_ONCE: Once<i32> = Once::new();
-///
-/// let value = MY_ONCE.get();
-/// assert(value.is_some());   // unsatisfied precondition, as MY_ONCE is uninitialized.
-/// ```
 #[verifier::reject_recursive_types(V)]
 pub struct OnceImpl<V: 'static, F: Predicate<V>> {
     cell: PCell<Option<V>>,
@@ -205,7 +164,6 @@ impl<V, F: Predicate<V>> OnceImpl<V, F> {
         self.f@
     }
 
-    /// Creates a new uninitialized [`Once`].
     pub const fn new(Ghost(f): Ghost<F>) -> (r: Self)
         ensures
             r.wf(),
@@ -222,7 +180,6 @@ impl<V, F: Predicate<V>> OnceImpl<V, F> {
         Self { cell, state, f: Ghost(f) }
     }
 
-    /// Initializes the [`Once`] with the given value `v`.
     pub fn init(&self, v: V)
         requires
             self.inv().inv(v),
@@ -247,7 +204,6 @@ impl<V, F: Predicate<V>> OnceImpl<V, F> {
                             OnceState::Occupied
                         }
                         _ => {
-                            // If we are not in Uninit state, we cannot do anything.
                             g
                         }
                     }
@@ -257,11 +213,7 @@ impl<V, F: Predicate<V>> OnceImpl<V, F> {
             if !res.is_err() {
                 let tracked mut points_to = points_to.tracked_unwrap();
                 self.cell.replace(Tracked(&mut points_to), Some(v));
-                // Extending the permission to static because `OnceLock` is
-                // often shared among threads and we want to ensure that
-                // the value is accessible globally.
                 let tracked static_points_to = tracked_static_ref(points_to);
-                // let tracked _ = self.inst.borrow().do_deposit(points_to, points_to, &mut token);
                 atomic_with_ghost! {
                     &self.state => store(INITED); ghost g => {
                         g = OnceState::Init(static_points_to);
@@ -269,15 +221,11 @@ impl<V, F: Predicate<V>> OnceImpl<V, F> {
                 }
                 return;
             } else {
-                // wait or abort.
                 return;
             }
         }
     }
 
-    /// Try to get the value stored in the [`Once`]. A [`Option::Some`]
-    /// is returned if the cell is initialized; otherwise, [`Option::None`]
-    /// is returned.
     pub fn get<'a>(&'a self) -> (r: Option<&'a V>)
         requires
             self.wf(),
@@ -309,15 +257,9 @@ impl<V, F: Predicate<V>> OnceImpl<V, F> {
     }
 }
 
-/// A `Once` that combines some data with a permission to access it.
-///
-/// This type alias automatically lifts the target value `V` into
-/// a wrapper [`AtomicDataWithOwner<V, Own>`] where `Own` is the
-/// permission type so that we can reason about non-trivial runtime
-/// properties in verification.
 pub type Once<V, Own, F> = OnceImpl<AtomicDataWithOwner<V, Own>, F>;
 
-} // verus!
-} // mod once
+} 
+} 
 
 pub use once::*;

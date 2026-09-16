@@ -132,7 +132,6 @@ tokenized_state_machine!{
             }
         }
 
-        ///// Invariants and proofs
 
         #[invariant]
         pub fn ref_counts_domain(&self) -> bool {
@@ -403,5 +402,5 @@ impl<T> RwLock<T> {
     }
 }
 
-} // verus!
+} 
 fn main() {}

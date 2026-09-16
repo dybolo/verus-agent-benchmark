@@ -1,7 +1,3 @@
-// SPDX-License-Identifier: Apache-2.0 OR MIT
-//
-// Self-contained adaptation of verified-node-replication/src/spec/cyclicbuffer.rs.
-// All dependencies required by the cyclic-buffer specification are inlined below.
 
 fn main() {}
 
@@ -47,8 +43,6 @@ pub proof fn int_mod_less_than_same(i: int, len: int)
 
 }
 
-// Minimal interface inlined from spec/unbounded_log.rs. CyclicBuffer only uses
-// UnboundedLog::Instance and the sharded log entry projection.
 tokenized_state_machine! {
 UnboundedLog<DT: Dispatch> {
     fields {
@@ -64,30 +58,12 @@ UnboundedLog<DT: Dispatch> {
 }
 }
 
-////////////////////////////////////////////////////////////////////////////////////////////////////
-//
-// Cyclic Buffer
-// =============
-//
-// The cyclic buffer is a bounded log with multiple readers and writers. A writer will check whether
-// there's enough space in the log and the reserve space to place its update operations into the log.
-// Log space can be reclaimed once all readers have advanced their read pointers accordingly.
-//
-////////////////////////////////////////////////////////////////////////////////////////////////////
 
 verus! {
 
-/// Logical Log Index
-///
-/// In contrast to the unbounded log, the log entries can be "negative". This is used for the
-/// initialization where all entries are initialized with the range [-LOG_SIZE, 0)
 pub type LogicalLogIdx = int;
 
-/// The size of the log. XXX: can we get rid of this?
 
-/// An entry in the log
-///
-///
 pub tracked struct StoredType<DT: Dispatch> {
     pub cell_perms: PointsTo<Option<ConcreteLogEntry<DT>>>,
     pub log_entry: Option<UnboundedLog::log<DT>>,
@@ -99,7 +75,6 @@ pub open spec fn stored_type_inv<DT: Dispatch>(
     cell_id: CellId,
     unbounded_log_instance: UnboundedLog::Instance<DT>,
 ) -> bool {
-    // also match the cell id
     &&& st.cell_perms.mem_contents().is_init()
     &&& st.cell_perms@.pcell == cell_id
     &&& idx >= 0 ==> {
@@ -116,27 +91,15 @@ pub open spec fn stored_type_inv<DT: Dispatch>(
     }
 }
 
-////////////////////////////////////////////////////////////////////////////////////////////////////
-// Read Only Operations
-////////////////////////////////////////////////////////////////////////////////////////////////////
-///
 #[is_variant]
 pub tracked enum ReaderState<DT: Dispatch> {
-    ///
     Starting {
-        ///
         start: LogIdx,
     },
-    /// reader in the range
     Range { start: LogIdx, end: LogIdx, cur: LogIdx },
-    /// Guard
     Guard { start: LogIdx, end: LogIdx, cur: LogIdx, val: StoredType<DT> },
 }
 
-////////////////////////////////////////////////////////////////////////////////////////////////////
-// Combiner
-////////////////////////////////////////////////////////////////////////////////////////////////////
-/// represents the combiner
 #[is_variant]
 pub tracked enum CombinerState<DT: Dispatch> {
     Idle,
@@ -152,13 +115,13 @@ impl<DT: Dispatch> CombinerState<DT> {
             CombinerState::Appending { cur_idx, tail } => {
                 match other {
                     CombinerState::Reading(ReaderState::Guard { start, end, cur, val }) => {
-                        (cur_idx > cur)  // self is after the other
-                         || (tail <= cur)  // self is before the other
+                        (cur_idx > cur)  
+                         || (tail <= cur)  
 
                     },
                     CombinerState::Appending { cur_idx: cur_idx2, tail: tail2 } => {
-                        (cur_idx >= tail2)  // self is after the other
-                         || (tail <= cur_idx2)  // self is before the other
+                        (cur_idx >= tail2)  
+                         || (tail <= cur_idx2)  
 
                     },
                     _ => { true },
@@ -177,56 +140,36 @@ tokenized_state_machine! { CyclicBuffer<DT: Dispatch> {
         #[sharding(constant)]
         pub cell_ids: Seq<CellId>,
 
-        /// the size of the buffer
         #[sharding(constant)]
         pub buffer_size: LogIdx,
 
-        /// the number of replicas
         #[sharding(constant)]
         pub num_replicas: nat,
 
-        // Logical index into the above slice at which the log starts.
-        // Note: the head does _not_ necessarily advance monotonically.
-        // (It could go backwards in the event of two threads overlapping
-        // in their AdvancingHead cycles.)
-        // It's only guaranteed to be <= all the local heads.
 
         #[sharding(variable)]
         pub head: LogIdx,
 
-        // Logical index into the above slice at which the log ends.
-        // New appends go here.
 
         #[sharding(variable)]
         pub tail: LogIdx,
 
-        // Array consisting of the local head of each replica registered with the log.
-        // Required for garbage collection; since replicas make progress over the log
-        // independently, we want to make sure that we don't garbage collect operations
-        // that haven't been executed by all replicas.
 
         #[sharding(map)]
-        pub local_versions: Map<NodeId, LogIdx>,    // previously called local_tails
+        pub local_versions: Map<NodeId, LogIdx>,    
 
-        /// the contents of the buffer/log.
         #[sharding(storage_map)]
         pub contents: Map<LogicalLogIdx, StoredType<DT>>,
 
-        // The 'alive' bit flips back and forth. So sometimes 'true' means 'alive',
-        // and sometimes 'false' means 'alive'.
-        // entry is an index into the buffer (0 <= entry < LOG_SIZE)
 
         #[sharding(map)]
-        pub alive_bits: Map</* entry: */ LogIdx, /* bit: */ bool>,
+        pub alive_bits: Map<             LogIdx,            bool>,
 
         #[sharding(map)]
         pub combiner: Map<NodeId, CombinerState<DT>>
     }
 
 
-    ////////////////////////////////////////////////////////////////////////////////////////////
-    // Invariant
-    ////////////////////////////////////////////////////////////////////////////////////////////
 
 
     #[invariant]
@@ -303,38 +246,24 @@ tokenized_state_machine! { CyclicBuffer<DT: Dispatch> {
     pub closed spec fn reader_state_valid(&self, node_id: NodeId, rs: ReaderState<DT>) -> bool {
         match rs {
             ReaderState::Starting{start} => {
-                // the starting value should match the local tail
                 &&& start == self.local_versions[node_id]
                 &&& start <= self.tail
             }
             ReaderState::Range{start, end, cur} => {
-                // the start must be our local tail
                 &&& self.local_versions[node_id] == start
-                // the start must be before the end, can be equial if ltail == tail
                 &&& start <= end
-                // we've read the tail, but the tail may have moved
                 &&& (self.tail as int) - (self.buffer_size as int) <= end <= (self.tail as int)
-                // current is between start and end
                 &&& start <= cur <= end
-                // the entries up to, and including  current must be alive
                 &&& (forall |i| start <= i < cur ==> log_entry_is_alive(self.alive_bits, i, self.buffer_size))
-                // the entries up to, and including current must have something in the log
                 &&& (forall |i| start <= i < cur ==> self.contents.contains_key(i))
             }
             ReaderState::Guard{start, end, cur, val} => {
-                // the start must be our local tail
                 &&& self.local_versions[node_id] == start
-                // the start must be before the end, can be equial if ltail == tail
                 &&& start <= end
-                // we've read the tail, but the tail may have moved
                 &&& (self.tail as int) - (self.buffer_size as int) <= end <= (self.tail as int)
-                // current is between start and end
                 &&& start <= cur < end
-                // the entries up to, and including  current must be alive
                 &&& (forall |i| start <= i <= cur ==> log_entry_is_alive(self.alive_bits, i, self.buffer_size))
-                // the entries up to, and including current must have something in the log
                 &&& (forall |i| start <= i <= cur ==> self.contents.contains_key(i))
-                // the thing we are ready should match the log content
                 &&& self.contents.contains_key(cur as int)
                 &&& self.contents[cur as int] === val
             }
@@ -350,25 +279,18 @@ tokenized_state_machine! { CyclicBuffer<DT: Dispatch> {
     pub closed spec fn combiner_valid(&self, node_id: NodeId, cs: CombinerState<DT>) -> bool {
         match cs {
             CombinerState::Idle => true,
-            CombinerState::Reading(_) => true, // see reader_state_valid instead
+            CombinerState::Reading(_) => true, 
             CombinerState::AdvancingHead{idx, min_local_version} => {
-                // the index is always within the defined replicas
                 &&& idx <= self.num_replicas as nat
-                // forall replicas we'e seen, min_local_version is smaller than all localTails
                 &&& (forall |n| 0 <= n < idx ==> min_local_version <= self.local_versions[n])
             }
             CombinerState::AdvancingTail{observed_head} => {
-                // the observed head is smaller than all local tails
                 &&& (forall |n| 0 <= n < self.num_replicas as nat ==> observed_head <= self.local_versions[n])
             }
             CombinerState::Appending{cur_idx, tail} => {
-                // the current index is between local tails and tail.
                 &&& self.local_versions[node_id] <= cur_idx <= tail
-                // the read tail is smaller or equal to the current tail.
                 &&& tail <= self.tail
-                //
                 &&& (self.tail as int) - (self.buffer_size as int) <= cur_idx <= (self.tail as int)
-                // all the entries we're writing must not be alive.
                 &&& (forall |i : nat| cur_idx <= i < tail ==> (
                   !(log_entry_is_alive(self.alive_bits, i as int, self.buffer_size))))
             }
@@ -376,9 +298,6 @@ tokenized_state_machine! { CyclicBuffer<DT: Dispatch> {
     }
 
 
-    ////////////////////////////////////////////////////////////////////////////////////////////
-    // Initialization
-    ////////////////////////////////////////////////////////////////////////////////////////////
 
     init!{
         initialize(buffer_size: nat, num_replicas: nat, contents: Map<int, StoredType<DT>>, cell_ids: Seq<CellId>, unbounded_log_instance: UnboundedLog::Instance<DT>, ) {
@@ -404,14 +323,7 @@ tokenized_state_machine! { CyclicBuffer<DT: Dispatch> {
     }
 
 
-    ////////////////////////////////////////////////////////////////////////////////////////////////
-    // Reader Transitions
-    ////////////////////////////////////////////////////////////////////////////////////////////////
-    //
-    // The reader transitions traverse the log and read the entries in it.
-    //
 
-    /// start the reader on the provided node, the combiner must be in idle state.
     transition!{
         reader_start(node_id: NodeId) {
             have   local_versions    >= [ node_id => let local_head ];
@@ -423,7 +335,6 @@ tokenized_state_machine! { CyclicBuffer<DT: Dispatch> {
         }
     }
 
-    /// enter the reading phase
     transition!{
         reader_enter(node_id: NodeId) {
             remove combiner -= [
@@ -436,7 +347,6 @@ tokenized_state_machine! { CyclicBuffer<DT: Dispatch> {
         }
     }
 
-    /// read the value of the current entry to process it
     transition!{
         reader_guard(node_id: NodeId) {
             remove combiner -= [
@@ -453,11 +363,9 @@ tokenized_state_machine! { CyclicBuffer<DT: Dispatch> {
                 node_id => CombinerState::Reading( ReaderState::Guard{ start, end, cur, val })
             ];
 
-            // assert(stored_type_inv(val, cur as int));
         }
     }
 
-    /// the value of the log must not change while we're processing it
     property!{
         guard_guards(node_id: NodeId) {
             have combiner >= [
@@ -469,7 +377,6 @@ tokenized_state_machine! { CyclicBuffer<DT: Dispatch> {
         }
     }
 
-    /// finish processing the entry, increase current pointer
     transition!{
         reader_unguard(node_id: NodeId) {
             remove combiner -= [
@@ -481,7 +388,6 @@ tokenized_state_machine! { CyclicBuffer<DT: Dispatch> {
         }
     }
 
-    /// finish the reading whith, place the combiner into the idle state
     transition!{
         reader_finish(node_id: NodeId) {
             remove combiner -= [
@@ -496,7 +402,6 @@ tokenized_state_machine! { CyclicBuffer<DT: Dispatch> {
         }
     }
 
-    /// abort reading, place the combiner back into the idle state
     transition!{
         reader_abort(node_id: NodeId) {
             remove combiner -= [ node_id => let CombinerState::Reading(r) ];
@@ -507,14 +412,7 @@ tokenized_state_machine! { CyclicBuffer<DT: Dispatch> {
     }
 
 
-    ////////////////////////////////////////////////////////////////////////////////////////////////
-    // Advance Head Transitions
-    ////////////////////////////////////////////////////////////////////////////////////////////////
-    //
-    // The advance head transitions update the global head of the log with the minimum value
-    // of all local heads.
 
-    /// start the advancing of the head by reading the local head of node 0
     transition!{
         advance_head_start(node_id: NodeId) {
             have   local_versions >= [ 0 => let local_head_0 ];
@@ -523,7 +421,6 @@ tokenized_state_machine! { CyclicBuffer<DT: Dispatch> {
         }
     }
 
-    /// read the next local head
     transition!{
         advance_head_next(node_id: NodeId) {
             remove combiner -= [ node_id => let CombinerState::AdvancingHead { idx, min_local_version } ];
@@ -536,7 +433,6 @@ tokenized_state_machine! { CyclicBuffer<DT: Dispatch> {
         }
     }
 
-    /// update the head value with the current collected miniumu
     transition!{
         advance_head_finish(node_id: NodeId) {
             remove combiner -= [ node_id => let CombinerState::AdvancingHead { idx, min_local_version } ];
@@ -547,7 +443,6 @@ tokenized_state_machine! { CyclicBuffer<DT: Dispatch> {
         }
     }
 
-    /// stop the advancing head transition without uppdating the head
     transition!{
         advance_head_abort(node_id: NodeId) {
             remove combiner -= [ node_id => let CombinerState::AdvancingHead { .. } ];
@@ -556,15 +451,7 @@ tokenized_state_machine! { CyclicBuffer<DT: Dispatch> {
     }
 
 
-    ////////////////////////////////////////////////////////////////////////////////////////////////
-    // Advance Tail Transitions
-    ////////////////////////////////////////////////////////////////////////////////////////////////
-    //
-    // The advance tail transition bump the tail of the log to make space for new entries.
-    // We first read the current head as this defines the maximum value the tail can be advanced to
-    // as we need to ensure that we do not overrun existing entries.
 
-    /// start the advancing of the head tail by reading the head value
     transition!{
         advance_tail_start(node_id: NodeId) {
             remove combiner -= [ node_id => CombinerState::Idle ];
@@ -572,17 +459,14 @@ tokenized_state_machine! { CyclicBuffer<DT: Dispatch> {
         }
     }
 
-    /// advance the tail to the new value
     transition!{
         advance_tail_finish(node_id: NodeId, new_tail: nat) {
             remove combiner -= [ node_id => let CombinerState::AdvancingTail { observed_head } ];
             add    combiner += [ node_id => CombinerState::Appending { cur_idx: pre.tail, tail: new_tail } ];
             update tail      = new_tail;
 
-            // only allow advances and must not overwrite still active entries
             require(pre.tail <= new_tail <= observed_head + pre.buffer_size);
 
-            // construct the entries in the log we withdraw
             birds_eye let withdrawn = Map::new(
                 Set::range(pre.tail - pre.buffer_size, new_tail - pre.buffer_size),
                 |i: int| pre.contents[i],
@@ -611,7 +495,6 @@ tokenized_state_machine! { CyclicBuffer<DT: Dispatch> {
         }
     }
 
-    /// aborts the advancing tail transitions
     transition!{
         advance_tail_abort(node_id: NodeId) {
             remove combiner -= [ node_id => let CombinerState::AdvancingTail { .. } ];
@@ -620,9 +503,6 @@ tokenized_state_machine! { CyclicBuffer<DT: Dispatch> {
     }
 
 
-    ////////////////////////////////////////////////////////////////////////////////////////////////
-    // Advance Tail Transitions
-    ////////////////////////////////////////////////////////////////////////////////////////////////
 
 
     transition!{
@@ -642,7 +522,6 @@ tokenized_state_machine! { CyclicBuffer<DT: Dispatch> {
         }
     }
 
-    /// finish the appending parts
     transition!{
         append_finish(node_id: NodeId) {
             remove combiner -= [ node_id => let CombinerState::Appending { cur_idx, tail } ];
@@ -652,9 +531,6 @@ tokenized_state_machine! { CyclicBuffer<DT: Dispatch> {
         }
     }
 
-    ////////////////////////////////////////////////////////////////////////////////////////////////
-    // Proofs
-    ////////////////////////////////////////////////////////////////////////////////////////////////
 
     #[inductive(initialize)]
     fn initialize_inductive(post: Self, buffer_size: nat, num_replicas: nat, contents: Map<int, StoredType<DT>>, cell_ids: Seq<CellId>,  unbounded_log_instance: UnboundedLog::Instance<DT>, ) {
@@ -715,13 +591,11 @@ tokenized_state_machine! { CyclicBuffer<DT: Dispatch> {
         assert(forall |i| min_local_head <= i < min_local_head + post.buffer_size && i != myidx ==>
             log_entry_is_alive(pre.alive_bits, i, pre.buffer_size) == log_entry_is_alive(post.alive_bits, i, post.buffer_size));
 
-        // overlap check
         assert forall |i, j| post.combiner.contains_key(i) && post.combiner.contains_key(j) && i != j
             implies post.combiner[i].no_overlap_with(post.combiner[j]) by {
             assert(pre.combiner[i].no_overlap_with(pre.combiner[j]));
         }
 
-        // combiner state
         assert forall |nid| #[trigger] post.combiner.contains_key(nid) implies
             post.combiner_valid(nid, post.combiner[nid]) by
         {
@@ -761,7 +635,6 @@ tokenized_state_machine! { CyclicBuffer<DT: Dispatch> {
         let min_local_versions_pre = map_min_value(pre.local_versions, (pre.num_replicas - 1) as nat);
         let min_local_versions_post = map_min_value(post.local_versions, (post.num_replicas - 1) as nat);
 
-        // there was a change in the minimum of the local heads, meaning the minimum was updated by us.
         if min_local_versions_pre != min_local_versions_post {
 
             map_min_value_smallest(pre.local_versions, (pre.num_replicas - 1) as nat);
@@ -815,7 +688,6 @@ proof fn map_min_value_smallest(m: Map<NodeId, nat>, idx: nat)
     }
 }
 
-/// converts the logical to the physical log index
 pub open spec fn log_entry_idx(logical: LogicalLogIdx, buffer_size: nat) -> LogIdx
     recommends
         buffer_size == LOG_SIZE,
@@ -823,7 +695,6 @@ pub open spec fn log_entry_idx(logical: LogicalLogIdx, buffer_size: nat) -> LogI
     (logical % (buffer_size as int)) as nat
 }
 
-// a % b == 0 to a == b * (a / b)
 pub proof fn log_entry_idx_wrap_around(start: nat, buffer_size: nat, idx: nat)
     requires
         buffer_size == LOG_SIZE,
@@ -835,7 +706,6 @@ pub proof fn log_entry_idx_wrap_around(start: nat, buffer_size: nat, idx: nat)
 {
 }
 
-/// predicate to check whether a log entry is alive
 pub open spec fn log_entry_is_alive(
     alive_bits: Map<LogIdx, bool>,
     logical: LogicalLogIdx,
@@ -848,7 +718,6 @@ pub open spec fn log_entry_is_alive(
     alive_bits[phys_id as nat] == log_entry_alive_value(logical, buffer_size)
 }
 
-/// the value the alive but must have for the entry to be alive, this flips on wrap around
 pub open spec fn log_entry_alive_value(logical: LogicalLogIdx, buffer_size: nat) -> bool
     recommends
         buffer_size == LOG_SIZE,
@@ -930,4 +799,4 @@ pub proof fn log_entry_alive_value_wrap_around(i: LogicalLogIdx, buffer_size: na
     assert(((i + (buffer_size as int)) / buffer_size as int) == ((i / buffer_size as int) + 1));
 }
 
-} // verus!
+} 

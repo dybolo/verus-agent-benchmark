@@ -1,9 +1,3 @@
-// SPDX-License-Identifier: MPL-2.0
-//
-// Standalone Verus version of `wait.rs`.
-//
-// Run with the same Verus flags and dependencies used by the `ostd` target,
-// e.g. `cargo dv verify --targets ostd -- --verify-only-module sync::wait_inline`.
 #![feature(proc_macro_hygiene)]
 
 extern crate alloc;
@@ -21,22 +15,14 @@ use core::{marker::PhantomData, ops::{Deref, DerefMut}};
 
 verus! {
 
-// Inlined from `sync/guard.rs`.
-// `SpinLock` only carries this type parameter in this standalone file; the
-// platform-specific interrupt guard implementation is not needed by `wait.rs`.
 pub struct LocalIrqDisabled(());
 
-// Inlined from `sync/spin.rs`.
 pub trait SpinLockPredicate<T>: Sized {
     type State;
 
     spec fn inv(self, value: T, state: Self::State) -> bool;
 }
 
-// Inlined from `sync/spin.rs`.
-// These declarations preserve the spin-lock proof interface used below. Their
-// executable implementations are intentionally external in this standalone
-// harness.
 #[verifier::reject_recursive_types(T)]
 #[verifier::reject_recursive_types(G)]
 pub struct SpinLock<T, G, P: SpinLockPredicate<T>> {
@@ -74,7 +60,6 @@ impl<T, G, P: SpinLockPredicate<T>> SpinLock<T, G, P> {
     }
 }
 
-// Inlined from `sync/spin.rs`.
 #[verifier::reject_recursive_types(T)]
 #[verifier::reject_recursive_types(G)]
 pub struct SpinLockGuard<'a, T, G, P: SpinLockPredicate<T>> {
@@ -180,11 +165,9 @@ impl<T, G, P: SpinLockPredicate<T>> DerefMut for SpinLockGuard<'_, T, G, P> {
     }
 }
 
-// Inlined from `task/mod.rs`.
 #[derive(Debug)]
 pub struct Task {}
 
-// Inlined from `sync/wait.rs`.
 struct WakersPredicate {
     ghost_id: Ghost<Loc>,
 }
@@ -198,9 +181,6 @@ impl WakersPredicate {
 impl SpinLockPredicate<VecDeque<Arc<Waker>>> for WakersPredicate {
     type State = GhostVar<int>;
 
-    /// While the spin lock is unlocked, its mirror records the exact queue
-    /// length. Lock acquisition transfers the mirror to the guard, allowing
-    /// the relation to be updated together with `num_wakers` before unlock.
     closed spec fn inv(self, wakers: VecDeque<Arc<Waker>>, mirror: GhostVar<int>) -> bool {
         &&& mirror.id() == self.id()
         &&& mirror@ == wakers@.len()
@@ -209,7 +189,6 @@ impl SpinLockPredicate<VecDeque<Arc<Waker>>> for WakersPredicate {
 
 struct_with_invariants! {
 
-/// A wait queue.
 pub struct WaitQueue {
     num_wakers: AtomicU32<_, GhostVarAuth<int>, _>,
     wakers: SpinLock<VecDeque<Arc<Waker>>, LocalIrqDisabled, WakersPredicate>,
@@ -264,7 +243,7 @@ impl WaitQueue {
             self.enqueue(waiter.waker());
             if let Some(res) = cond() {
                 assert(cond.ensures((), Some(res)));
-                proof! { admit(); }  // FIXME: https://github.com/verus-lang/verus/issues/2295
+                proof! { admit(); }  
                 return res;
             }
             waiter.wait();
@@ -371,7 +350,6 @@ impl Default for WaitQueue {
     fn default() -> Self { Self::new() }
 }
 
-// Inlined from `sync/wait.rs`.
 pub struct Waiter { waker: Arc<Waker> }
 impl !Send for Waiter {}
 impl !Sync for Waiter {}
@@ -461,8 +439,6 @@ impl Waker {
     }
 }
 
-} // verus!
+} 
 
-// Standalone entry point so `verus wait_inline.rs` uses its default binary
-// crate mode. The verified wait-queue definitions above do not use it.
 fn main() {}
