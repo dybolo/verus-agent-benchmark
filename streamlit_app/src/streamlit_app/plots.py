@@ -368,6 +368,243 @@ def caterpillar(attempts: pd.DataFrame, width: float, minimum_height: float) -> 
     return PlotResult(figure=figure, data=summary)
 
 
+def difficulty_bubble_scatter(
+    attempts: pd.DataFrame, width: float, height: float
+) -> PlotResult:
+    """Relate task size and missing proof code to repair success and atomic operations."""
+    dimensions = ["method_lines", "missing_code_lines", "atomic_operations"]
+    available = attempts.dropna(subset=dimensions).copy()
+    summary = (
+        available.groupby(
+            ["task_id", "proof_style", "source_module", *dimensions],
+            observed=True,
+            dropna=False,
+        )
+        .agg(attempts=("strict_success", "size"), valid_repairs=("strict_success", "sum"))
+        .reset_index()
+    )
+    summary["agent_success_rate"] = (
+        summary["valid_repairs"] / summary["attempts"] * 100
+    )
+    plotted = summary[
+        (summary["method_lines"] > 0) & (summary["missing_code_lines"] > 0)
+    ].copy()
+
+    omitted = attempts["task_id"].nunique() - plotted["task_id"].nunique()
+    warning = None
+    if omitted:
+        warning = (
+            f"{omitted} task(s) omitted because size metadata is missing or non-positive."
+        )
+
+    minimum_area = 32.0
+    area_per_operation = 30.0
+    bubble_areas = minimum_area + area_per_operation * plotted["atomic_operations"]
+    success_colors = mcolors.LinearSegmentedColormap.from_list(
+        "agent_success_rate", ["#355FB3", "#66B7AE"]
+    )
+
+    with _style():
+        figure, axis = plt.subplots(figsize=(width, height), constrained_layout=True)
+        scatter = axis.scatter(
+            plotted["method_lines"],
+            plotted["missing_code_lines"],
+            s=bubble_areas,
+            c=plotted["agent_success_rate"],
+            cmap=success_colors,
+            norm=mcolors.Normalize(vmin=0, vmax=100),
+            alpha=0.6,
+            edgecolor=COLORS["dark"],
+            linewidth=0.5,
+            zorder=3,
+        )
+        if not plotted.empty:
+            axis.set_xscale("log")
+            axis.set_yscale("log")
+            for scale_axis in (axis.xaxis, axis.yaxis):
+                scale_axis.set_major_locator(
+                    mticker.LogLocator(base=10, subs=(1.0, 3.0))
+                )
+                scale_axis.set_major_formatter(mticker.ScalarFormatter())
+                scale_axis.set_minor_formatter(mticker.NullFormatter())
+        axis.set_xlabel("Method lines (log scale)")
+        axis.set_ylabel("Missing-code lines (log scale)")
+        axis.set_title(
+            "Task size, missing proof code, and agent success",
+            loc="left",
+            fontweight="bold",
+        )
+        axis.grid(color=COLORS["light_gray"], linewidth=0.7, which="both")
+        axis.set_axisbelow(True)
+        colorbar = figure.colorbar(scatter, ax=axis, pad=0.02)
+        colorbar.set_label("Agent success rate (%)")
+
+        if not plotted.empty:
+            maximum_operations = int(plotted["atomic_operations"].max())
+            size_handles = [
+                Line2D(
+                    [],
+                    [],
+                    marker="o",
+                    linestyle="None",
+                    markersize=np.sqrt(area),
+                    markerfacecolor="none",
+                    markeredgecolor=COLORS["dark"],
+                )
+                for area in (
+                    minimum_area,
+                    minimum_area + area_per_operation * maximum_operations,
+                )
+            ]
+            axis.legend(
+                handles=size_handles,
+                labels=["", "size: atomic operations"],
+                frameon=False,
+                loc="upper left",
+                ncol=2,
+                handletextpad=0.2,
+                columnspacing=0.4,
+            )
+    return PlotResult(figure=figure, data=summary, warning=warning)
+
+
+def _format_range_value(value: float) -> str:
+    """Format a numeric bin boundary without unnecessary decimal places."""
+    return f"{value:g}"
+
+
+def _quartile_bin_codes(values: pd.Series) -> tuple[pd.Series, list[tuple[float, float]]]:
+    """Assign numeric values to up to four quantile bins."""
+    edges = np.unique(values.quantile(np.linspace(0, 1, 5)).to_numpy(dtype=float))
+    if len(edges) == 1:
+        return pd.Series(0, index=values.index, dtype=int), [(edges[0], edges[0])]
+    codes = pd.cut(values, bins=edges, labels=False, include_lowest=True).astype(int)
+    ranges = list(itertools.pairwise(edges))
+    return codes, ranges
+
+
+def _atomic_operation_bin_codes(
+    values: pd.Series,
+) -> tuple[pd.Series, list[tuple[float, float]]]:
+    """Keep repeated operation counts together in four interpretable ranges."""
+    maximum = float(values.max())
+    definitions = [
+        (values == 0, (0.0, 0.0)),
+        (values == 1, (1.0, 1.0)),
+        (values.between(2, 3), (2.0, min(3.0, maximum))),
+        (values >= 4, (4.0, maximum)),
+    ]
+    codes = pd.Series(-1, index=values.index, dtype=int)
+    ranges: list[tuple[float, float]] = []
+    for mask, value_range in definitions:
+        if not mask.any():
+            continue
+        codes.loc[mask] = len(ranges)
+        ranges.append(value_range)
+    return codes, ranges
+
+
+def binned_success_curves(
+    attempts: pd.DataFrame, width: float, height: float
+) -> PlotResult:
+    """Plot valid-repair rates across task-complexity ranges."""
+    metrics = [
+        ("method_lines", "Method lines"),
+        ("missing_code_lines", "Missing-code lines"),
+        ("atomic_operations", "Atomic operations"),
+    ]
+    dimensions = [metric for metric, _ in metrics]
+    tasks = (
+        attempts.dropna(subset=dimensions)
+        .groupby(["task_id", *dimensions], observed=True)
+        .agg(attempts=("strict_success", "size"), valid_repairs=("strict_success", "sum"))
+        .reset_index()
+    )
+    records: list[dict[str, object]] = []
+    for metric, label in metrics:
+        if tasks.empty:
+            continue
+        if metric == "atomic_operations":
+            codes, ranges = _atomic_operation_bin_codes(tasks[metric])
+        else:
+            codes, ranges = _quartile_bin_codes(tasks[metric])
+        binned = tasks.assign(bin_order=codes)
+        for bin_order, value_range in enumerate(ranges):
+            members = binned[binned["bin_order"] == bin_order]
+            if members.empty:
+                continue
+            attempted = int(members["attempts"].sum())
+            repaired = int(members["valid_repairs"].sum())
+            lower, upper = value_range
+            records.append(
+                {
+                    "metric": metric,
+                    "metric_label": label,
+                    "bin_order": bin_order,
+                    "bin_label": (
+                        f"{_format_range_value(lower)}–{_format_range_value(upper)}"
+                    ),
+                    "range_min": lower,
+                    "range_max": upper,
+                    "tasks": members["task_id"].nunique(),
+                    "attempts": attempted,
+                    "valid_repairs": repaired,
+                    "agent_success_rate": repaired / attempted * 100,
+                }
+            )
+    summary = pd.DataFrame.from_records(records)
+
+    warning = None
+    omitted = attempts["task_id"].nunique() - tasks["task_id"].nunique()
+    if omitted:
+        warning = f"{omitted} task(s) omitted because complexity metadata is missing."
+
+    success_colors = mcolors.LinearSegmentedColormap.from_list(
+        "binned_agent_success_rate", ["#355FB3", "#66B7AE"]
+    )
+    with _style():
+        figure, axes = plt.subplots(
+            1,
+            len(metrics),
+            figsize=(width, height),
+            constrained_layout=True,
+            squeeze=False,
+        )
+        for axis, (metric, label) in zip(axes[0], metrics):
+            panel = summary[summary["metric"] == metric].sort_values("bin_order")
+            positions = np.arange(len(panel))
+            rates = panel["agent_success_rate"].to_numpy(dtype=float)
+            axis.plot(
+                positions,
+                rates,
+                color=COLORS["yellow"],
+                linewidth=2,
+                zorder=2,
+            )
+            axis.scatter(
+                positions,
+                rates,
+                c=rates,
+                cmap=success_colors,
+                norm=mcolors.Normalize(vmin=0, vmax=100),
+                s=70,
+                edgecolor="white",
+                linewidth=0.8,
+                zorder=3,
+            )
+            axis.set_xticks(positions, panel["bin_label"])
+            axis.set_ylim(0, 100)
+            axis.set_yticks(np.arange(0, 101, 20))
+            axis.yaxis.set_major_formatter(mticker.PercentFormatter(xmax=100, decimals=0))
+            axis.set_xlabel(f"{label} (quartile range)")
+            axis.set_ylabel("Agent success rate")
+            axis.set_title(label, fontweight="bold")
+            axis.grid(axis="y", color=COLORS["light_gray"], linewidth=0.7)
+            axis.set_axisbelow(True)
+        figure.suptitle("Binned success curves", fontweight="bold")
+    return PlotResult(figure=figure, data=summary, warning=warning)
+
+
 def harness_comparisons(attempts: pd.DataFrame) -> pd.DataFrame:
     """Build task-level same-model comparisons between harnesses."""
     metadata = attempts[["task_id", "proof_style", "source_module"]].drop_duplicates("task_id").set_index("task_id")

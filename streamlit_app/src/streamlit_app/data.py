@@ -94,9 +94,12 @@ def load_task_metadata(
     metadata_path: Path, task_dirs: Path | Iterable[Path] | None = None
 ) -> tuple[pd.DataFrame, list[str]]:
     """Load task taxonomy metadata and optionally check it against task directories."""
-    required = {"task_id", "proof_style", "source_module"}
+    text_fields = ("task_id", "proof_style", "source_module")
+    numeric_fields = ("method_lines", "atomic_operations", "missing_code_lines")
+    columns = [*text_fields, *numeric_fields]
+    required = set(columns)
     errors: list[str] = []
-    records: list[dict[str, str]] = []
+    records: list[dict[str, Any]] = []
     seen: set[str] = set()
 
     try:
@@ -107,29 +110,35 @@ def load_task_metadata(
             if missing_fields:
                 raise ValueError(f"missing columns: {', '.join(sorted(missing_fields))}")
             for line_number, record in enumerate(reader, start=2):
-                identifier = (record.get("task_id") or "").strip()
-                proof_style = (record.get("proof_style") or "").strip()
-                source_module = (record.get("source_module") or "").strip()
-                if not identifier or not proof_style or not source_module:
+                text_values = {
+                    field: (record.get(field) or "").strip() for field in text_fields
+                }
+                if not all(text_values.values()) or any(
+                    not (record.get(field) or "").strip() for field in numeric_fields
+                ):
                     errors.append(f"{metadata_path.name}:{line_number}: incomplete metadata row")
                     continue
+                try:
+                    numeric_values = {
+                        field: int((record.get(field) or "").strip())
+                        for field in numeric_fields
+                    }
+                except ValueError:
+                    errors.append(f"{metadata_path.name}:{line_number}: invalid numeric metadata")
+                    continue
+                if any(value < 0 for value in numeric_values.values()):
+                    errors.append(f"{metadata_path.name}:{line_number}: negative numeric metadata")
+                    continue
+                identifier = text_values["task_id"]
                 if identifier in seen:
                     errors.append(f"{metadata_path.name}:{line_number}: duplicate task {identifier}")
                     continue
                 seen.add(identifier)
-                records.append(
-                    {
-                        "task_id": identifier,
-                        "proof_style": proof_style,
-                        "source_module": source_module,
-                    }
-                )
+                records.append({**text_values, **numeric_values})
     except (OSError, ValueError) as error:
         errors.append(f"{metadata_path.name}: {error}")
 
-    metadata = pd.DataFrame.from_records(
-        records, columns=["task_id", "proof_style", "source_module"]
-    )
+    metadata = pd.DataFrame.from_records(records, columns=columns)
 
     if task_dirs is not None:
         directories = [task_dirs] if isinstance(task_dirs, Path) else list(task_dirs)
@@ -232,6 +241,9 @@ def flatten_runs(runs: Iterable[dict[str, Any]], metadata: pd.DataFrame) -> pd.D
                         ),
                         "proof_style": task_metadata.get("proof_style"),
                         "source_module": task_metadata.get("source_module"),
+                        "method_lines": task_metadata.get("method_lines"),
+                        "atomic_operations": task_metadata.get("atomic_operations"),
+                        "missing_code_lines": task_metadata.get("missing_code_lines"),
                     }
                 )
     return pd.DataFrame.from_records(records)

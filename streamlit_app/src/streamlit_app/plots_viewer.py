@@ -16,8 +16,10 @@ from streamlit_app.data import (
 from streamlit_app.paths import app_data_path, repository_root
 from streamlit_app.plots import (
     PlotResult,
+    binned_success_curves,
     caterpillar,
     csv_bytes,
+    difficulty_bubble_scatter,
     exclusive_solves_matrix,
     figure_bytes,
     harness_resource_usage,
@@ -208,6 +210,16 @@ def main() -> None:
     with question_two:
         st.header("Which proof patterns and verification constructs are most difficult?")
         render_plot(
+            difficulty_bubble_scatter(selected, figure_width, figure_height),
+            "task-difficulty-bubble-scatter",
+        )
+        st.divider()
+        render_plot(
+            binned_success_curves(selected, figure_width, figure_height),
+            "binned-success-curves",
+        )
+        st.divider()
+        render_plot(
             caterpillar(selected, figure_width, figure_height),
             "hierarchical-caterpillar",
         )
@@ -242,13 +254,6 @@ def main() -> None:
             token_usage_by_outcome(selected, figure_width, figure_height),
             "token-usage-by-outcome",
         )
-
-    # with question_four:
-    #     st.header("How does model capability change harness performance?")
-    #     render_plot(
-    #         harness_model_interaction(selected, figure_width, figure_height),
-    #         "harness-model-interaction",
-    #     )
 
 
 if __name__ == "__main__":

@@ -17,8 +17,10 @@ from streamlit_app.data import (
 )
 from streamlit_app.paths import app_data_path
 from streamlit_app.plots import (
+    binned_success_curves,
     caterpillar,
     csv_bytes,
+    difficulty_bubble_scatter,
     exclusive_solves_matrix,
     figure_bytes,
     harness_comparisons,
@@ -61,6 +63,8 @@ class PlotSmokeTests(unittest.TestCase):
             outcome_composition(self.selected, 10, 5),
             quality_cost(self.selected, 10, 5, "log"),
             caterpillar(self.selected, 12, 5),
+            difficulty_bubble_scatter(self.selected, 10, 5),
+            binned_success_curves(self.selected, 12, 5),
             exclusive_solves_matrix(self.selected, 10, 5),
             harness_resource_usage(self.selected, 12, 5),
             harness_model_interaction(self.selected, 10, 5),
@@ -107,6 +111,44 @@ class PlotSmokeTests(unittest.TestCase):
             counts,
             {"atomic-operation": 20, "tokenized_state_machine!": 30},
         )
+
+    def test_difficulty_bubbles_encode_metadata_and_agent_success(self) -> None:
+        result = difficulty_bubble_scatter(self.selected, 10, 5)
+        axis = result.figure.axes[0]
+
+        self.assertEqual(result.data["task_id"].nunique(), 50)
+        self.assertEqual(axis.get_xscale(), "log")
+        self.assertEqual(axis.get_yscale(), "log")
+        self.assertTrue(
+            {
+                "method_lines",
+                "missing_code_lines",
+                "atomic_operations",
+                "agent_success_rate",
+            }.issubset(result.data.columns)
+        )
+        self.assertTrue(result.data["agent_success_rate"].between(0, 100).all())
+        self.assertGreater(
+            axis.collections[0].get_sizes().max(),
+            axis.collections[0].get_sizes().min(),
+        )
+        self.assertEqual(axis.collections[0].norm.vmin, 0)
+        self.assertEqual(axis.collections[0].norm.vmax, 100)
+
+    def test_binned_success_curves_cover_all_complexity_metrics(self) -> None:
+        result = binned_success_curves(self.selected, 12, 5)
+
+        self.assertEqual(
+            set(result.data["metric"]),
+            {"method_lines", "missing_code_lines", "atomic_operations"},
+        )
+        self.assertEqual(len(result.figure.axes), 3)
+        self.assertTrue(result.data["agent_success_rate"].between(0, 100).all())
+        self.assertTrue((result.data.groupby("metric")["tasks"].sum() == 50).all())
+        atomic_labels = result.data[result.data["metric"] == "atomic_operations"][
+            "bin_label"
+        ].tolist()
+        self.assertTrue(all(label in atomic_labels for label in ("0–0", "1–1")))
 
     def test_caterpillar_uses_source_file_group_headers(self) -> None:
         result = caterpillar(self.selected, 12, 5)

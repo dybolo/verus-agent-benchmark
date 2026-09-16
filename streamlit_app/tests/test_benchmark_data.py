@@ -6,6 +6,7 @@ import unittest
 from pathlib import Path
 
 import pandas as pd
+
 from streamlit_app.data import (
     cohort_attempts,
     discover_cohorts,
@@ -47,7 +48,16 @@ class LoadingTests(unittest.TestCase):
                 },
             }
         ]
-        metadata = pd.DataFrame(columns=["task_id", "proof_style", "source_module"])
+        metadata = pd.DataFrame(
+            columns=[
+                "task_id",
+                "proof_style",
+                "source_module",
+                "method_lines",
+                "atomic_operations",
+                "missing_code_lines",
+            ]
+        )
 
         attempts = flatten_runs(runs, metadata)
 
@@ -88,6 +98,15 @@ class LoadingTests(unittest.TestCase):
         self.assertEqual(errors, [])
         self.assertEqual(len(metadata), 92)
         self.assertEqual(metadata["task_id"].nunique(), 92)
+        self.assertTrue(
+            {
+                "method_lines",
+                "atomic_operations",
+                "missing_code_lines",
+            }.issubset(metadata.columns)
+        )
+        self.assertTrue((metadata["method_lines"] > 0).all())
+        self.assertTrue((metadata["missing_code_lines"] > 0).all())
         self.assertEqual(
             metadata["proof_style"].value_counts().to_dict(),
             {
