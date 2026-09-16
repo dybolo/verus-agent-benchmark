@@ -210,6 +210,26 @@ def flatten_runs(runs: Iterable[dict[str, Any]], metadata: pd.DataFrame) -> pd.D
                         ),
                         "total_turns": _numeric(result.get("total_turns")),
                         "total_tool_calls": _numeric(result.get("total_tool_calls")),
+                        "tool_calls_read": _numeric(
+                            result.get("tool_calls_by_type", {}).get("read")
+                            if isinstance(result.get("tool_calls_by_type"), dict)
+                            else None
+                        ),
+                        "tool_calls_shell": _numeric(
+                            result.get("tool_calls_by_type", {}).get("shell_command")
+                            if isinstance(result.get("tool_calls_by_type"), dict)
+                            else None
+                        ),
+                        "tool_calls_patch": _numeric(
+                            result.get("tool_calls_by_type", {}).get("patch")
+                            if isinstance(result.get("tool_calls_by_type"), dict)
+                            else None
+                        ),
+                        "tool_calls_other": _numeric(
+                            result.get("tool_calls_by_type", {}).get("other")
+                            if isinstance(result.get("tool_calls_by_type"), dict)
+                            else None
+                        ),
                         "proof_style": task_metadata.get("proof_style"),
                         "source_module": task_metadata.get("source_module"),
                     }

@@ -32,6 +32,12 @@ class LoadingTests(unittest.TestCase):
                                 "timed_out": True,
                                 "total_turns": 12,
                                 "total_tool_calls": 9,
+                                "tool_calls_by_type": {
+                                    "read": 2,
+                                    "shell_command": 4,
+                                    "patch": 1,
+                                    "other": 2,
+                                },
                             },
                             "timed-out.rs": {"timed_out": True},
                             "rejected.rs": {"verus_passed": True},
@@ -57,6 +63,10 @@ class LoadingTests(unittest.TestCase):
         self.assertTrue(attempts.set_index("task_id").loc["valid", "strict_success"])
         self.assertEqual(attempts.set_index("task_id").loc["valid", "total_turns"], 12)
         self.assertEqual(attempts.set_index("task_id").loc["valid", "total_tool_calls"], 9)
+        self.assertEqual(attempts.set_index("task_id").loc["valid", "tool_calls_read"], 2)
+        self.assertEqual(attempts.set_index("task_id").loc["valid", "tool_calls_shell"], 4)
+        self.assertEqual(attempts.set_index("task_id").loc["valid", "tool_calls_patch"], 1)
+        self.assertEqual(attempts.set_index("task_id").loc["valid", "tool_calls_other"], 2)
 
     def test_load_runs_reports_malformed_files(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

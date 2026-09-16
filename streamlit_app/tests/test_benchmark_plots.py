@@ -28,6 +28,7 @@ from streamlit_app.plots import (
     quality_cost,
     task_normalized_harness_effect,
     token_usage_by_outcome,
+    tool_calls_by_type,
 )
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -64,6 +65,7 @@ class PlotSmokeTests(unittest.TestCase):
             harness_resource_usage(self.selected, 12, 5),
             harness_model_interaction(self.selected, 10, 5),
             task_normalized_harness_effect(self.selected, 10, 5),
+            tool_calls_by_type(self.selected, 10, 5),
             token_usage_by_outcome(self.selected, 10, 5),
         ]
         for result in results:
@@ -226,6 +228,25 @@ class PlotSmokeTests(unittest.TestCase):
         )
         for row in result.data.itertuples():
             self.assertEqual(row.attempts, expected_attempts.get((row.condition, row.successful), 0))
+
+    def test_tool_calls_by_type_are_reported_per_attempted_task(self) -> None:
+        result = tool_calls_by_type(self.selected, 10, 5)
+
+        self.assertEqual(
+            set(result.data["reported_tool_call_category"]),
+            {"read", "shell", "patch", "other"},
+        )
+        self.assertEqual(result.figure.axes[0].get_ylabel(), "Reported tool-call category")
+        self.assertEqual(
+            [label.get_text() for label in result.figure.axes[0].get_yticklabels()],
+            ["read", "shell", "patch", "other"],
+        )
+        expected_y = np.arange(4)
+        for agent_dots in result.figure.axes[0].collections[1:]:
+            np.testing.assert_array_equal(agent_dots.get_offsets()[:, 1], expected_y)
+        for row in result.data.itertuples():
+            expected = row.total_reported_calls / row.attempted_tasks
+            self.assertAlmostEqual(row.calls_per_attempted_task, expected)
 
     def test_resource_usage_counts_timeouts_as_twenty_minutes(self) -> None:
         attempts = self.selected.copy()

@@ -25,6 +25,7 @@ from streamlit_app.plots import (
     quality_cost,
     task_normalized_harness_effect,
     token_usage_by_outcome,
+    tool_calls_by_type,
 )
 
 
@@ -226,6 +227,15 @@ def main() -> None:
         render_plot(
             harness_resource_usage(selected, figure_width, figure_height),
             "harness-resource-usage",
+        )
+        st.divider()
+        st.caption(
+            "These are reported tool-call categories. Codex performs many reads through shell commands, "
+            "while other harnesses expose dedicated read tools."
+        )
+        render_plot(
+            tool_calls_by_type(selected, figure_width, figure_height),
+            "reported-tool-calls-by-type",
         )
         st.divider()
         render_plot(

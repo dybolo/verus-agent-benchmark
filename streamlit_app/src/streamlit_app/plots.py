@@ -1024,6 +1024,118 @@ def harness_resource_usage(attempts: pd.DataFrame, width: float, height: float) 
     return PlotResult(figure=figure, data=summary, warning=warning)
 
 
+def tool_calls_by_type(attempts: pd.DataFrame, width: float, height: float) -> PlotResult:
+    """Plot reported tool-call categories per attempted task for each agent."""
+    categories = (
+        ("read", "tool_calls_read"),
+        ("shell", "tool_calls_shell"),
+        ("patch", "tool_calls_patch"),
+        ("other", "tool_calls_other"),
+    )
+    agents = _ordered_conditions(attempts)
+    records: list[dict[str, object]] = []
+    for agent in agents:
+        group = attempts[attempts["condition"] == agent]
+        attempted_tasks = len(group)
+        for category, column in categories:
+            values = group[column].dropna().astype(float)
+            total_calls = values.sum() if len(values) else np.nan
+            records.append(
+                {
+                    "agent": agent,
+                    "harness": group["harness"].iloc[0],
+                    "model": group["model"].iloc[0],
+                    "reported_tool_call_category": category,
+                    "attempted_tasks": attempted_tasks,
+                    "reported_attempts": len(values),
+                    "total_reported_calls": total_calls,
+                    "calls_per_attempted_task": (
+                        total_calls / attempted_tasks
+                        if attempted_tasks and pd.notna(total_calls)
+                        else np.nan
+                    ),
+                }
+            )
+    summary = pd.DataFrame.from_records(records)
+
+    category_names = [category for category, _ in categories]
+    y = np.arange(len(category_names), dtype=float)
+    palette = [
+        COLORS["blue"],
+        COLORS["orange"],
+        COLORS["green"],
+        COLORS["purple"],
+        COLORS["red"],
+        COLORS["sky"],
+    ]
+    markers = ["o", "s", "^", "D", "P", "X"]
+
+    with _style():
+        figure, axis = plt.subplots(
+            figsize=(width, max(height, 4.2)),
+            constrained_layout=True,
+        )
+        axis.hlines(
+            y,
+            xmin=0,
+            xmax=1,
+            transform=axis.get_yaxis_transform(),
+            color=COLORS["light_gray"],
+            linewidth=1,
+            zorder=0,
+        )
+        for index, agent in enumerate(agents):
+            panel = (
+                summary[summary["agent"] == agent]
+                .set_index("reported_tool_call_category")
+                .reindex(category_names)
+            )
+            values = panel["calls_per_attempted_task"].to_numpy(dtype=float)
+            valid = ~np.isnan(values)
+            axis.scatter(
+                values[valid],
+                y[valid],
+                s=82,
+                color=palette[index % len(palette)],
+                marker=markers[index % len(markers)],
+                edgecolor="white",
+                linewidth=0.8,
+                label=agent,
+                zorder=3,
+            )
+        axis.set_yticks(y, category_names)
+        axis.invert_yaxis()
+        axis.set_xlim(left=0)
+        axis.set_xlabel("Calls per attempted task")
+        axis.set_ylabel("Reported tool-call category")
+        axis.set_title(
+            "Reported tool-call counts by type",
+            loc="left",
+            fontweight="bold",
+            pad=58,
+        )
+        axis.grid(axis="x", color=COLORS["light_gray"], linewidth=0.7)
+        axis.set_axisbelow(True)
+        if agents:
+            axis.legend(
+                frameon=False,
+                loc="lower left",
+                bbox_to_anchor=(0, 1.015),
+                ncol=min(4, len(agents)),
+                borderaxespad=0,
+            )
+
+    incomplete = summary[summary["reported_attempts"] < summary["attempted_tasks"]]
+    warning = None
+    if not incomplete.empty:
+        affected_agents = incomplete["agent"].nunique()
+        warning = (
+            f"{affected_agents} agent(s) have attempts without reported tool-call categories; "
+            "rates use all attempted tasks as the denominator."
+        )
+    return PlotResult(figure=figure, data=summary, warning=warning)
+
+
 def token_usage_by_outcome(attempts: pd.DataFrame, width: float, height: float) -> PlotResult:
     """Compare input and output token usage for successful and unsuccessful attempts."""
     metrics = (
