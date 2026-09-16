@@ -39,11 +39,24 @@ class MethodSizeTests(unittest.TestCase):
         self.assertEqual(by_task["wait"].targets, ("wake_one", "wake_all", "enqueue"))
         self.assertEqual(by_task["cuckoo_inductive"].method_lines, 76)
         self.assertEqual(by_task["helping_full"].method_lines, 171)
+        self.assertEqual(by_task["helping_full"].atomic_operations, 10)
         self.assertEqual(by_task["linked_list_take"].method_lines, 37)
         self.assertEqual(by_task["linked_list_take_"].method_lines, 52)
 
+    def test_every_atomic_operation_task_has_an_atomic_operation(self) -> None:
+        proof_styles = {row["task_id"]: row["proof_style"] for row in self.rows}
+
+        self.assertTrue(
+            all(
+                size.atomic_operations > 0
+                for size in self.sizes
+                if proof_styles[size.task_id] == "atomic-operation"
+            )
+        )
+
     def test_checked_in_metadata_is_current(self) -> None:
         self.assertIn("method_lines", self.fieldnames)
+        self.assertIn("atomic_operations", self.fieldnames)
         self.assertTrue(METHOD_SIZES.metadata_is_current(self.rows, self.sizes))
 
     def test_writing_metadata_is_idempotent(self) -> None:

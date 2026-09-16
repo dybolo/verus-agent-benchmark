@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Update task metadata with non-empty line counts for hard-coded methods."""
+"""Update task metadata with metrics for hard-coded method ranges."""
 
 from __future__ import annotations
 
@@ -11,6 +11,12 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 METADATA_PATH = ROOT / "streamlit_app" / "src" / "streamlit_app" / "task_metadata.csv"
 METHOD_LINES_COLUMN = "method_lines"
+ATOMIC_OPERATIONS_COLUMN = "atomic_operations"
+ATOMIC_OPERATION_MACROS = (
+    "atomic_with_ghost!",
+    "open_atomic_invariant!",
+    "try_open_atomic_update!",
+)
 
 
 @dataclass(frozen=True)
@@ -32,6 +38,7 @@ class TaskSpec:
 class TaskSize:
     task_id: str
     method_lines: int
+    atomic_operations: int
     targets: tuple[str, ...]
 
 
@@ -165,6 +172,11 @@ def count_target_lines(lines: list[str], target: Target, source_path: Path) -> i
     return sum(bool(line.strip()) for line in lines[target.start_line - 1 : target.end_line])
 
 
+def count_atomic_operations(lines: list[str], target: Target) -> int:
+    target_source = "\n".join(lines[target.start_line - 1 : target.end_line])
+    return sum(target_source.count(macro) for macro in ATOMIC_OPERATION_MACROS)
+
+
 def calculate_all_sizes(
     rows: list[dict[str, str]], root: Path = ROOT
 ) -> list[TaskSize]:
@@ -205,15 +217,28 @@ def calculate_all_sizes(
             count_target_lines(source_lines, target, source_path)
             for target in spec.targets
         )
+        atomic_operations = sum(
+            count_atomic_operations(source_lines, target) for target in spec.targets
+        )
         results.append(
-            TaskSize(task_id, method_lines, tuple(target.name for target in spec.targets))
+            TaskSize(
+                task_id,
+                method_lines,
+                atomic_operations,
+                tuple(target.name for target in spec.targets),
+            )
         )
     return results
 
 
 def metadata_is_current(rows: list[dict[str, str]], sizes: list[TaskSize]) -> bool:
-    expected = {size.task_id: str(size.method_lines) for size in sizes}
-    return all(row.get(METHOD_LINES_COLUMN) == expected.get(row.get("task_id", "")) for row in rows)
+    expected = {size.task_id: size for size in sizes}
+    return all(
+        row.get(METHOD_LINES_COLUMN) == str(expected[row["task_id"]].method_lines)
+        and row.get(ATOMIC_OPERATIONS_COLUMN)
+        == str(expected[row["task_id"]].atomic_operations)
+        for row in rows
+    )
 
 
 def write_metadata(
@@ -225,11 +250,15 @@ def write_metadata(
     output_fields = list(fieldnames)
     if METHOD_LINES_COLUMN not in output_fields:
         output_fields.append(METHOD_LINES_COLUMN)
-    sizes_by_task = {size.task_id: str(size.method_lines) for size in sizes}
+    if ATOMIC_OPERATIONS_COLUMN not in output_fields:
+        output_fields.append(ATOMIC_OPERATIONS_COLUMN)
+    sizes_by_task = {size.task_id: size for size in sizes}
     output_rows = []
     for row in rows:
         output_row = dict(row)
-        output_row[METHOD_LINES_COLUMN] = sizes_by_task[row["task_id"].strip()]
+        size = sizes_by_task[row["task_id"].strip()]
+        output_row[METHOD_LINES_COLUMN] = str(size.method_lines)
+        output_row[ATOMIC_OPERATIONS_COLUMN] = str(size.atomic_operations)
         output_rows.append(output_row)
     with path.open("w", encoding="utf-8", newline="") as metadata_file:
         writer = csv.DictWriter(metadata_file, fieldnames=output_fields, lineterminator="\n")
