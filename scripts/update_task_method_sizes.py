@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
-"""Update task metadata with metrics for hard-coded method ranges."""
+"""Update task metadata with statistics for hard-coded method ranges."""
 
 from __future__ import annotations
 
 import csv
+import difflib
 import re
 from dataclasses import dataclass
 from pathlib import Path
@@ -12,6 +13,7 @@ ROOT = Path(__file__).resolve().parents[1]
 METADATA_PATH = ROOT / "streamlit_app" / "src" / "streamlit_app" / "task_metadata.csv"
 METHOD_LINES_COLUMN = "method_lines"
 ATOMIC_OPERATIONS_COLUMN = "atomic_operations"
+MISSING_CODE_LINES_COLUMN = "missing_code_lines"
 ATOMIC_OPERATION_MACROS = (
     "atomic_with_ghost!",
     "open_atomic_invariant!",
@@ -39,6 +41,7 @@ class TaskSize:
     task_id: str
     method_lines: int
     atomic_operations: int
+    missing_code_lines: int
     targets: tuple[str, ...]
 
 
@@ -145,7 +148,7 @@ def read_metadata(path: Path) -> tuple[list[str], list[dict[str, str]]]:
         reader = csv.DictReader(metadata_file)
         fieldnames = list(reader.fieldnames or [])
         rows = list(reader)
-    required = {"task_id", "source_module"}
+    required = {"task_id", "proof_style", "source_module"}
     missing = required - set(fieldnames)
     if missing:
         raise ValueError(f"{path}: missing columns: {', '.join(sorted(missing))}")
@@ -175,6 +178,55 @@ def count_target_lines(lines: list[str], target: Target, source_path: Path) -> i
 def count_atomic_operations(lines: list[str], target: Target) -> int:
     target_source = "\n".join(lines[target.start_line - 1 : target.end_line])
     return sum(target_source.count(macro) for macro in ATOMIC_OPERATION_MACROS)
+
+
+def count_code_lines(lines: list[str]) -> int:
+    """Count non-empty lines, including comments and delimiter-only lines."""
+    return sum(bool(line.strip()) for line in lines)
+
+
+def count_missing_code_lines(
+    source_lines: list[str],
+    task_lines: list[str],
+    targets: tuple[Target, ...],
+) -> int:
+    """Count unmatched source lines only within a task's target functions.
+
+    Task files may omit unrelated functions from the base module. Restricting
+    the diff to the declared source ranges prevents those deliberate omissions
+    from being counted as code the task asks the solver to supply.
+    """
+    matcher = difflib.SequenceMatcher(None, source_lines, task_lines, autojunk=False)
+    missing_lines = 0
+    for operation, source_start, source_end, task_start, task_end in matcher.get_opcodes():
+        if operation == "equal" or operation == "insert":
+            continue
+        for target in targets:
+            target_start = target.start_line - 1
+            target_end = target.end_line
+            overlap_start = max(source_start, target_start)
+            overlap_end = min(source_end, target_end)
+            if overlap_start >= overlap_end:
+                continue
+
+            source_count = count_code_lines(source_lines[overlap_start:overlap_end])
+            replacement_count = 0
+            if operation == "replace":
+                if overlap_start != source_start or overlap_end != source_end:
+                    raise ValueError(
+                        f"diff replacement at source lines {source_start + 1}-{source_end} "
+                        f"crosses the boundary of target {target.name!r}"
+                    )
+                replacement_count = count_code_lines(task_lines[task_start:task_end])
+            missing_lines += max(source_count - replacement_count, 0)
+    return missing_lines
+
+
+def task_path_for(row: dict[str, str], root: Path) -> Path:
+    task_id = row.get("task_id", "").strip()
+    proof_style = row.get("proof_style", "").strip()
+    directory = root / ("full_tasks" if proof_style == "full-file" else "tasks")
+    return directory / f"{task_id}.rs"
 
 
 def calculate_all_sizes(
@@ -220,11 +272,19 @@ def calculate_all_sizes(
         atomic_operations = sum(
             count_atomic_operations(source_lines, target) for target in spec.targets
         )
+        task_path = task_path_for(row, root)
+        if not task_path.is_file():
+            raise FileNotFoundError(f"{task_id}: task file not found: {task_path}")
+        task_lines = task_path.read_text(encoding="utf-8").splitlines()
+        missing_code_lines = count_missing_code_lines(
+            source_lines, task_lines, spec.targets
+        )
         results.append(
             TaskSize(
                 task_id,
                 method_lines,
                 atomic_operations,
+                missing_code_lines,
                 tuple(target.name for target in spec.targets),
             )
         )
@@ -237,6 +297,8 @@ def metadata_is_current(rows: list[dict[str, str]], sizes: list[TaskSize]) -> bo
         row.get(METHOD_LINES_COLUMN) == str(expected[row["task_id"]].method_lines)
         and row.get(ATOMIC_OPERATIONS_COLUMN)
         == str(expected[row["task_id"]].atomic_operations)
+        and row.get(MISSING_CODE_LINES_COLUMN)
+        == str(expected[row["task_id"]].missing_code_lines)
         for row in rows
     )
 
@@ -252,6 +314,8 @@ def write_metadata(
         output_fields.append(METHOD_LINES_COLUMN)
     if ATOMIC_OPERATIONS_COLUMN not in output_fields:
         output_fields.append(ATOMIC_OPERATIONS_COLUMN)
+    if MISSING_CODE_LINES_COLUMN not in output_fields:
+        output_fields.append(MISSING_CODE_LINES_COLUMN)
     sizes_by_task = {size.task_id: size for size in sizes}
     output_rows = []
     for row in rows:
@@ -259,6 +323,7 @@ def write_metadata(
         size = sizes_by_task[row["task_id"].strip()]
         output_row[METHOD_LINES_COLUMN] = str(size.method_lines)
         output_row[ATOMIC_OPERATIONS_COLUMN] = str(size.atomic_operations)
+        output_row[MISSING_CODE_LINES_COLUMN] = str(size.missing_code_lines)
         output_rows.append(output_row)
     with path.open("w", encoding="utf-8", newline="") as metadata_file:
         writer = csv.DictWriter(metadata_file, fieldnames=output_fields, lineterminator="\n")
