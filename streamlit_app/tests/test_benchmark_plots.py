@@ -30,6 +30,7 @@ from streamlit_app.plots import (
     quality_cost,
     task_normalized_harness_effect,
     token_usage_by_outcome,
+    tokens_used_by_agent_for_each_task,
     tool_calls_by_type,
 )
 
@@ -69,6 +70,7 @@ class PlotSmokeTests(unittest.TestCase):
             harness_resource_usage(self.selected, 12, 5),
             harness_model_interaction(self.selected, 10, 5),
             task_normalized_harness_effect(self.selected, 10, 5),
+            tokens_used_by_agent_for_each_task(self.selected, 10, 5),
             tool_calls_by_type(self.selected, 10, 5),
             token_usage_by_outcome(self.selected, 10, 5),
         ]
@@ -240,6 +242,22 @@ class PlotSmokeTests(unittest.TestCase):
 
         self.assertIsNotNone(result.warning)
         self.assertTrue((result.data["excluded_tasks"] >= 1).all())
+
+    def test_tokens_by_task_combine_input_and_output_tokens(self) -> None:
+        result = tokens_used_by_agent_for_each_task(self.selected, 10, 5)
+
+        self.assertEqual(result.data["task_id"].nunique(), self.selected["task_id"].nunique())
+        self.assertEqual(set(result.data["condition"]), set(self.selected["condition"]))
+        self.assertTrue({"median_input_tokens", "median_output_tokens", "total_tokens"}.issubset(result.data.columns))
+        row = result.data.dropna(subset=["total_tokens"]).iloc[0]
+        expected = self.selected[
+            (self.selected["task_id"] == row["task_id"])
+            & (self.selected["condition"] == row["condition"])
+        ]
+        expected_total = (expected["total_input_tokens"] + expected["total_output_tokens"]).median()
+        self.assertAlmostEqual(row["total_tokens"], expected_total)
+        self.assertEqual(result.figure.axes[0].get_xlabel(), "total tokens used (input + output)")
+        self.assertEqual(result.figure.axes[0].get_ylabel(), "tasks")
 
     def test_resource_usage_exports_all_metrics(self) -> None:
         result = harness_resource_usage(self.selected, 12, 5)

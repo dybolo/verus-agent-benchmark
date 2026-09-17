@@ -1160,6 +1160,126 @@ def task_normalized_harness_effect(
     return PlotResult(figure=figure, data=summary, warning=warning)
 
 
+def tokens_used_by_agent_for_each_task(
+    attempts: pd.DataFrame, width: float, minimum_height: float
+) -> PlotResult:
+    """Plot each agent's input-plus-output token use for every selected task.
+
+    When the input contains repeated attempts for a condition/task pair, the bar
+    shows their median total token use rather than adding separate attempts.
+    """
+    condition_order = _ordered_conditions(attempts)
+    token_attempts = attempts.assign(
+        total_tokens=pd.to_numeric(attempts["total_input_tokens"], errors="coerce")
+        + pd.to_numeric(attempts["total_output_tokens"], errors="coerce")
+    )
+    summary = (
+        token_attempts.groupby(
+            ["task_id", "task_file", "condition", "harness", "model"],
+            observed=True,
+            dropna=False,
+        )
+        .agg(
+            attempts=("task_id", "size"),
+            token_observations=("total_tokens", "count"),
+            median_input_tokens=("total_input_tokens", "median"),
+            median_output_tokens=("total_output_tokens", "median"),
+            total_tokens=("total_tokens", "median"),
+        )
+        .reset_index()
+    )
+    task_labels = (
+        attempts[["task_id", "task_file"]]
+        .drop_duplicates("task_id")
+        .assign(task_label=lambda frame: frame["task_file"].fillna(frame["task_id"] + ".rs"))
+        .sort_values(["task_label", "task_id"], kind="stable")
+    )
+    task_order = task_labels["task_id"].tolist()
+    labels = task_labels.set_index("task_id").loc[task_order, "task_label"].tolist()
+    condition_details = attempts[["condition", "harness", "model"]].drop_duplicates("condition")
+    conditions_per_harness = condition_details.groupby("harness", observed=True)["condition"].nunique()
+    condition_labels = {
+        row.condition: (
+            str(row.harness).capitalize()
+            if conditions_per_harness[row.harness] == 1
+            else f"{str(row.harness).capitalize()} / {row.model}"
+        )
+        for row in condition_details.itertuples(index=False)
+    }
+    y = np.arange(len(task_order), dtype=float)
+    palette = {
+        "codex": "#426FC4",
+        "copilot": "#F2D66B",
+        "opencode": "#DA8ABD",
+        "pi": "#6BC2BE",
+    }
+    fallback_colors = [COLORS["blue"], COLORS["orange"], COLORS["green"], COLORS["purple"], COLORS["red"]]
+    harness_colors = {
+        harness: palette.get(harness, fallback_colors[index % len(fallback_colors)])
+        for index, harness in enumerate(sorted(summary["harness"].unique()))
+    }
+    bar_height = 0.8 / max(len(condition_order), 1)
+    offsets = (np.arange(len(condition_order)) - (len(condition_order) - 1) / 2) * bar_height
+    maximum = float(summary["total_tokens"].max()) if summary["total_tokens"].notna().any() else 0.0
+    figure_height = max(minimum_height, 2.4 + 0.52 * len(task_order))
+
+    with _style():
+        figure, axis = plt.subplots(figsize=(width, figure_height), constrained_layout=True)
+        for index, condition in enumerate(condition_order):
+            panel = (
+                summary[summary["condition"] == condition]
+                .set_index("task_id")
+                .reindex(task_order)
+            )
+            values = panel["total_tokens"].to_numpy(dtype=float)
+            valid = ~np.isnan(values)
+            bars = axis.barh(
+                y[valid] + offsets[index],
+                values[valid],
+                height=bar_height * 0.82,
+                color=harness_colors[str(panel["harness"].dropna().iloc[0])],
+                label=condition_labels[condition],
+                zorder=3,
+            )
+            for bar, value in zip(bars, values[valid]):
+                label = f"{value / 1_000_000:.2f}M" if value >= 100_000 else f"{value / 1_000:.1f}K"
+                axis.annotate(
+                    label,
+                    (value, bar.get_y() + bar.get_height() / 2),
+                    xytext=(5, 0),
+                    textcoords="offset points",
+                    va="center",
+                    fontsize=8,
+                    color=COLORS["dark"],
+                )
+        axis.set_yticks(y, labels)
+        axis.invert_yaxis()
+        axis.set_xlim(0, maximum * 1.14 if maximum else 1)
+        axis.xaxis.set_major_formatter(mticker.FuncFormatter(lambda value, _: f"{value / 1_000_000:g}M"))
+        axis.set_xlabel("total tokens used (input + output)")
+        axis.set_ylabel("tasks")
+        axis.set_title("Tokens used by agent for each task", loc="left", fontweight="bold", pad=56)
+        axis.grid(axis="x", color=COLORS["light_gray"], linewidth=0.7)
+        axis.set_axisbelow(True)
+        if condition_order:
+            axis.legend(
+                frameon=False,
+                loc="lower left",
+                bbox_to_anchor=(0, 1.015),
+                ncol=min(4, len(condition_order)),
+                borderaxespad=0,
+            )
+
+    incomplete = summary[summary["token_observations"] < summary["attempts"]]
+    warning = None
+    if not incomplete.empty:
+        warning = (
+            f"{len(incomplete)} condition–task combination(s) have missing input or output token data; "
+            "bars use attempts with both values."
+        )
+    return PlotResult(figure=figure, data=summary, warning=warning)
+
+
 def harness_resource_usage(attempts: pd.DataFrame, width: float, height: float) -> PlotResult:
     """Compare per-task duration, token usage, and tool calls across conditions."""
     metrics = [

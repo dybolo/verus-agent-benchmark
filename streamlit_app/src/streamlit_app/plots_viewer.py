@@ -27,6 +27,7 @@ from streamlit_app.plots import (
     quality_cost,
     task_normalized_harness_effect,
     token_usage_by_outcome,
+    tokens_used_by_agent_for_each_task,
     tool_calls_by_type,
 )
 
@@ -226,6 +227,11 @@ def main() -> None:
 
     with question_three:
         st.header("How does agent harness design affect proof-repair performance?")
+        render_plot(
+            tokens_used_by_agent_for_each_task(selected, figure_width, figure_height),
+            "tokens-used-by-agent-for-each-task",
+        )
+        st.divider()
         render_plot(
             task_normalized_harness_effect(selected, figure_width, figure_height),
             "task-normalized-harness-effect",
