@@ -24,6 +24,7 @@ from streamlit_app.plots import (
     figure_bytes,
     harness_resource_usage,
     outcome_composition,
+    per_attempt_tool_call_composition,
     quality_cost,
     task_normalized_harness_effect,
     token_usage_by_outcome,
@@ -245,6 +246,11 @@ def main() -> None:
         render_plot(
             harness_resource_usage(selected, figure_width, figure_height),
             "harness-resource-usage",
+        )
+        st.divider()
+        render_plot(
+            per_attempt_tool_call_composition(selected, figure_width, figure_height),
+            "per-attempt-tool-call-composition",
         )
         st.divider()
         st.caption(

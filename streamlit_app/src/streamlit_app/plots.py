@@ -1493,6 +1493,186 @@ def tool_calls_by_type(attempts: pd.DataFrame, width: float, height: float) -> P
     return PlotResult(figure=figure, data=summary, warning=warning)
 
 
+def per_attempt_tool_call_composition(
+    attempts: pd.DataFrame, width: float, height: float
+) -> PlotResult:
+    """Plot each tool type's share of an attempt, split by repair outcome.
+
+    Every point is one attempt's reported count for a tool type divided by that
+    attempt's total tool calls.  Boxes show the median and interquartile range
+    of those percentages across tasks; they do not pool tool calls across
+    attempts.
+    """
+    categories = (
+        ("read", "tool_calls_read"),
+        ("shell_command", "tool_calls_shell"),
+        ("patch", "tool_calls_patch"),
+        ("other", "tool_calls_other"),
+    )
+    outcomes = (
+        (True, "Successful attempts"),
+        (False, "Unsuccessful attempts"),
+    )
+    conditions = _ordered_conditions(attempts)
+    condition_details = attempts[["condition", "harness", "model"]].drop_duplicates("condition")
+    conditions_per_harness = condition_details.groupby("harness", observed=True)["condition"].nunique()
+    condition_labels = {
+        row.condition: (
+            str(row.harness).capitalize()
+            if conditions_per_harness[row.harness] == 1
+            else f"{str(row.harness).capitalize()} / {row.model}"
+        )
+        for row in condition_details.itertuples(index=False)
+    }
+    harness_palette = {
+        "codex": "#426FC4",
+        "copilot": "#F2D66B",
+        "opencode": "#DA8ABD",
+        "pi": "#6BC2BE",
+    }
+    fallback_colors = [COLORS["blue"], COLORS["orange"], COLORS["green"], COLORS["purple"], COLORS["red"]]
+    condition_colors = {
+        condition: harness_palette.get(
+            str(condition_details.set_index("condition").loc[condition, "harness"]),
+            fallback_colors[index % len(fallback_colors)],
+        )
+        for index, condition in enumerate(conditions)
+    }
+
+    records: list[dict[str, object]] = []
+    for row in attempts.itertuples(index=False):
+        total = pd.to_numeric(pd.Series([row.total_tool_calls]), errors="coerce").iloc[0]
+        for tool_call_type, column in categories:
+            count = pd.to_numeric(pd.Series([getattr(row, column)]), errors="coerce").iloc[0]
+            if pd.isna(total) or total <= 0 or pd.isna(count):
+                continue
+            records.append(
+                {
+                    "entry_id": row.entry_id,
+                    "run_id": row.run_id,
+                    "condition": row.condition,
+                    "harness": row.harness,
+                    "model": row.model,
+                    "task_id": row.task_id,
+                    "strict_success": row.strict_success,
+                    "outcome": "Successful attempts" if row.strict_success else "Unsuccessful attempts",
+                    "tool_call_type": tool_call_type,
+                    "total_tool_calls": float(total),
+                    "tool_call_count": float(count),
+                    "tool_call_share_pct": float(count / total * 100),
+                }
+            )
+    columns = [
+        "entry_id",
+        "run_id",
+        "condition",
+        "harness",
+        "model",
+        "task_id",
+        "strict_success",
+        "outcome",
+        "tool_call_type",
+        "total_tool_calls",
+        "tool_call_count",
+        "tool_call_share_pct",
+    ]
+    shares = pd.DataFrame.from_records(records, columns=columns)
+    category_names = [category for category, _ in categories]
+    y = np.arange(len(category_names), dtype=float)
+    figure_height = max(height, 6.0)
+
+    with _style():
+        figure, axes = plt.subplots(
+            1,
+            len(outcomes),
+            figsize=(width, figure_height),
+            constrained_layout=True,
+            sharex=True,
+            sharey=True,
+            squeeze=False,
+        )
+        # Keep a header band for the figure title and shared condition legend.
+        figure.get_layout_engine().set(rect=(0, 0, 1, 0.84))
+        condition_width = min(0.16, 0.7 / max(len(conditions), 1))
+        offsets = (np.arange(len(conditions)) - (len(conditions) - 1) / 2) * condition_width
+        jitter_rng = np.random.default_rng(0)
+        for axis, (successful, outcome_label) in zip(axes[0], outcomes):
+            outcome_data = shares[shares["strict_success"] == successful]
+            attempt_count = int((attempts["strict_success"] == successful).sum())
+            for condition_index, condition in enumerate(conditions):
+                condition_data = outcome_data[outcome_data["condition"] == condition]
+                color = condition_colors[condition]
+                for category_index, category in enumerate(category_names):
+                    values = condition_data.loc[
+                        condition_data["tool_call_type"] == category, "tool_call_share_pct"
+                    ].to_numpy(dtype=float)
+                    if not len(values):
+                        continue
+                    position = y[category_index] + offsets[condition_index]
+                    box = axis.boxplot(
+                        values,
+                        vert=False,
+                        positions=[position],
+                        widths=condition_width * 0.78,
+                        whis=(0, 100),
+                        showfliers=False,
+                        patch_artist=True,
+                        manage_ticks=False,
+                        zorder=2,
+                    )
+                    for patch in box["boxes"]:
+                        patch.set(facecolor=color, edgecolor=color, alpha=0.62, linewidth=1.1)
+                    for key in ("whiskers", "caps", "medians"):
+                        for artist in box[key]:
+                            artist.set(color=color, linewidth=1.1 if key != "medians" else 1.5)
+                    point_y = position + jitter_rng.uniform(-condition_width * 0.18, condition_width * 0.18, len(values))
+                    axis.scatter(
+                        values,
+                        point_y,
+                        s=24,
+                        color=color,
+                        alpha=0.45,
+                        edgecolor="none",
+                        zorder=3,
+                    )
+            axis.set_title(f"{outcome_label} · {attempt_count} attempts", loc="left", fontweight="bold")
+            axis.set_xlim(0, 100)
+            axis.xaxis.set_major_formatter(mticker.PercentFormatter(xmax=100, decimals=0))
+            axis.set_xlabel("Tool-call share of attempt (%)")
+            axis.grid(axis="x", color=COLORS["light_gray"], linewidth=0.7)
+            axis.set_axisbelow(True)
+        axes[0, 0].set_yticks(y, category_names)
+        axes[0, 0].invert_yaxis()
+        axes[0, 0].set_ylabel("Tool-call type")
+        figure.suptitle("Per-attempt tool-call composition", x=0.01, ha="left", fontweight="bold")
+        figure.text(
+            0.01,
+            0.88,
+            "Each point is one attempt; boxes show the median and IQR of each tool type's share across tasks.",
+            ha="left",
+            va="top",
+            fontsize=9,
+            color=COLORS["dark"],
+        )
+        if conditions:
+            figure.legend(
+                handles=[Patch(facecolor=condition_colors[condition], label=condition_labels[condition]) for condition in conditions],
+                frameon=False,
+                loc="upper left",
+                bbox_to_anchor=(0.01, 0.95),
+                ncol=min(4, len(conditions)),
+            )
+
+    expected_values = len(attempts) * len(categories)
+    warning = None
+    if len(shares) < expected_values:
+        warning = (
+            f"{expected_values - len(shares)} attempt–tool-type value(s) were omitted because the total or "
+            "reported tool-call count was missing, or the attempt made no tool calls."
+        )
+    return PlotResult(figure=figure, data=shares, warning=warning)
+
+
 def token_usage_by_outcome(attempts: pd.DataFrame, width: float, height: float) -> PlotResult:
     """Compare input and output token usage for successful and unsuccessful attempts."""
     metrics = (

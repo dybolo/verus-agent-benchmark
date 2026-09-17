@@ -27,6 +27,7 @@ from streamlit_app.plots import (
     harness_model_interaction,
     harness_resource_usage,
     outcome_composition,
+    per_attempt_tool_call_composition,
     quality_cost,
     task_normalized_harness_effect,
     token_usage_by_outcome,
@@ -72,6 +73,7 @@ class PlotSmokeTests(unittest.TestCase):
             task_normalized_harness_effect(self.selected, 10, 5),
             tokens_used_by_agent_for_each_task(self.selected, 10, 5),
             tool_calls_by_type(self.selected, 10, 5),
+            per_attempt_tool_call_composition(self.selected, 10, 5),
             token_usage_by_outcome(self.selected, 10, 5),
         ]
         for result in results:
@@ -307,6 +309,37 @@ class PlotSmokeTests(unittest.TestCase):
         for row in result.data.itertuples():
             expected = row.total_reported_calls / row.attempted_tasks
             self.assertAlmostEqual(row.calls_per_attempted_task, expected)
+
+    def test_per_attempt_tool_call_composition_uses_attempt_percentages_and_medians(self) -> None:
+        result = per_attempt_tool_call_composition(self.selected, 10, 5)
+
+        self.assertEqual(
+            set(result.data["tool_call_type"]),
+            {"read", "shell_command", "patch", "other"},
+        )
+        self.assertEqual(len(result.figure.axes), 2)
+        self.assertEqual(result.figure.axes[0].get_xlabel(), "Tool-call share of attempt (%)")
+        row = result.data.iloc[0]
+        self.assertAlmostEqual(
+            row["tool_call_share_pct"],
+            row["tool_call_count"] / row["total_tool_calls"] * 100,
+        )
+        expected = (
+            self.selected[
+                (self.selected["condition"] == row["condition"])
+                & (self.selected["strict_success"] == row["strict_success"])
+            ]
+            .assign(
+                share=lambda frame: frame["tool_calls_read"] / frame["total_tool_calls"] * 100
+            )["share"]
+            .median()
+        )
+        median = result.data[
+            (result.data["condition"] == row["condition"])
+            & (result.data["strict_success"] == row["strict_success"])
+            & (result.data["tool_call_type"] == "read")
+        ]["tool_call_share_pct"].median()
+        self.assertAlmostEqual(median, expected)
 
     def test_resource_usage_counts_timeouts_as_twenty_minutes(self) -> None:
         attempts = self.selected.copy()
