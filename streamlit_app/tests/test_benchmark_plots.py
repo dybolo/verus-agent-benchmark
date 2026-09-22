@@ -258,8 +258,10 @@ class PlotSmokeTests(unittest.TestCase):
         ]
         expected_total = (expected["total_input_tokens"] + expected["total_output_tokens"]).median()
         self.assertAlmostEqual(row["total_tokens"], expected_total)
-        self.assertEqual(result.figure.axes[0].get_xlabel(), "total tokens used (input + output)")
-        self.assertEqual(result.figure.axes[0].get_ylabel(), "tasks")
+        self.assertEqual(result.figure.axes[0].get_xlabel(), "Total tokens used (input + output)")
+        self.assertEqual(result.figure.axes[0].get_ylabel(), "Task")
+        self.assertTrue({"outcome", "outcome_marker"}.issubset(result.data.columns))
+        self.assertTrue(set(result.data["outcome"]).issubset({"Shared solve", "Exclusive solve", "Failed", "Missing"}))
 
     def test_resource_usage_exports_all_metrics(self) -> None:
         result = harness_resource_usage(self.selected, 12, 5)

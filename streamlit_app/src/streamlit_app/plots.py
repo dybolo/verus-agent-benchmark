@@ -1163,10 +1163,11 @@ def task_normalized_harness_effect(
 def tokens_used_by_agent_for_each_task(
     attempts: pd.DataFrame, width: float, minimum_height: float
 ) -> PlotResult:
-    """Plot each agent's input-plus-output token use for every selected task.
+    """Plot per-task token use, with a marker for each task-level outcome.
 
-    When the input contains repeated attempts for a condition/task pair, the bar
-    shows their median total token use rather than adding separate attempts.
+    Repeated attempts are reduced to their median token use and best repair
+    outcome. A solve is shared when more than one selected condition solves the
+    task; otherwise it is exclusive to the condition that solved it.
     """
     condition_order = _ordered_conditions(attempts)
     token_attempts = attempts.assign(
@@ -1175,9 +1176,7 @@ def tokens_used_by_agent_for_each_task(
     )
     summary = (
         token_attempts.groupby(
-            ["task_id", "task_file", "condition", "harness", "model"],
-            observed=True,
-            dropna=False,
+            ["task_id", "condition", "harness", "model"], observed=True, dropna=False
         )
         .agg(
             attempts=("task_id", "size"),
@@ -1185,6 +1184,7 @@ def tokens_used_by_agent_for_each_task(
             median_input_tokens=("total_input_tokens", "median"),
             median_output_tokens=("total_output_tokens", "median"),
             total_tokens=("total_tokens", "median"),
+            strict_success=("strict_success", "max"),
         )
         .reset_index()
     )
@@ -1192,6 +1192,7 @@ def tokens_used_by_agent_for_each_task(
         attempts[["task_id", "task_file"]]
         .drop_duplicates("task_id")
         .assign(task_label=lambda frame: frame["task_file"].fillna(frame["task_id"] + ".rs"))
+        .assign(task_label=lambda frame: frame["task_label"].str.removesuffix(".rs"))
         .sort_values(["task_label", "task_id"], kind="stable")
     )
     task_order = task_labels["task_id"].tolist()
@@ -1206,6 +1207,37 @@ def tokens_used_by_agent_for_each_task(
         )
         for row in condition_details.itertuples(index=False)
     }
+
+    # Include absent condition/task pairs so their missing outcome remains
+    # visible and the CSV has one row for every task and selected condition.
+    grid = pd.MultiIndex.from_product(
+        [task_order, condition_order], names=["task_id", "condition"]
+    )
+    summary = summary.set_index(["task_id", "condition"]).reindex(grid).reset_index()
+    details = condition_details.set_index("condition")
+    summary["harness"] = summary["harness"].fillna(summary["condition"].map(details["harness"]))
+    summary["model"] = summary["model"].fillna(summary["condition"].map(details["model"]))
+    summary["task_file"] = summary["task_id"].map(task_labels.set_index("task_id")["task_file"])
+    successful_conditions = summary.groupby("task_id", observed=True)["strict_success"].transform(
+        lambda values: values.fillna(False).astype(bool).sum()
+    )
+    summary["outcome"] = np.select(
+        [
+            summary["attempts"].isna(),
+            summary["strict_success"].fillna(False).astype(bool) & successful_conditions.eq(1),
+            summary["strict_success"].fillna(False).astype(bool),
+        ],
+        ["Missing", "Exclusive solve", "Shared solve"],
+        default="Failed",
+    )
+    outcome_markers = {
+        "Shared solve": "✓",
+        "Exclusive solve": "★",
+        "Failed": "×",
+        "Missing": "?",
+    }
+    summary["outcome_marker"] = summary["outcome"].map(outcome_markers)
+
     y = np.arange(len(task_order), dtype=float)
     palette = {
         "codex": "#426FC4",
@@ -1216,36 +1248,46 @@ def tokens_used_by_agent_for_each_task(
     fallback_colors = [COLORS["blue"], COLORS["orange"], COLORS["green"], COLORS["purple"], COLORS["red"]]
     harness_colors = {
         harness: palette.get(harness, fallback_colors[index % len(fallback_colors)])
-        for index, harness in enumerate(sorted(summary["harness"].unique()))
+        for index, harness in enumerate(sorted(condition_details["harness"].unique()))
     }
     bar_height = 0.8 / max(len(condition_order), 1)
     offsets = (np.arange(len(condition_order)) - (len(condition_order) - 1) / 2) * bar_height
     maximum = float(summary["total_tokens"].max()) if summary["total_tokens"].notna().any() else 0.0
-    figure_height = max(minimum_height, 2.4 + 0.52 * len(task_order))
+    figure_height = max(minimum_height, 2.8 + 0.52 * len(task_order))
+    all_full_module_tasks = all(task_id.endswith("_full") for task_id in task_order)
+    task_scope = "full-module tasks" if all_full_module_tasks else "selected tasks"
 
     with _style():
         figure, axis = plt.subplots(figsize=(width, figure_height), constrained_layout=True)
         for index, condition in enumerate(condition_order):
-            panel = (
-                summary[summary["condition"] == condition]
-                .set_index("task_id")
-                .reindex(task_order)
-            )
+            panel = summary[summary["condition"] == condition].set_index("task_id").reindex(task_order)
             values = panel["total_tokens"].to_numpy(dtype=float)
             valid = ~np.isnan(values)
             bars = axis.barh(
                 y[valid] + offsets[index],
                 values[valid],
                 height=bar_height * 0.82,
-                color=harness_colors[str(panel["harness"].dropna().iloc[0])],
-                label=condition_labels[condition],
+                color=harness_colors[str(panel["harness"].iloc[0])],
                 zorder=3,
             )
-            for bar, value in zip(bars, values[valid]):
-                label = f"{value / 1_000_000:.2f}M" if value >= 100_000 else f"{value / 1_000:.1f}K"
+            for position, bar in zip(y[valid], bars):
+                row = panel.iloc[int(position)]
+                value = float(row["total_tokens"])
+                token_label = f"{value / 1_000_000:.2f}M" if value >= 100_000 else f"{value / 1_000:.1f}K"
                 axis.annotate(
-                    label,
+                    f"{row['outcome_marker']}  {token_label}",
                     (value, bar.get_y() + bar.get_height() / 2),
+                    xytext=(5, 0),
+                    textcoords="offset points",
+                    va="center",
+                    fontsize=8,
+                    color=COLORS["dark"],
+                )
+            for position in y[~valid]:
+                row = panel.iloc[int(position)]
+                axis.annotate(
+                    str(row["outcome_marker"]),
+                    (0, position + offsets[index]),
                     xytext=(5, 0),
                     textcoords="offset points",
                     va="center",
@@ -1255,22 +1297,41 @@ def tokens_used_by_agent_for_each_task(
         axis.set_yticks(y, labels)
         axis.invert_yaxis()
         axis.set_xlim(0, maximum * 1.14 if maximum else 1)
-        axis.xaxis.set_major_formatter(mticker.FuncFormatter(lambda value, _: f"{value / 1_000_000:g}M"))
-        axis.set_xlabel("total tokens used (input + output)")
-        axis.set_ylabel("tasks")
-        axis.set_title("Tokens used by agent for each task", loc="left", fontweight="bold", pad=56)
+        axis.xaxis.set_major_formatter(mticker.FuncFormatter(lambda value, _: f"{value / 1_000_000:.2f}M"))
+        axis.set_xlabel("Total tokens used (input + output)")
+        axis.set_ylabel("Task")
+        axis.set_title(
+            f"Tokens used with proof-repair outcomes · {task_scope}",
+            loc="left",
+            fontweight="bold",
+            pad=74,
+        )
         axis.grid(axis="x", color=COLORS["light_gray"], linewidth=0.7)
         axis.set_axisbelow(True)
-        if condition_order:
-            axis.legend(
-                frameon=False,
-                loc="lower left",
-                bbox_to_anchor=(0, 1.015),
-                ncol=min(4, len(condition_order)),
-                borderaxespad=0,
+        agent_handles = [
+            Patch(
+                facecolor=harness_colors[str(details.loc[condition, "harness"])],
+                label=condition_labels[condition],
             )
+            for condition in condition_order
+        ]
+        outcome_handles = [
+            Line2D([], [], color=COLORS["dark"], linestyle="None", label="✓  Shared solve"),
+            Line2D([], [], color=COLORS["dark"], linestyle="None", label="★  Exclusive solve"),
+            Line2D([], [], color=COLORS["dark"], linestyle="None", label="×  Failed"),
+        ]
+        axis.legend(
+            handles=[*agent_handles, *outcome_handles],
+            frameon=False,
+            loc="lower left",
+            bbox_to_anchor=(0, 1.015),
+            ncol=len(agent_handles) + len(outcome_handles),
+            borderaxespad=0,
+            handlelength=1.0,
+            columnspacing=1.0,
+        )
 
-    incomplete = summary[summary["token_observations"] < summary["attempts"]]
+    incomplete = summary[summary["attempts"].notna() & (summary["token_observations"] < summary["attempts"])]
     warning = None
     if not incomplete.empty:
         warning = (
@@ -1417,14 +1478,20 @@ def tool_calls_by_type(attempts: pd.DataFrame, width: float, height: float) -> P
 
     category_names = [category for category, _ in categories]
     y = np.arange(len(category_names), dtype=float)
-    palette = [
-        COLORS["blue"],
-        COLORS["orange"],
-        COLORS["green"],
-        COLORS["purple"],
-        COLORS["red"],
-        COLORS["sky"],
-    ]
+    harness_palette = {
+        "codex": "#426FC4",
+        "copilot": "#F2D66B",
+        "opencode": "#DA8ABD",
+        "pi": "#6BC2BE",
+    }
+    fallback_colors = [COLORS["blue"], COLORS["orange"], COLORS["green"], COLORS["purple"], COLORS["red"]]
+    condition_colors = {
+        agent: harness_palette.get(
+            str(summary.loc[summary["agent"] == agent, "harness"].iloc[0]),
+            fallback_colors[index % len(fallback_colors)],
+        )
+        for index, agent in enumerate(agents)
+    }
     markers = ["o", "s", "^", "D", "P", "X"]
 
     with _style():
@@ -1453,13 +1520,23 @@ def tool_calls_by_type(attempts: pd.DataFrame, width: float, height: float) -> P
                 values[valid],
                 y[valid],
                 s=82,
-                color=palette[index % len(palette)],
+                color=condition_colors[agent],
                 marker=markers[index % len(markers)],
                 edgecolor="white",
                 linewidth=0.8,
                 label=agent,
                 zorder=3,
             )
+            for value, position in zip(values[valid], y[valid]):
+                axis.annotate(
+                    f"{value:.2f}",
+                    (value, position),
+                    xytext=(5, 5 + (index - (len(agents) - 1) / 2) * 7),
+                    textcoords="offset points",
+                    fontsize=7,
+                    color=condition_colors[agent],
+                    zorder=4,
+                )
         axis.set_yticks(y, category_names)
         axis.invert_yaxis()
         axis.set_xlim(left=0)
