@@ -174,6 +174,11 @@ def main() -> None:
     figure_width = st.sidebar.slider("Figure width (inches)", 7.0, 16.0, 11.0, 0.5)
     figure_height = st.sidebar.slider("Minimum figure height (inches)", 4.0, 12.0, 6.0, 0.5)
     cost_scale = st.sidebar.radio("Cost-axis scale", ["log", "linear"], horizontal=True)
+    include_model = st.sidebar.checkbox(
+        "Include model in agent labels",
+        value=True,
+        help="Turn this off when every selected harness uses the same model.",
+    )
 
     unmapped = selected[selected["proof_style"].isna()]["task_id"].unique()
     if len(unmapped):
@@ -200,12 +205,23 @@ def main() -> None:
     with question_one:
         st.header("Can current coding agents repair incomplete concurrent Verus proofs?")
         render_plot(
-            outcome_composition(selected, figure_width, figure_height),
+            outcome_composition(
+                selected,
+                figure_width,
+                figure_height,
+                include_model=include_model,
+            ),
             "outcome-composition",
         )
         st.divider()
         render_plot(
-            quality_cost(selected, figure_width, figure_height, cost_scale),
+            quality_cost(
+                selected,
+                figure_width,
+                figure_height,
+                cost_scale,
+                include_model=include_model,
+            ),
             "quality-vs-cost",
         )
 
@@ -234,7 +250,12 @@ def main() -> None:
         )
         st.divider()
         render_plot(
-            task_normalized_harness_effect(selected, figure_width, figure_height),
+            task_normalized_harness_effect(
+                selected,
+                figure_width,
+                figure_height,
+                include_model=include_model,
+            ),
             "task-normalized-harness-effect",
         )
         st.divider()
@@ -258,12 +279,22 @@ def main() -> None:
             "while other harnesses expose dedicated read tools."
         )
         render_plot(
-            tool_calls_by_type(selected, figure_width, figure_height),
+            tool_calls_by_type(
+                selected,
+                figure_width,
+                figure_height,
+                include_model=include_model,
+            ),
             "reported-tool-calls-by-type",
         )
         st.divider()
         render_plot(
-            token_usage_by_outcome(selected, figure_width, figure_height),
+            token_usage_by_outcome(
+                selected,
+                figure_width,
+                figure_height,
+                include_model=include_model,
+            ),
             "token-usage-by-outcome",
         )
 

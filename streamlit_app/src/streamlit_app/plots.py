@@ -83,14 +83,32 @@ def _ordered_conditions(attempts: pd.DataFrame) -> list[str]:
     return conditions["condition"].tolist()
 
 
+def _condition_labels(attempts: pd.DataFrame, include_model: bool) -> dict[str, str]:
+    """Return display labels for conditions, optionally shortened to harness names."""
+    details = attempts[["condition", "harness", "model"]].drop_duplicates("condition")
+    return {
+        str(row.condition): (
+            str(row.condition) if include_model else str(row.harness)
+        )
+        for row in details.itertuples(index=False)
+    }
+
+
 def _format_usd_tick(value: float) -> str:
     """Format agent costs precisely enough to distinguish nearby plot positions."""
     return f"${value:,.4f}".rstrip("0").rstrip(".")
 
 
-def outcome_composition(attempts: pd.DataFrame, width: float, height: float) -> PlotResult:
+def outcome_composition(
+    attempts: pd.DataFrame,
+    width: float,
+    height: float,
+    *,
+    include_model: bool = True,
+) -> PlotResult:
     """Plot the proportion of outcome categories for every selected condition."""
     condition_order = _ordered_conditions(attempts)
+    condition_labels = _condition_labels(attempts, include_model)
     counts = (
         attempts.groupby(["condition", "outcome"], observed=True)
         .size()
@@ -135,11 +153,11 @@ def outcome_composition(attempts: pd.DataFrame, width: float, height: float) -> 
                         color="white" if outcome != OUTCOME_ORDER[1] else COLORS["dark"],
                     )
             left += np.nan_to_num(values)
-        axis.set_yticks(y, condition_order)
+        axis.set_yticks(y, [condition_labels[condition] for condition in condition_order])
         axis.invert_yaxis()
         axis.set_xlim(0, 100)
         axis.set_xlabel("Share of attempted tasks (%)")
-        axis.set_ylabel("Harness / model")
+        axis.set_ylabel("Harness / model" if include_model else "Harness")
         axis.set_title("Proof-repair outcome composition", loc="left", fontweight="bold")
         axis.grid(axis="x", color=COLORS["light_gray"], linewidth=0.7)
         axis.set_axisbelow(True)
@@ -152,8 +170,16 @@ def outcome_composition(attempts: pd.DataFrame, width: float, height: float) -> 
     return PlotResult(figure=figure, data=export)
 
 
-def quality_cost(attempts: pd.DataFrame, width: float, height: float, cost_scale: str = "log") -> PlotResult:
+def quality_cost(
+    attempts: pd.DataFrame,
+    width: float,
+    height: float,
+    cost_scale: str = "log",
+    *,
+    include_model: bool = True,
+) -> PlotResult:
     """Plot valid-repair rate against mean cost per attempt."""
+    condition_labels = _condition_labels(attempts, include_model)
     summary = (
         attempts.groupby(["condition", "harness", "model"], observed=True)
         .agg(
@@ -214,7 +240,7 @@ def quality_cost(attempts: pd.DataFrame, width: float, height: float, cost_scale
                     zorder=3,
                 )
                 axis.annotate(
-                    row["condition"],
+                    condition_labels[str(row["condition"])],
                     (row["mean_cost_per_attempt_usd"], row["repair_rate"] * 100),
                     xytext=(6, 6),
                     textcoords="offset points",
@@ -247,19 +273,6 @@ def quality_cost(attempts: pd.DataFrame, width: float, height: float, cost_scale
         axis.set_title("Proof-repair quality versus cost", loc="left", fontweight="bold")
         axis.grid(color=COLORS["light_gray"], linewidth=0.7)
         axis.set_axisbelow(True)
-        harness_handles = [
-            Line2D(
-                [],
-                [],
-                color=COLORS["dark"],
-                marker=markers[index % len(markers)],
-                linestyle="None",
-                label=harness,
-            )
-            for index, harness in enumerate(harnesses)
-        ]
-        if harness_handles:
-            axis.legend(handles=harness_handles, title="Harness", frameon=False, loc="best")
     return PlotResult(figure=figure, data=summary, warning=warning)
 
 
@@ -938,6 +951,7 @@ def task_normalized_harness_effect(
     reference_harness: str = "pi",
     bootstrap_samples: int = 10_000,
     random_seed: int = 0,
+    include_model: bool = True,
 ) -> PlotResult:
     """Compare each harness with Pi on the same tasks and model.
 
@@ -1073,7 +1087,11 @@ def task_normalized_harness_effect(
     labels = []
     for comparison in comparison_order:
         row = summary[summary["comparison"] == comparison].iloc[0]
-        labels.append(f"{row['harness']} | {row['model']}")
+        labels.append(
+            f"{row['harness']} | {row['model']}"
+            if include_model
+            else str(row["harness"])
+        )
     y = np.arange(len(comparison_order))
     figure_height = max(minimum_height, 2.2 + 0.58 * len(comparison_order))
     harnesses = sorted(summary["harness"].unique())
@@ -1140,7 +1158,7 @@ def task_normalized_harness_effect(
             axis.set_axisbelow(True)
         axes[0].set_yticks(y, labels)
         axes[0].invert_yaxis()
-        axes[0].set_ylabel("Harness | model")
+        axes[0].set_ylabel("Harness | model" if include_model else "Harness")
         figure.suptitle(
             f"Task-normalized harness effects relative to {reference_harness.capitalize()}",
             fontweight="bold",
@@ -1442,7 +1460,13 @@ def harness_resource_usage(attempts: pd.DataFrame, width: float, height: float) 
     return PlotResult(figure=figure, data=summary, warning=warning)
 
 
-def tool_calls_by_type(attempts: pd.DataFrame, width: float, height: float) -> PlotResult:
+def tool_calls_by_type(
+    attempts: pd.DataFrame,
+    width: float,
+    height: float,
+    *,
+    include_model: bool = True,
+) -> PlotResult:
     """Plot reported tool-call categories per attempted task for each agent."""
     categories = (
         ("read", "tool_calls_read"),
@@ -1451,6 +1475,7 @@ def tool_calls_by_type(attempts: pd.DataFrame, width: float, height: float) -> P
         ("other", "tool_calls_other"),
     )
     agents = _ordered_conditions(attempts)
+    agent_labels = _condition_labels(attempts, include_model)
     records: list[dict[str, object]] = []
     for agent in agents:
         group = attempts[attempts["condition"] == agent]
@@ -1524,7 +1549,7 @@ def tool_calls_by_type(attempts: pd.DataFrame, width: float, height: float) -> P
                 marker=markers[index % len(markers)],
                 edgecolor="white",
                 linewidth=0.8,
-                label=agent,
+                label=agent_labels[agent],
                 zorder=3,
             )
             for value, position in zip(values[valid], y[valid]):
@@ -1750,7 +1775,13 @@ def per_attempt_tool_call_composition(
     return PlotResult(figure=figure, data=shares, warning=warning)
 
 
-def token_usage_by_outcome(attempts: pd.DataFrame, width: float, height: float) -> PlotResult:
+def token_usage_by_outcome(
+    attempts: pd.DataFrame,
+    width: float,
+    height: float,
+    *,
+    include_model: bool = True,
+) -> PlotResult:
     """Compare input and output token usage for successful and unsuccessful attempts."""
     metrics = (
         ("total_input_tokens", "Input tokens"),
@@ -1761,6 +1792,7 @@ def token_usage_by_outcome(attempts: pd.DataFrame, width: float, height: float) 
         (False, "Unsuccessful attempt", COLORS["red"], "s", 0.14),
     )
     conditions = _ordered_conditions(attempts)
+    condition_labels = _condition_labels(attempts, include_model)
     records: list[dict[str, object]] = []
 
     for condition in conditions:
@@ -1829,9 +1861,9 @@ def token_usage_by_outcome(attempts: pd.DataFrame, width: float, height: float) 
             axis.set_title(metric_label, loc="left", fontweight="bold")
             axis.grid(axis="x", color=COLORS["light_gray"], linewidth=0.7)
             axis.set_axisbelow(True)
-        axes[0].set_yticks(y, conditions)
+        axes[0].set_yticks(y, [condition_labels[condition] for condition in conditions])
         axes[0].invert_yaxis()
-        axes[0].set_ylabel("Harness / model")
+        axes[0].set_ylabel("Harness / model" if include_model else "Harness")
         axes[-1].legend(frameon=False, loc="best")
         figure.suptitle("Token usage by proof-repair outcome (median and IQR)", fontweight="bold")
 

@@ -89,10 +89,39 @@ class PlotSmokeTests(unittest.TestCase):
         self.assertTrue(result.figure.axes[0].patches)
         self.assertTrue(all(not patch.get_hatch() for patch in result.figure.axes[0].patches))
 
+    def test_model_can_be_omitted_from_agent_labels(self) -> None:
+        expected_harnesses = sorted(self.selected["harness"].unique())
+        results = [
+            outcome_composition(self.selected, 10, 5, include_model=False),
+            quality_cost(self.selected, 10, 5, include_model=False),
+            token_usage_by_outcome(self.selected, 10, 5, include_model=False),
+        ]
+
+        outcome_labels = [
+            label.get_text() for label in results[0].figure.axes[0].get_yticklabels()
+        ]
+        quality_labels = [text.get_text() for text in results[1].figure.axes[0].texts]
+        token_labels = [
+            label.get_text() for label in results[2].figure.axes[0].get_yticklabels()
+        ]
+
+        self.assertEqual(sorted(outcome_labels), expected_harnesses)
+        self.assertTrue(set(expected_harnesses).issubset(quality_labels))
+        self.assertEqual(sorted(token_labels), expected_harnesses)
+        for result in results:
+            labels = [
+                label.get_text()
+                for axis in result.figure.axes
+                for label in axis.get_yticklabels()
+            ]
+            labels.extend(text.get_text() for axis in result.figure.axes for text in axis.texts)
+            self.assertTrue(all("bedrock-qwen" not in label for label in labels))
+
     def test_quality_cost_axis_marks_each_agent_cost(self) -> None:
         for scale in ("log", "linear"):
             with self.subTest(scale=scale):
                 result = quality_cost(self.selected, 10, 5, scale)
+                self.assertIsNone(result.figure.axes[0].get_legend())
                 expected = result.data.dropna(subset=["mean_cost_per_attempt_usd"])
                 if scale == "log":
                     expected = expected[expected["mean_cost_per_attempt_usd"] > 0]
@@ -231,6 +260,19 @@ class PlotSmokeTests(unittest.TestCase):
         self.assertAlmostEqual(repairs["estimate"], expected_repairs)
         self.assertEqual(repairs["unit"], "percentage points")
 
+        without_model = task_normalized_harness_effect(
+            selected,
+            10,
+            5,
+            include_model=False,
+        )
+        labels = [
+            label.get_text()
+            for label in without_model.figure.axes[0].get_yticklabels()
+        ]
+        self.assertEqual(sorted(labels), sorted(set(selected["harness"]) - {"pi"}))
+        self.assertEqual(without_model.figure.axes[0].get_ylabel(), "Harness")
+
     def test_task_normalized_effect_warns_when_tasks_are_unpaired(self) -> None:
         attempts = self.selected.copy()
         comparison = task_normalized_harness_effect(attempts, 10, 5).data.iloc[0]
@@ -311,6 +353,17 @@ class PlotSmokeTests(unittest.TestCase):
         for row in result.data.itertuples():
             expected = row.total_reported_calls / row.attempted_tasks
             self.assertAlmostEqual(row.calls_per_attempted_task, expected)
+
+        without_model = tool_calls_by_type(
+            self.selected,
+            10,
+            5,
+            include_model=False,
+        )
+        legend_labels = [
+            text.get_text() for text in without_model.figure.axes[0].get_legend().get_texts()
+        ]
+        self.assertEqual(sorted(legend_labels), sorted(self.selected["harness"].unique()))
 
     def test_per_attempt_tool_call_composition_uses_attempt_percentages_and_medians(self) -> None:
         result = per_attempt_tool_call_composition(self.selected, 10, 5)
