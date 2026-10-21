@@ -94,7 +94,7 @@ def nonempty_strings(series: pd.Series) -> list[str]:
 def main() -> None:
     """Load benchmark data and render the plots dashboard."""
     st.set_page_config(
-        page_title="Thesis Evaluation Plots",
+        page_title="Benchmark Evaluation Plots",
         page_icon="📊",
         layout="wide",
     )
@@ -106,7 +106,7 @@ def main() -> None:
     )
     attempts = flatten_runs(runs, metadata)
 
-    st.title("Thesis Evaluation Plot Dashboard")
+    st.title("Benchmark Evaluation Plot Dashboard")
     st.caption("Interactive, exportable analysis of the benchmark run JSON files")
 
     errors = [*run_errors, *metadata_errors]
@@ -209,12 +209,11 @@ def main() -> None:
     metric_columns[2].metric("Attempts", len(selected))
     metric_columns[3].metric("Valid repairs", int(selected["strict_success"].sum()))
 
-    question_one, question_two, question_three, _question_four = st.tabs(
+    question_one, question_two, question_three = st.tabs(
         [
             "1 · Overall performance",
             "2 · Difficult proof patterns",
             "3 · Harness effects",
-            "4 · Model × harness",
         ]
     )
 
