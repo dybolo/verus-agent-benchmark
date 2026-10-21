@@ -12,6 +12,24 @@ import shutil
 import zipfile
 from pathlib import Path
 
+from fetch_vstd import fetch_vstd
+
+
+def ensure_vstd_sources(release_data, target_dir):
+    """Keep bundled vstd sources, or fetch them from the resolved release tag."""
+    vstd_dir = Path(target_dir) / "vstd"
+    if (vstd_dir / "lib.rs").is_file():
+        return
+
+    tag = release_data.get("tag_name")
+    if not tag:
+        raise RuntimeError("Cannot fetch matching vstd sources: release metadata has no tag_name")
+
+    fetch_vstd(version=tag, target_dir=vstd_dir)
+    if not (vstd_dir / "lib.rs").is_file():
+        raise RuntimeError(f"Missing vstd/lib.rs after fetching sources for {tag}")
+
+
 def get_platform_info():
     sys_name = platform.system().lower()
     if sys_name == "darwin":
@@ -165,6 +183,7 @@ def fetch_verus_release(version=None):
                     st = os.stat(file_path)
                     os.chmod(file_path, st.st_mode | stat.S_IEXEC)
 
+    ensure_vstd_sources(release_data, target_dir)
     install_required_toolchain(release_data)
 
     print(f"Successfully downloaded and extracted Verus to ./{target_dir}")
