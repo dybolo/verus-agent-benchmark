@@ -34,11 +34,11 @@ class VerusVersionTests(unittest.TestCase):
                     with zipfile.ZipFile(destination, "w") as archive:
                         archive.writestr("verus-release/verus", "binary")
                         if bundled:
-                            archive.writestr("verus-release/vstd/lib.rs", "// bundled vstd")
+                            archive.writestr("verus-release/vstd/vstd.rs", "// bundled vstd")
 
                 def fetch_sources(version, target_dir):
                     target_dir.mkdir(parents=True)
-                    (target_dir / "lib.rs").write_text(f"// vstd from {version}")
+                    (target_dir / "vstd.rs").write_text(f"// vstd from {version}")
 
                 previous_cwd = os.getcwd()
                 os.chdir(directory)
@@ -58,12 +58,12 @@ class VerusVersionTests(unittest.TestCase):
                         toolchain.assert_called_once_with(release)
                         if bundled:
                             sources.assert_not_called()
-                            self.assertEqual(Path(".verus/vstd/lib.rs").read_text(), "// bundled vstd")
+                            self.assertEqual(Path(".verus/vstd/vstd.rs").read_text(), "// bundled vstd")
                         else:
                             sources.assert_called_once_with(
                                 version=release["tag_name"], target_dir=Path(".verus/vstd")
                             )
-                            self.assertIn(release["tag_name"], Path(".verus/vstd/lib.rs").read_text())
+                            self.assertIn(release["tag_name"], Path(".verus/vstd/vstd.rs").read_text())
                 finally:
                     os.chdir(previous_cwd)
 

@@ -19,7 +19,7 @@ class FetchVstdTests(unittest.TestCase):
                 if command[:2] == ["git", "sparse-checkout"]:
                     source = Path(kwargs["cwd"]) / "source" / "vstd"
                     source.mkdir(parents=True)
-                    (source / "lib.rs").write_text("// matching source")
+                    (source / "vstd.rs").write_text("// matching source")
                     (source / "nested").mkdir()
                     (source / "nested" / "proof.rs").write_text("// proof")
 
@@ -29,7 +29,7 @@ class FetchVstdTests(unittest.TestCase):
             clone = run.call_args_list[0].args[0]
             self.assertEqual(clone[clone.index("--branch") + 1], "release/test")
             self.assertIn("--single-branch", clone)
-            self.assertEqual((destination / "lib.rs").read_text(), "// matching source")
+            self.assertEqual((destination / "vstd.rs").read_text(), "// matching source")
             self.assertTrue((destination / "nested" / "proof.rs").is_file())
             self.assertFalse((destination / "stale.rs").exists())
 
@@ -48,7 +48,7 @@ class FetchVstdTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             destination = Path(directory) / "vstd"
             with patch.object(fetch_vstd.subprocess, "run"):
-                with self.assertRaisesRegex(RuntimeError, "Missing source/vstd/lib.rs"):
+                with self.assertRaisesRegex(RuntimeError, "Missing vstd source root"):
                     fetch_vstd.fetch_vstd("release/test", destination)
             self.assertFalse(destination.exists())
 
@@ -68,8 +68,20 @@ class FetchVstdTests(unittest.TestCase):
     def test_empty_fetch_result_is_rejected(self):
         with tempfile.TemporaryDirectory() as directory:
             with patch.object(releases, "fetch_vstd"):
-                with self.assertRaisesRegex(RuntimeError, "Missing vstd/lib.rs after fetching"):
+                with self.assertRaisesRegex(RuntimeError, "Missing vstd source root after fetching"):
                     releases.ensure_vstd_sources({"tag_name": "release/test"}, directory)
+
+    def test_recognizes_both_crate_root_names(self):
+        for root_name in ("vstd.rs", "lib.rs"):
+            with self.subTest(root_name=root_name), tempfile.TemporaryDirectory() as directory:
+                vstd = Path(directory) / "vstd"
+                vstd.mkdir()
+                self.assertFalse(fetch_vstd.has_vstd_sources(vstd))
+                (vstd / root_name).write_text("// crate root")
+                self.assertTrue(fetch_vstd.has_vstd_sources(vstd))
+                with patch.object(releases, "fetch_vstd") as fetch:
+                    releases.ensure_vstd_sources({"tag_name": "release/test"}, directory)
+                    fetch.assert_not_called()
 
 
 if __name__ == "__main__":

@@ -12,13 +12,13 @@ import shutil
 import zipfile
 from pathlib import Path
 
-from fetch_vstd import fetch_vstd
+from fetch_vstd import fetch_vstd, has_vstd_sources
 
 
 def ensure_vstd_sources(release_data, target_dir):
     """Keep bundled vstd sources, or fetch them from the resolved release tag."""
     vstd_dir = Path(target_dir) / "vstd"
-    if (vstd_dir / "lib.rs").is_file():
+    if has_vstd_sources(vstd_dir):
         return
 
     tag = release_data.get("tag_name")
@@ -26,8 +26,8 @@ def ensure_vstd_sources(release_data, target_dir):
         raise RuntimeError("Cannot fetch matching vstd sources: release metadata has no tag_name")
 
     fetch_vstd(version=tag, target_dir=vstd_dir)
-    if not (vstd_dir / "lib.rs").is_file():
-        raise RuntimeError(f"Missing vstd/lib.rs after fetching sources for {tag}")
+    if not has_vstd_sources(vstd_dir):
+        raise RuntimeError(f"Missing vstd source root after fetching sources for {tag}")
 
 
 def get_platform_info():

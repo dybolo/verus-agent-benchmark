@@ -6,6 +6,13 @@ import subprocess
 import tempfile
 from pathlib import Path
 
+
+def has_vstd_sources(directory):
+    """Recognize vstd's named crate root as well as a conventional lib.rs."""
+    directory = Path(directory)
+    return any((directory / name).is_file() for name in ("vstd.rs", "lib.rs"))
+
+
 def fetch_latest_vstd():
     """Fetch vstd from the default branch into .vstd."""
     fetch_vstd()
@@ -42,9 +49,9 @@ def fetch_vstd(version=None, target_dir=".vstd"):
             ) from e
 
         source_vstd_path = temp_path / "source" / "vstd"
-        if not (source_vstd_path / "lib.rs").is_file():
+        if not has_vstd_sources(source_vstd_path):
             raise RuntimeError(
-                f"Missing source/vstd/lib.rs in {version or 'the default branch'}"
+                f"Missing vstd source root (vstd.rs or lib.rs) in {version or 'the default branch'}"
             )
 
         # Replace the destination only after fetching and validating the sources.
