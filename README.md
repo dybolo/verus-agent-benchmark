@@ -2,7 +2,7 @@
 
 A Docker-based benchmark for coding agents that repair incomplete Verus proofs
 in concurrent Rust programs. Each proposed solution is checked with Verus and
-Lynette; a valid repair must pass both checks.
+Lynette (adapted from the [original implementation]((https://github.com/microsoft/verus-proof-synthesis/tree/main/utils/lynette))); a valid repair must pass both checks.
 
 The corpus contains 75 focused tasks (42 atomic-operation proofs and 33
 state-machine proofs) and 17 full-file tasks. See [TASKS.md](TASKS.md) for the
@@ -182,3 +182,8 @@ The script accepts multiple run IDs, JSON filenames, or paths directly under
 `runs/`. Shared token pricing and tool categories live in
 [`stats_protocol.py`](stats_protocol.py).
 
+## License
+
+Original benchmark infrastructure is licensed under [MIT](LICENSE).
+Benchmark tasks and reference proofs retain their original licenses. 
+See [TASKS.md](TASKS.md) for source mappings.
