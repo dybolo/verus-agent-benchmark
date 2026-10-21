@@ -1,5 +1,7 @@
 # Verus agent benchmark
 
+[![DOI](https://zenodo.org/badge/1250473194.svg)](https://doi.org/10.5281/zenodo.23540079)
+
 A Docker-based benchmark for coding agents that repair incomplete Verus proofs
 in concurrent Rust programs. Each proposed solution is checked with Verus and
 Lynette (adapted from the [original implementation](https://github.com/microsoft/verus-proof-synthesis/tree/main/utils/lynette)); a valid repair must pass both checks.
