@@ -1,9 +1,22 @@
-# Benchmark repo for verus-based agents
+# Verus agent benchmark
+
+A Docker-based benchmark for coding agents that repair incomplete Verus proofs
+in concurrent Rust programs. Each proposed solution is checked with Verus and
+Lynette; a valid repair must pass both checks.
+
+The corpus contains 75 focused tasks (42 atomic-operation proofs and 33
+state-machine proofs) and 17 full-file tasks. See [TASKS.md](TASKS.md) for the
+manifest, reference proofs, smaller follow-up sets, and task metadata.
 
 ## Requirements
 
-- python
-- docker
+- Python 3.10 or newer.
+- Docker with a running daemon. The images install Rust, Verus, and Lynette.
+- Provider credentials for the selected entrypoint (see below).
+- Git, if you want the runner's automatic run-artifact commit to succeed.
+
+Run commands from the repository root. Building the images requires network
+access to download dependencies.
 
 ## Adding Agents
 
@@ -20,17 +33,41 @@ Each agent has a single `Dockerfile` shared by all its entrypoints. When the ben
 
 ## How to run
 
+The runner builds the base image and selected agent images automatically.
+Without filters, it runs every discovered agent/model entrypoint on `tasks/`.
+For example:
+
+```bash
+python3 benchmark.py -a opencode -m gpt-5.6-luna -j 4
+python3 benchmark.py -a pi -m claude-sonnet-4.6 --task-directory full_tasks -j 4
+python3 benchmark.py -a opencode -m gpt-5.6-luna --task-directory tasks_2
+python3 benchmark.py --resume <run-id>
+```
+
 - Run the benchmark with `python3 benchmark.py`.
 - Use `--task-directory <directory>` to load `.rs` tasks from another directory (defaults to `tasks/`).
 - Use the `-j` flag to set the number of parallel workers (defaults to the number of CPU cores).
 - Use `-a <pattern>` or `--agent <pattern>` to filter agents by glob pattern (e.g. `opencode`, `open*`).
 - Use `-m <pattern>` or `--model <pattern>` to filter models by glob pattern (e.g. `gpt-5.4`, `*gpt*`).
-- A run JSON file is created with every task marked `pending` and updated after every completed task. If a provider reports a usage/rate limit, rerun later with `python3 benchmark.py --resume <run-id>`; completed tasks are skipped and the limited task is started again. Timed-out tasks remain final and are not retried.
+- Each agent runs its tasks with up to `-j` workers; agent/model conditions run sequentially. Each agent invocation has a 20-minute timeout.
+- A run JSON file is created with every task marked `pending` and saved after each worker finishes. Usage/rate limits, nonzero agent exits, and missing or invalid sessions leave tasks pending. Resume with `python3 benchmark.py --resume <run-id>` (the filename under `runs/`, without `.json`). Completed tasks are skipped. Timeouts are recorded as completed, but a missing or invalid session can still make them pending.
+- Resume uses the original agents and task directory. An explicitly supplied task directory must match the saved run; agent/model filters must match every saved condition.
+
+Results are written to:
+
+| Path | Contents |
+| --- | --- |
+| `runs/<run-id>.json` | Configuration, task status, verification results, token/cost totals, tool-call counts, and durations. |
+| `sessions/<agent>/<model>/<run-id>/<task>/` | Agent session logs. |
+| `solutions/<agent>/<model>/<run-id>/<task>_verified.rs` | Generated solutions, when produced. |
+
+At the end of a run, the runner stages its artifacts and attempts a Git commit
+named `run <run-id>`.
 
 ## Important
 
-- The script uses the user's current environment variables for provider credentials.
-- Make sure to run the agents with a provider with the credentials set in the environment.
+- The runner forwards these provider variables when set: `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `GEMINI_API_KEY`, `OPENCODE_API_KEY`, `OPENROUTER_API_KEY`, and `AWS_BEARER_TOKEN_BEDROCK`.
+- The checked-in `claude-sonnet-4.6` entrypoints for OpenCode and Pi use Amazon Bedrock. Configure `AWS_BEARER_TOKEN_BEDROCK` for those entrypoints; the `gpt-5.6-luna` entrypoints use the OAuth setup below.
 - `.model` entrypoint files must be executable (`chmod +x`).
 
 ### ChatGPT subscription models
@@ -84,9 +121,9 @@ Run only these model entrypoints with:
 python3 benchmark.py -m gpt-5.6-luna
 ```
 
-# Streamlit App
+## Streamlit dashboards
 
-## Reviewing runs
+### Reviewing runs
 
 The Streamlit viewer provides a human-readable overview of run results, conversation logs, and generated solution files. Run it from the repository root:
 
@@ -97,7 +134,7 @@ benchmark-runs-viewer
 
 Use the sidebar to select a run, agent/model, result status, and task. Conversation tool calls and outputs are collapsed by default, and the solution view shows a diff whenever the original task is still available.
 
-## Generating evaluation plots
+### Generating evaluation plots
 
 The thesis evaluation dashboard reads the JSON files in `runs/` directly and
 selects the latest `opencode` and `pi` harness/model results in the largest
@@ -109,11 +146,39 @@ benchmark-plots-viewer
 ```
 
 Use the sidebar to select a cohort, harness/model conditions, proof styles,
-source modules, tasks, and figure dimensions. Each plot can be downloaded as
-SVG, PDF, 300-DPI PNG, or CSV containing the exact displayed data. 
+source modules, tasks, figure dimensions, and font sizes for titles, axis labels,
+ticks, legends, and annotations. Plots cover outcomes and cost, task difficulty
+by method size and missing proof lines, atomic-operation counts, harness effects,
+per-task tokens, resource usage, and tool-call composition. Tool-call categories
+are those reported by each harness; reads performed through a shell remain shell
+commands. Each plot can be downloaded as SVG, PDF, 300-DPI PNG, or CSV containing
+the exact displayed data.
 
-Run the analysis and rendering tests with:
+## Maintaining metadata and statistics
+
+Regenerate the task-size columns in the dashboard's
+[`task_metadata.csv`](streamlit_app/src/streamlit_app/task_metadata.csv) after
+changing reference proofs or task files:
 
 ```bash
-python3 -m unittest discover -s streamlit_app/tests
+python3 scripts/update_task_method_sizes.py
 ```
+
+The updater validates explicit target-function ranges in `solutions/base/`;
+update its `TASK_SPECS` when those ranges change. It computes `method_lines`,
+`atomic_operations`, and `missing_code_lines` as described in
+[TASKS.md](TASKS.md#task-metadata). `scripts/update_task_missing_lines.py` is a
+compatibility wrapper for the same updater.
+
+To recompute stored token totals, fixed-price costs, and tool-call counts from
+existing sessions, inspect the changes first, then write them:
+
+```bash
+python3 scripts/update_run_token_stats.py <run-id> --dry-run
+python3 scripts/update_run_token_stats.py <run-id>
+```
+
+The script accepts multiple run IDs, JSON filenames, or paths directly under
+`runs/`. Shared token pricing and tool categories live in
+[`stats_protocol.py`](stats_protocol.py).
+

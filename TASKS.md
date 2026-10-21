@@ -8,7 +8,7 @@ experimental outcomes, costs, and durations are recorded separately in
 ## Provenance and task contract
 
 - Repository: [`dybolo/verus-agent-benchmark`](https://github.com/dybolo/verus-agent-benchmark)
-- Corpus snapshot: commit [`52efc533a234df3d534b53acdb3888cb60d765d1`](https://github.com/dybolo/verus-agent-benchmark/commit/52efc533a234df3d534b53acdb3888cb60d765d1)
+- Original corpus snapshot: commit [`52efc533a234df3d534b53acdb3888cb60d765d1`](https://github.com/dybolo/verus-agent-benchmark/commit/52efc533a234df3d534b53acdb3888cb60d765d1)
 - Focused tasks: 75 standalone Rust files in [`tasks/`](tasks/)
 - Full-file tasks: 17 standalone Rust files in [`full_tasks/`](full_tasks/)
 - Reference proofs: the corresponding fully verified files in
@@ -19,8 +19,9 @@ experimental outcomes, costs, and durations are recorded separately in
 [verified-node-replication]: https://github.com/verus-lang/verified-node-replication
 [verified-memory-allocator]: https://github.com/verus-lang/verified-memory-allocator
 
-Each focused task contains one designated repair target (normally one proof
-obligation; the unified `wait` task covers the three queue operations). A
+Each focused task contains a designated repair scope, usually one function.
+`cuckoo_inductive` covers four transition-inductiveness proofs, and the unified
+`wait` task covers the three queue operations. A
 full-file task instead removes the repair annotations for all selected proof
 obligations in one source module, so a solver must repair the module as a
 whole. The benchmark prompt requires a solver to add only proof annotations:
@@ -47,7 +48,55 @@ proofs.
 
 The focused and full-file groups are separate benchmark modes, not 92
 independent obligations. Run the focused corpus with `python3 benchmark.py`
-and the full-file corpus with `python3 benchmark.py --full-tasks`.
+and the full-file corpus with
+`python3 benchmark.py --task-directory full_tasks`. Agent/model filters and
+parallelism flags apply to either mode. A valid repair must pass both the Verus
+check (`--rlimit 30`) and the Lynette change checker; a completed attempt alone
+does not establish success.
+
+## Follow-up task sets
+
+Two smaller sets select tasks for follow-up runs based on earlier results. They
+reuse IDs from the main corpus and do not add new task IDs to the manifest.
+
+| Directory | Count | Task IDs |
+| --- | ---: | --- |
+| [`tasks_2/`](tasks_2/) | 7 | `free_free_block_mt`, `helping_try_handshake`, `log_append`, `rwlock_readguard_drop`, `rwlock_try_read`, `rwlock_try_upgrade`, `rwlock_try_upread` |
+| [`full_tasks_2/`](full_tasks_2/) | 7 | `cuckoo_full`, `cyclicbuffer_full`, `free_full`, `helping_full`, `linked_list_full`, `log_full`, `rwlock_full` |
+
+Select these with `--task-directory tasks_2` or
+`--task-directory full_tasks_2`. The tables below describe the main `tasks/` and
+`full_tasks/` corpora.
+
+## Task metadata
+
+The dashboard reads all 92 task IDs from
+[`task_metadata.csv`](streamlit_app/src/streamlit_app/task_metadata.csv).
+Its columns describe the designated repair scope:
+
+| Column | Meaning |
+| --- | --- |
+| `task_id` | Task filename without `.rs`, including `_full` for full-file tasks. |
+| `proof_style` | `atomic-operation`, `tokenized_state_machine!`, or `full-file`. |
+| `source_module` | Reference filename under `solutions/base/`. |
+| `method_lines` | Nonempty reference lines in the explicitly selected function ranges, including signatures, contracts, and delimiters; summed for tasks with multiple targets. |
+| `atomic_operations` | Textual occurrences of `atomic_with_ghost!`, `open_atomic_invariant!`, and `try_open_atomic_update!` within those ranges. |
+| `missing_code_lines` | Nonempty reference lines absent from the task within those ranges; replacement lines are subtracted per diff block, with a minimum of zero. Unrelated omitted functions are excluded. |
+
+These line counts include any comments still present and delimiter-only lines.
+They measure the reference repair scope, not the number of lines an agent must
+produce or runtime atomic operations. The canonical metadata uses `tasks/` and
+`full_tasks/`, rather than recalculating sizes from the follow-up sets.
+
+Regenerate all three numeric columns with:
+
+```bash
+python3 scripts/update_task_method_sizes.py
+```
+
+The updater uses validated, inclusive reference-function ranges in its
+`TASK_SPECS`; changes to source layout require updating those ranges. The legacy
+`scripts/update_task_missing_lines.py` command invokes the same updater.
 
 ## Full-file proof tasks (17)
 
