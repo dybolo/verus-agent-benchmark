@@ -1,10 +1,12 @@
 #!/usr/bin/env python3.14
 
+import argparse
 import os
 import stat
 import json
 import subprocess
 import urllib.request
+from urllib.parse import quote
 import platform
 import shutil
 import zipfile
@@ -89,22 +91,29 @@ def install_required_toolchain(release_data):
         print(f"Warning: Failed to install toolchain: {result.stderr.strip()}")
 
 def fetch_latest_verus_release():
+    """Download the latest Verus release for the current platform."""
+    fetch_verus_release()
+
+
+def fetch_verus_release(version=None):
+    """Download a Verus release by its exact GitHub tag, or latest if omitted."""
     target_dir = Path(".verus")
 
     os_name, arch = get_platform_info()
     search_str = f"{arch}-{os_name}.zip"
     print(f"Detected platform: {os_name}, architecture: {arch}")
 
-    print("Fetching latest release information...")
-    api_url = "https://api.github.com/repos/verus-lang/verus/releases/latest"
+    version = version or "latest"
+    print(f"Fetching release information for {version}...")
+    endpoint = "latest" if version == "latest" else f"tags/{quote(version, safe='')}"
+    api_url = f"https://api.github.com/repos/verus-lang/verus/releases/{endpoint}"
     req = urllib.request.Request(api_url, headers={'User-Agent': 'Verus-Benchmark-Agent'})
 
     try:
         with urllib.request.urlopen(req) as response:
             release_data = json.loads(response.read().decode())
     except Exception as e:
-        print(f"Error fetching release data: {e}")
-        return
+        raise RuntimeError(f"Could not fetch Verus release {version}: {e}") from e
 
     download_url = None
     for asset in release_data.get('assets', []):
@@ -117,7 +126,7 @@ def fetch_latest_verus_release():
         print("Available assets:")
         for asset in release_data.get('assets', []):
             print(f" - {asset['name']}")
-        return
+        raise RuntimeError(f"Verus release {version} has no asset for {arch}-{os_name}")
 
     if target_dir.exists():
         print(f"Removing existing {target_dir} directory...")
@@ -161,4 +170,12 @@ def fetch_latest_verus_release():
     print(f"Successfully downloaded and extracted Verus to ./{target_dir}")
 
 if __name__ == "__main__":
-    fetch_latest_verus_release()
+    parser = argparse.ArgumentParser(description="Download a Verus release")
+    parser.add_argument(
+        "--version", default="latest", help="Exact GitHub release tag (default: latest)"
+    )
+    args = parser.parse_args()
+    try:
+        fetch_verus_release(args.version)
+    except RuntimeError as e:
+        parser.exit(1, f"Error: {e}\n")

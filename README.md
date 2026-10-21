@@ -46,12 +46,17 @@ python3 benchmark.py --resume <run-id>
 
 - Run the benchmark with `python3 benchmark.py`.
 - Use `--task-directory <directory>` to load `.rs` tasks from another directory (defaults to `tasks/`).
+- Use `--verus-version <release-tag>` to download a specific Verus GitHub release when building the images. Omit it (or use `latest`) for the latest release. Use the exact tag from the [Verus releases](https://github.com/verus-lang/verus/releases) page.
 - Use the `-j` flag to set the number of parallel workers (defaults to the number of CPU cores).
 - Use `-a <pattern>` or `--agent <pattern>` to filter agents by glob pattern (e.g. `opencode`, `open*`).
 - Use `-m <pattern>` or `--model <pattern>` to filter models by glob pattern (e.g. `gpt-5.4`, `*gpt*`).
 - Each agent runs its tasks with up to `-j` workers; agent/model conditions run sequentially. Each agent invocation has a 20-minute timeout.
 - A run JSON file is created with every task marked `pending` and saved after each worker finishes. Usage/rate limits, nonzero agent exits, and missing or invalid sessions leave tasks pending. Resume with `python3 benchmark.py --resume <run-id>` (the filename under `runs/`, without `.json`). Completed tasks are skipped. Timeouts are recorded as completed, but a missing or invalid session can still make them pending.
-- Resume uses the original agents and task directory. An explicitly supplied task directory must match the saved run; agent/model filters must match every saved condition.
+- Resume uses the original agents, task directory, and Verus version selection. An explicitly supplied task directory or Verus version must match the saved run; agent/model filters must match every saved condition. Runs saved before version selection was supported default to `latest`. To keep the same release across resumes, select an explicit release tag; `latest` can change between builds (and Docker may reuse a cached download).
+
+The downloader also supports `python3 fetch_verus_release.py --version <release-tag>`.
+For a manual base-image build, use
+`docker build --build-arg VERUS_VERSION=<release-tag> -t benchmark-base:latest .`.
 
 Results are written to:
 
