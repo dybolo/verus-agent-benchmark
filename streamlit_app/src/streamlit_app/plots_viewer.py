@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from functools import partial
+
 import matplotlib.pyplot as plt
 import pandas as pd
 import streamlit as st
@@ -15,7 +17,9 @@ from streamlit_app.data import (
 )
 from streamlit_app.paths import app_data_path, repository_root
 from streamlit_app.plots import (
+    FontSizes,
     PlotResult,
+    apply_font_sizes,
     binned_success_curves,
     caterpillar,
     csv_bytes,
@@ -33,10 +37,14 @@ from streamlit_app.plots import (
 )
 
 
-def render_plot(result: PlotResult, name: str) -> None:
+def render_plot(
+    result: PlotResult, name: str, *, font_sizes: FontSizes | None = None
+) -> None:
     """Display a figure and provide downloads for it and its source data."""
     if result.warning:
         st.warning(result.warning)
+    if font_sizes is not None:
+        apply_font_sizes(result.figure, font_sizes)
     st.pyplot(result.figure, width="stretch")
     svg = figure_bytes(result.figure, "svg")
     pdf = figure_bytes(result.figure, "pdf")
@@ -173,6 +181,14 @@ def main() -> None:
     st.sidebar.header("Figure settings")
     figure_width = st.sidebar.slider("Figure width (inches)", 7.0, 16.0, 11.0, 0.5)
     figure_height = st.sidebar.slider("Minimum figure height (inches)", 4.0, 12.0, 6.0, 0.5)
+    font_sizes = FontSizes(
+        titles=st.sidebar.slider("Title font size (pt)", 6, 32, 12),
+        labels=st.sidebar.slider("Axis label font size (pt)", 6, 32, 10),
+        ticks=st.sidebar.slider("Tick label font size (pt)", 6, 32, 9),
+        legends=st.sidebar.slider("Legend font size (pt)", 6, 32, 9),
+        annotations=st.sidebar.slider("Annotation font size (pt)", 6, 32, 8),
+    )
+    render = partial(render_plot, font_sizes=font_sizes)
     cost_scale = st.sidebar.radio("Cost-axis scale", ["log", "linear"], horizontal=True)
     include_model = st.sidebar.checkbox(
         "Include model in agent labels",
@@ -204,7 +220,7 @@ def main() -> None:
 
     with question_one:
         st.header("Can current coding agents repair incomplete concurrent Verus proofs?")
-        render_plot(
+        render(
             outcome_composition(
                 selected,
                 figure_width,
@@ -214,7 +230,7 @@ def main() -> None:
             "outcome-composition",
         )
         st.divider()
-        render_plot(
+        render(
             quality_cost(
                 selected,
                 figure_width,
@@ -227,29 +243,29 @@ def main() -> None:
 
     with question_two:
         st.header("Which proof patterns and verification constructs are most difficult?")
-        render_plot(
+        render(
             difficulty_bubble_scatter(selected, figure_width, figure_height),
             "task-difficulty-bubble-scatter",
         )
         st.divider()
-        render_plot(
+        render(
             binned_success_curves(selected, figure_width, figure_height),
             "binned-success-curves",
         )
         st.divider()
-        render_plot(
+        render(
             caterpillar(selected, figure_width, figure_height),
             "hierarchical-caterpillar",
         )
 
     with question_three:
         st.header("How does agent harness design affect proof-repair performance?")
-        render_plot(
+        render(
             tokens_used_by_agent_for_each_task(selected, figure_width, figure_height),
             "tokens-used-by-agent-for-each-task",
         )
         st.divider()
-        render_plot(
+        render(
             task_normalized_harness_effect(
                 selected,
                 figure_width,
@@ -259,17 +275,17 @@ def main() -> None:
             "task-normalized-harness-effect",
         )
         st.divider()
-        render_plot(
+        render(
             exclusive_solves_matrix(selected, figure_width, figure_height),
             "harness-exclusive-solves",
         )
         st.divider()
-        render_plot(
+        render(
             harness_resource_usage(selected, figure_width, figure_height),
             "harness-resource-usage",
         )
         st.divider()
-        render_plot(
+        render(
             per_attempt_tool_call_composition(selected, figure_width, figure_height),
             "per-attempt-tool-call-composition",
         )
@@ -278,7 +294,7 @@ def main() -> None:
             "These are reported tool-call categories. Codex performs many reads through shell commands, "
             "while other harnesses expose dedicated read tools."
         )
-        render_plot(
+        render(
             tool_calls_by_type(
                 selected,
                 figure_width,
@@ -288,7 +304,7 @@ def main() -> None:
             "reported-tool-calls-by-type",
         )
         st.divider()
-        render_plot(
+        render(
             token_usage_by_outcome(
                 selected,
                 figure_width,

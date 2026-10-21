@@ -16,6 +16,7 @@ import pandas as pd
 from matplotlib.figure import Figure
 from matplotlib.lines import Line2D
 from matplotlib.patches import Patch
+from matplotlib.text import Text
 
 COLORS = {
     "blue": "#0072B2",
@@ -52,6 +53,48 @@ class PlotResult:
     figure: Figure
     data: pd.DataFrame
     warning: str | None = None
+
+
+@dataclass(frozen=True)
+class FontSizes:
+    """Font sizes in points for the dashboard's plot text."""
+
+    titles: int = 12
+    labels: int = 10
+    ticks: int = 9
+    legends: int = 9
+    annotations: int = 8
+
+
+def apply_font_sizes(figure: Figure, sizes: FontSizes) -> None:
+    """Update plot text before display and export, including explicit sizes."""
+    for text in figure.findobj(Text):
+        text.set_fontsize(sizes.annotations)
+    for axis in figure.axes:
+        for attribute in ("title", "_left_title", "_right_title"):
+            title = getattr(axis, attribute, None)
+            if isinstance(title, Text):
+                title.set_fontsize(sizes.titles)
+        for dimension in (axis.xaxis, axis.yaxis):
+            dimension.label.set_fontsize(sizes.labels)
+            dimension.get_offset_text().set_fontsize(sizes.ticks)
+        axis.tick_params(axis="both", which="both", labelsize=sizes.ticks)
+    for attribute, size in (
+        ("_suptitle", sizes.titles),
+        ("_supxlabel", sizes.labels),
+        ("_supylabel", sizes.labels),
+    ):
+        text = getattr(figure, attribute, None)
+        if isinstance(text, Text):
+            text.set_fontsize(size)
+    legends = [*figure.legends]
+    for axis in figure.axes:
+        legend = axis.get_legend()
+        if legend is not None:
+            legends.append(legend)
+    for legend in legends:
+        for text in [*legend.get_texts(), legend.get_title()]:
+            text.set_fontsize(sizes.legends)
 
 
 def _style() -> AbstractContextManager[None]:

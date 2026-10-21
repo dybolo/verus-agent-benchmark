@@ -4,6 +4,7 @@ import unittest
 from pathlib import Path
 
 import matplotlib
+import matplotlib.pyplot as plt
 import numpy as np
 
 matplotlib.use("Agg")
@@ -17,6 +18,8 @@ from streamlit_app.data import (
 )
 from streamlit_app.paths import app_data_path
 from streamlit_app.plots import (
+    FontSizes,
+    apply_font_sizes,
     binned_success_curves,
     caterpillar,
     csv_bytes,
@@ -36,6 +39,37 @@ from streamlit_app.plots import (
 )
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
+
+
+class FontSizeTests(unittest.TestCase):
+    def test_font_sizes_cover_plot_and_figure_text(self) -> None:
+        figure, axis = plt.subplots(constrained_layout=True)
+        self.addCleanup(plt.close, figure)
+        axis.plot([1, 2], [1e6, 2e6], label="Series")
+        title = axis.set_title("Panel title", loc="left")
+        axis.set_xlabel("X label")
+        axis.set_ylabel("Y label")
+        annotation = axis.annotate("Value", (1, 1e6), fontsize=7)
+        legend = axis.legend(title="Legend")
+        shared_legend = figure.legend()
+        heading = figure.suptitle("Figure title")
+        caption = figure.text(0.1, 0.9, "Caption", fontsize=9)
+        sizes = FontSizes(titles=20, labels=16, ticks=14, legends=12, annotations=10)
+
+        apply_font_sizes(figure, sizes)
+        figure.canvas.draw()
+
+        for text in (title, heading):
+            self.assertEqual(text.get_fontsize(), 20)
+        for text in (axis.xaxis.label, axis.yaxis.label):
+            self.assertEqual(text.get_fontsize(), 16)
+        for text in [*axis.get_xticklabels(), *axis.get_yticklabels(), axis.yaxis.get_offset_text()]:
+            self.assertEqual(text.get_fontsize(), 14)
+        for text in [*legend.get_texts(), legend.get_title(), *shared_legend.get_texts()]:
+            self.assertEqual(text.get_fontsize(), 12)
+        for text in (annotation, caption):
+            self.assertEqual(text.get_fontsize(), 10)
+        self.assertTrue(figure_bytes(figure, "pdf").startswith(b"%PDF"))
 
 
 class PlotSmokeTests(unittest.TestCase):
