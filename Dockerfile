@@ -20,7 +20,8 @@ COPY lynette/ ./
 
 # Execute the scripts to bake vstd and verus into the Docker image
 # fetch_verus_release.py automatically detects and installs the required Rust toolchain
-RUN python3 fetch_verus_release.py
+ARG VERUS_VERSION=latest
+RUN python3 fetch_verus_release.py --version "$VERUS_VERSION"
 
 # remove examples from verus (some tasks are removed from there)
 RUN rm -rf /opt/.verus/examples

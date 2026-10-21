@@ -45,13 +45,23 @@ AGENT_AUTH_FILE_OVERRIDES = {
 print_lock = threading.Lock()
 
 
-def build_base_image():
+def build_base_image(verus_version="latest"):
     """Build the base Docker image with all shared dependencies."""
     print("=" * 60)
     print("Building base image: benchmark-base:latest")
     print("=" * 60)
     subprocess.run(
-        ["docker", "build", "-t", "benchmark-base:latest", "-f", "Dockerfile", "."],
+        [
+            "docker",
+            "build",
+            "-t",
+            "benchmark-base:latest",
+            "-f",
+            "Dockerfile",
+            "--build-arg",
+            f"VERUS_VERSION={verus_version}",
+            ".",
+        ],
         check=True,
     )
     print()
@@ -173,10 +183,15 @@ class Run:
     task_names: list[str]
     task_directory: str
     tasks_by_agent: dict[str, dict[str, Task]]
+    verus_version: str = "latest"
 
     @classmethod
     def create(
-        cls, agents: list[AgentSpec], task_names: list[str], task_directory: str
+        cls,
+        agents: list[AgentSpec],
+        task_names: list[str],
+        task_directory: str,
+        verus_version: str = "latest",
     ) -> Run:
         timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
         return cls(
@@ -185,6 +200,7 @@ class Run:
             agents=agents,
             task_names=task_names,
             task_directory=task_directory,
+            verus_version=verus_version,
             tasks_by_agent={
                 agent.name: {name: Task(name) for name in task_names}
                 for agent in agents
@@ -201,6 +217,7 @@ class Run:
             agents=agents,
             task_names=[str(name) for name in configuration["tasks"]],
             task_directory=str(configuration.get("task_directory", "tasks")),
+            verus_version=str(configuration.get("verus_version", "latest")),
             tasks_by_agent={
                 agent_name: {
                     name: Task.from_dict(name, stats)
@@ -229,6 +246,7 @@ class Run:
                 "agents": [agent.to_dict() for agent in self.agents],
                 "tasks": self.task_names,
                 "task_directory": self.task_directory,
+                "verus_version": self.verus_version,
             },
             "agents": {
                 agent.name: {
@@ -632,7 +650,9 @@ def discover_agents(agent_filter=None, model_filter=None):
     return agents
 
 
-def start_new_run(agent_filter=None, model_filter=None, task_directory="tasks"):
+def start_new_run(
+    agent_filter=None, model_filter=None, task_directory="tasks", verus_version="latest"
+):
     """Create a run file with every selected task marked pending."""
     if not os.path.isdir(task_directory):
         raise ValueError(f"Task directory not found: {task_directory}/")
@@ -640,7 +660,7 @@ def start_new_run(agent_filter=None, model_filter=None, task_directory="tasks"):
         f for f in os.listdir(task_directory) if f.endswith(".rs")
     )
     agents = discover_agents(agent_filter, model_filter)
-    run = Run.create(agents, task_names, task_directory)
+    run = Run.create(agents, task_names, task_directory, verus_version)
     run.save()
     return run
 
@@ -688,10 +708,16 @@ def run_tasks(
     model_filter=None,
     resume_id=None,
     task_directory=None,
+    verus_version=None,
 ):
     """Run a new benchmark or resume only the pending tasks from an existing run."""
     if resume_id:
         run = resume_run(resume_id, agent_filter, model_filter)
+        if verus_version is not None and verus_version != run.verus_version:
+            raise ValueError(
+                "--verus-version does not match the version recorded for this run: "
+                f"{run.verus_version}"
+            )
         if task_directory is not None and os.path.abspath(
             task_directory
         ) != os.path.abspath(run.task_directory):
@@ -700,7 +726,9 @@ def run_tasks(
                 f"{run.task_directory}"
             )
     else:
-        run = start_new_run(agent_filter, model_filter, task_directory or "tasks")
+        run = start_new_run(
+            agent_filter, model_filter, task_directory or "tasks", verus_version or "latest"
+        )
 
     timestamp = run.timestamp
     agents = run.agents
@@ -717,7 +745,7 @@ def run_tasks(
     print(f"Found {len(task_names)} task(s)")
     print()
 
-    build_base_image()
+    build_base_image(run.verus_version)
     for agent_dir in sorted({agent.agent_dir for agent in agents}):
         build_agent_image(agent_dir, os.path.join("agents", agent_dir))
 
@@ -819,6 +847,11 @@ def main():
         metavar="DIRECTORY",
         help="Directory containing task .rs files (default: tasks/)",
     )
+    parser.add_argument(
+        "--verus-version",
+        metavar="TAG",
+        help="Verus GitHub release tag (default: latest; saved version when resuming)",
+    )
     args = parser.parse_args()
     try:
         run_tasks(
@@ -827,6 +860,7 @@ def main():
             model_filter=args.model,
             resume_id=args.resume,
             task_directory=args.task_directory,
+            verus_version=args.verus_version,
         )
     except ValueError as e:
         parser.error(str(e))
