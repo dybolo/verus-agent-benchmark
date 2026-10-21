@@ -2,7 +2,7 @@
 
 A Docker-based benchmark for coding agents that repair incomplete Verus proofs
 in concurrent Rust programs. Each proposed solution is checked with Verus and
-Lynette (adapted from the [original implementation]((https://github.com/microsoft/verus-proof-synthesis/tree/main/utils/lynette))); a valid repair must pass both checks.
+Lynette (adapted from the [original implementation](https://github.com/microsoft/verus-proof-synthesis/tree/main/utils/lynette)); a valid repair must pass both checks.
 
 The corpus contains 75 focused tasks (42 atomic-operation proofs and 33
 state-machine proofs) and 17 full-file tasks. See [TASKS.md](TASKS.md) for the
@@ -55,6 +55,9 @@ python3 benchmark.py --resume <run-id>
 - Resume uses the original agents, task directory, and Verus version selection. An explicitly supplied task directory or Verus version must match the saved run; agent/model filters must match every saved condition. Runs saved before version selection was supported default to `latest`. To keep the same release across resumes, select an explicit release tag; `latest` can change between builds (and Docker may reuse a cached download).
 
 The downloader also supports `python3 fetch_verus_release.py --version <release-tag>`.
+If a release does not come with `vstd` sources, the downloader fetches `source/vstd` from that release's resolved. Bundled sources are kept; failure to
+fetch missing sources stops the build.
+
 For a manual base-image build, use
 `docker build --build-arg VERUS_VERSION=<release-tag> -t benchmark-base:latest .`.
 
