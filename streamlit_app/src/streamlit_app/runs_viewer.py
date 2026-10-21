@@ -257,14 +257,32 @@ def render_solution(repo_root: Path, task_name: str, result: dict[str, Any]) -> 
         st.warning(message)
         return
 
+    original_path = original_task_path(repo_root, task_name)
+    st.caption(str(solution_path.relative_to(repo_root)))
+    view = st.radio(
+        "Source view", ["Diff", "Original", "Solution"], horizontal=True,
+        key="source_view",
+    )
+    if view == "Original" and original_path is not None:
+        try:
+            original = original_path.read_text(errors="replace")
+        except OSError as error:
+            st.error(f"Could not read the original task: {error}")
+            return
+        st.caption(str(original_path.relative_to(repo_root)))
+        st.code(original, language="rust", line_numbers=True)
+        return
+
     try:
         solution = solution_path.read_text(errors="replace")
     except OSError as error:
         st.error(f"Could not read the solution: {error}")
         return
 
-    original_path = original_task_path(repo_root, task_name)
-    st.caption(str(solution_path.relative_to(repo_root)))
+    if view == "Solution":
+        st.code(solution, language="rust", line_numbers=True)
+        return
+
     if original_path is None:
         st.info("The original task file is no longer present. Showing the solution only.")
         st.code(solution, language="rust", line_numbers=True)
@@ -285,19 +303,10 @@ def render_solution(repo_root: Path, task_name: str, result: dict[str, Any]) -> 
             tofile=str(solution_path.relative_to(repo_root)),
         )
     )
-    diff_tab, original_tab, solution_tab = st.tabs(["Diff", "Original", "Solution"])
-
-    with diff_tab:
-        if diff:
-            st.code(diff, language="diff", line_numbers=True)
-        else:
-            st.success("The original and solution files are identical.")
-    with original_tab:
-        st.caption(str(original_path.relative_to(repo_root)))
-        st.code(original, language="rust", line_numbers=True)
-    with solution_tab:
-        st.caption(str(solution_path.relative_to(repo_root)))
-        st.code(solution, language="rust", line_numbers=True)
+    if diff:
+        st.code(diff, language="diff", line_numbers=True)
+    else:
+        st.success("The original and solution files are identical.")
 
 
 def main() -> None:
@@ -382,10 +391,12 @@ def main() -> None:
     )
     render_task_metrics(selected_result)
 
-    conversation_tab, solution_tab = st.tabs(["Conversation", "Solution"])
-    with conversation_tab:
+    view = st.radio(
+        "View", ["Conversation", "Solution"], horizontal=True, key="task_view"
+    )
+    if view == "Conversation":
         render_conversation(repo_root, selected_agent, selected_result)
-    with solution_tab:
+    else:
         render_solution(repo_root, selected_task, selected_result)
 
     with st.expander("All runs overview"):
