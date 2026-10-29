@@ -648,11 +648,15 @@ def binned_success_curves(
                 linewidth=0.8,
                 zorder=3,
             )
-            axis.set_xticks(positions, panel["bin_label"])
+            tick_labels = [
+                f"{row.bin_label}\n({row.tasks} examples)"
+                for row in panel.itertuples()
+            ]
+            axis.set_xticks(positions, tick_labels)
             axis.set_ylim(0, 100)
             axis.set_yticks(np.arange(0, 101, 20))
             axis.yaxis.set_major_formatter(mticker.PercentFormatter(xmax=100, decimals=0))
-            axis.set_xlabel(f"{label} (quartile range)")
+            axis.set_xlabel(label)
             axis.set_ylabel("Agent success rate")
             axis.set_title(label, fontweight="bold")
             axis.grid(axis="y", color=COLORS["light_gray"], linewidth=0.7)
