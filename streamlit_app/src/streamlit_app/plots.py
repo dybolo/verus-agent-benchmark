@@ -167,17 +167,22 @@ def outcome_composition(
 
     with _style():
         figure, axis = plt.subplots(
-            figsize=(width, max(height, 1.0 + 0.55 * len(condition_order))),
+            # Leave room between rows for the single-line callouts.
+            figsize=(width, max(height, 1.0 + 0.75 * len(condition_order))),
             constrained_layout=True,
         )
         left = np.zeros(len(condition_order))
         y = np.arange(len(condition_order))
+        min_inline_percentage = 3
+        bar_height = 0.55  # Leave a clear band above each bar for callouts.
+        small_labels: list[list[tuple[float, str]]] = [[] for _ in condition_order]
         for outcome in OUTCOME_ORDER:
             values = percentages[outcome].to_numpy(dtype=float)
             bars = axis.barh(
                 y,
                 values,
                 left=left,
+                height=bar_height,
                 color=OUTCOME_COLORS[outcome],
                 label=outcome,
                 edgecolor="white",
@@ -185,19 +190,47 @@ def outcome_composition(
             )
             for index, (bar, percentage) in enumerate(zip(bars, values)):
                 count = int(counts.iloc[index][outcome])
-                if count and percentage >= 7:
+                if not count:
+                    continue
+                center = bar.get_x() + bar.get_width() / 2
+                label = f"{count}\n{percentage:.0f}%"
+                if percentage < min_inline_percentage:
+                    small_labels[index].append((center, f"{count} ({percentage:.0f}%)"))
+                else:
                     axis.text(
-                        bar.get_x() + bar.get_width() / 2,
+                        center,
                         bar.get_y() + bar.get_height() / 2,
-                        f"{count}\n{percentage:.0f}%",
+                        label,
                         ha="center",
                         va="center",
                         fontsize=8,
                         color="white" if outcome != OUTCOME_ORDER[1] else COLORS["dark"],
                     )
             left += np.nan_to_num(values)
+        # Keep callouts near their segments, separating only crowded neighbors.
+        callout_width_inches = 0.7
+        label_gap = 100 * callout_width_inches / width
+        for index, labels in enumerate(small_labels):
+            positions = []
+            right_edge = 100 - label_gap / 2
+            for center, _ in reversed(labels):
+                positions.append(min(center, right_edge))
+                right_edge = positions[-1] - label_gap
+            positions = np.maximum(positions[::-1], label_gap * (np.arange(len(labels)) + 0.5))
+            for (center, label), label_x in zip(labels, positions):
+                axis.annotate(
+                    label,
+                    xy=(center, index - bar_height / 2),
+                    xytext=(label_x, index - 0.5),
+                    ha="center",
+                    va="center",
+                    fontsize=8,
+                    color=COLORS["dark"],
+                    arrowprops={"arrowstyle": "-", "color": COLORS["dark"]},
+                )
+        # Reserve half a row above the first bar for callouts.
+        axis.set_ylim(len(condition_order) - 0.5, -1)
         axis.set_yticks(y, [condition_labels[condition] for condition in condition_order])
-        axis.invert_yaxis()
         axis.set_xlim(0, 100)
         axis.set_xlabel("Share of attempted tasks (%)")
         axis.set_ylabel("Harness / model" if include_model else "Harness")
